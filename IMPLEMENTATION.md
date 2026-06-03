@@ -240,38 +240,38 @@
 
 **Route:** `/dashboard/deliveries/[id]`
 
-- [ ] Fetch delivery from DB + refresh from Uber if active
-- [ ] Header: status badge + external ID + created time
-- [ ] **Status timeline** component
-  - [ ] pending → scheduled → en route to pickup → at pickup → en route to dropoff → at dropoff → completed
-  - [ ] failed / cancelled terminal states
-- [ ] Pickup & dropoff info cards
-- [ ] Fee + currency display
-- [ ] Scheduled pickup time (if applicable)
-- [ ] **Tracking link** — open Uber `tracking_url` in new tab (never modify URL)
-- [ ] Courier section (when available from Uber): name, vehicle, ETA
+- [x] Fetch delivery from DB + refresh from Uber if active
+- [x] Header: status badge + external ID + created time
+- [x] **Status timeline** component
+  - [x] pending → scheduled → en route to pickup → at pickup → en route to dropoff → at dropoff → completed
+  - [x] failed / cancelled terminal states
+- [x] Pickup & dropoff info cards
+- [x] Fee + currency display
+- [x] Scheduled pickup time (if applicable)
+- [x] **Tracking link** — open Uber `tracking_url` in new tab (never modify URL)
+- [x] Courier section (when available from Uber): name, vehicle, ETA
 
 ### Cancel delivery
 
-- [ ] Show “Cancel delivery” when status is cancellable (before terminal state)
-- [ ] Cancel modal with reason select:
-  - [ ] `CUSTOMER_CALLED_TO_CANCEL`
-  - [ ] `OUT_OF_ITEMS`
-  - [ ] `RESTAURANT_TOO_BUSY`
-  - [ ] `OTHER` (+ details field)
-- [ ] `POST /api/deliveries/[id]/cancel` → Uber cancel API, `cancelling_party: MERCHANT`
-- [ ] Update local status + show confirmation
-- [ ] Disable cancel button after success
+- [x] Show “Cancel delivery” when status is cancellable (before terminal state)
+- [x] Cancel modal with reason select:
+  - [x] `CUSTOMER_CALLED_TO_CANCEL`
+  - [x] `OUT_OF_ITEMS`
+  - [x] `RESTAURANT_TOO_BUSY`
+  - [x] `OTHER` (+ details field)
+- [x] `POST /api/deliveries/[id]/cancel` → Uber cancel API, `cancelling_party: MERCHANT`
+- [x] Update local status + show confirmation
+- [x] Disable cancel button after success
 
 ### Proof of delivery
 
-- [ ] When status = completed, fetch latest from Uber `Get Delivery`
-- [ ] Display POD section if verification data exists:
-  - [ ] Signature image + signer name
-  - [ ] Delivery photo
+- [x] When status = completed, fetch latest from Uber `Get Delivery`
+- [x] Display POD section if verification data exists:
+  - [x] Signature image + signer name
+  - [x] Delivery photo
   - [ ] Barcode scan result (if configured later)
-- [ ] Handle expired POD URLs gracefully (Uber retains ~30 days via API)
-- [ ] “Proof pending” state if completed but verification not yet available
+- [x] Handle expired POD URLs gracefully (Uber retains ~30 days via API)
+- [x] “Proof pending” state if completed but verification not yet available
 
 ---
 
@@ -373,9 +373,9 @@
 | 3 | Uber Direct client | [x] |
 | 4 | Geocoding | [x] |
 | 5 | App shell | [x] |
-| 6 | Deliveries list | [ ] |
-| 7 | New delivery | [ ] |
-| 8 | Delivery detail | [ ] |
+| 6 | Deliveries list | [x] |
+| 7 | New delivery | [x] |
+| 8 | Delivery detail | [x] |
 | 9 | Webhooks | [ ] |
 | 10 | API routes | [ ] |
 | 11 | Sandbox & robo courier | [ ] |

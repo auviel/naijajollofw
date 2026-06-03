@@ -31,15 +31,25 @@ export const createQuoteSchema = z.object({
   scheduledPickupAt: z.coerce.date().optional(),
 });
 
-export const cancelDeliverySchema = z.object({
-  reason: z.enum([
-    "CUSTOMER_CALLED_TO_CANCEL",
-    "OUT_OF_ITEMS",
-    "RESTAURANT_TOO_BUSY",
-    "OTHER",
-  ]),
-  details: z.string().optional(),
-});
+export const cancelDeliverySchema = z
+  .object({
+    reason: z.enum([
+      "CUSTOMER_CALLED_TO_CANCEL",
+      "OUT_OF_ITEMS",
+      "RESTAURANT_TOO_BUSY",
+      "OTHER",
+    ]),
+    details: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      data.reason !== "OTHER" ||
+      Boolean(data.details && data.details.trim().length > 0),
+    {
+      message: "Details are required when reason is Other",
+      path: ["details"],
+    },
+  );
 
 export type CreateDeliverySchema = z.infer<typeof createDeliverySchema>;
 export type CreateQuoteSchema = z.infer<typeof createQuoteSchema>;

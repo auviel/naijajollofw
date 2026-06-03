@@ -82,6 +82,7 @@ export function mapUberDeliveryStatus(status: string): ReturnType<typeof mapProv
 
 export function mapUberDeliveryResponse(raw: UberDeliveryResponse): ProviderDelivery {
   const proof = raw.dropoff?.verification;
+  const courier = raw.courier;
 
   return {
     providerDeliveryId: raw.id,
@@ -98,6 +99,16 @@ export function mapUberDeliveryResponse(raw: UberDeliveryResponse): ProviderDeli
           pictureImageUrl: proof.picture?.image_url,
         }
       : undefined,
+    courier:
+      courier || raw.pickup_eta || raw.dropoff_eta
+        ? {
+            name: courier?.name,
+            phone: courier?.phone_number,
+            vehicleType: courier?.vehicle_type,
+            pickupEta: raw.pickup_eta ? new Date(raw.pickup_eta) : undefined,
+            dropoffEta: raw.dropoff_eta ? new Date(raw.dropoff_eta) : undefined,
+          }
+        : undefined,
     raw,
   };
 }

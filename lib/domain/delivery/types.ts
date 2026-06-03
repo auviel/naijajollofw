@@ -60,3 +60,46 @@ export type DeliveryListItem = {
   createdAt: Date;
   scheduledFor: Date | null;
 };
+
+export type CourierInfo = {
+  name?: string;
+  phone?: string;
+  vehicleType?: string;
+  pickupEta?: Date;
+  dropoffEta?: Date;
+};
+
+export type DeliveryProofOfDelivery = {
+  signatureImageUrl?: string;
+  signerName?: string;
+  pictureImageUrl?: string;
+  fetchedAt?: string;
+  pending?: boolean;
+};
+
+export type DeliveryLocation = {
+  name: string;
+  phone: string;
+  address: string;
+};
+
+export type DeliveryDetail = {
+  id: string;
+  externalId: string;
+  status: DeliveryStatus;
+  createdAt: Date;
+  feeCents: number | null;
+  currency: string;
+  trackingUrl: string | null;
+  liveMode: boolean;
+  scheduledFor: Date | null;
+  pickupReadyAt: Date | null;
+  pickup: DeliveryLocation;
+  dropoff: DeliveryLocation;
+  podConfig: ProofOfDeliveryConfig;
+  proofOfDelivery: DeliveryProofOfDelivery | null;
+  courier: CourierInfo | null;
+  cancellable: boolean;
+  cancelledAt: Date | null;
+  cancelReason: string | null;
+};

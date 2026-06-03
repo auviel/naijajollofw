@@ -1,5 +1,6 @@
 import type { UserRole } from "@/lib/domain/auth/types";
 import { userRepository } from "@/lib/db/repositories/user.repository";
+import { authConfig } from "@/lib/auth/auth.config";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -11,12 +12,7 @@ const credentialsSchema = z.object({
 });
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
-  trustHost: true,
-  secret: process.env.AUTH_SECRET,
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -54,24 +50,4 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.sub = user.id;
-        token.storeId = user.storeId;
-        token.storeName = user.storeName;
-        token.role = user.role;
-      }
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-        session.user.storeId = token.storeId as string;
-        session.user.storeName = token.storeName as string;
-        session.user.role = token.role as UserRole;
-      }
-      return session;
-    },
-  },
 });

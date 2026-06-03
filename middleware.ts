@@ -1,5 +1,8 @@
-import { auth } from "@/lib/auth/index";
+import { authConfig } from "@/lib/auth/auth.config";
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((request) => {
   const { pathname } = request.nextUrl;

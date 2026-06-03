@@ -55,6 +55,12 @@ export type UberDeliveryResponse = {
   pickup_eta?: string;
   dropoff_eta?: string;
   manifest_items?: UberManifestItem[];
+  courier?: {
+    name?: string;
+    phone_number?: string;
+    vehicle_type?: string;
+    img_href?: string;
+  };
 };
 
 export type UberListDeliveriesResponse = {

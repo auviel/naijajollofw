@@ -51,6 +51,13 @@ export type ProviderDelivery = {
     signerName?: string;
     pictureImageUrl?: string;
   };
+  courier?: {
+    name?: string;
+    phone?: string;
+    vehicleType?: string;
+    pickupEta?: Date;
+    dropoffEta?: Date;
+  };
   raw?: unknown;
 };
 
