@@ -422,7 +422,7 @@ Document exact strings from sandbox responses in `lib/integrations/delivery/door
 
 - [x] Extend `DeliveryProviderId` union: `"uber_direct" | "doordash_drive"`
 - [x] Per-store carrier toggles: `enabledUberDirect`, `enabledDoorDashDrive` on **Store**
-- [x] **Store** field `doordashExternalStoreId` if not derived from `Store.id`
+- [x] DoorDash `external_store_id` from `DOORDASH_EXTERNAL_STORE_ID` env (falls back to `Store.id`)
 - [x] Migration for new store columns (`20250603120000_store_delivery_settings`)
 - [x] Seed: document how test store maps to DoorDash `external_store_id`
 - [x] Ensure `Delivery.providerId` can be `doordash_drive` on create (no schema change if string already flexible)

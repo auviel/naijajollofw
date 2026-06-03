@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getDoorDashExternalStoreId,
   getStoreEnabledProviderIds,
@@ -18,21 +18,20 @@ const store: StoreProfile = {
   longitude: -80.524498,
   enabledUberDirect: true,
   enabledDoorDashDrive: false,
-  doordashExternalStoreId: null,
 };
 
 describe("getDoorDashExternalStoreId", () => {
-  it("falls back to Store.id when override is unset", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("falls back to Store.id when env is unset", () => {
     expect(getDoorDashExternalStoreId(store)).toBe("seed-store-waterloo");
   });
 
-  it("uses the configured override when present", () => {
-    expect(
-      getDoorDashExternalStoreId({
-        ...store,
-        doordashExternalStoreId: "custom-store-id",
-      }),
-    ).toBe("custom-store-id");
+  it("uses DOORDASH_EXTERNAL_STORE_ID from env when set", () => {
+    vi.stubEnv("DOORDASH_EXTERNAL_STORE_ID", "default");
+    expect(getDoorDashExternalStoreId(store)).toBe("default");
   });
 });
 

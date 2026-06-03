@@ -50,6 +50,10 @@ export type UberDeliveryResponse = {
       picture?: { image_url?: string };
       signature_proof?: { image_url?: string; signer_name?: string };
       pincode?: { value?: string; entered?: boolean };
+      pin_code?: { value?: string; entered?: boolean };
+    };
+    verification_requirements?: {
+      pincode?: { enabled?: boolean; value?: string };
     };
   };
   verification_requirements?: {

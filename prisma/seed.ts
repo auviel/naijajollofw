@@ -1,6 +1,7 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
+import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
 
 const prisma = new PrismaClient();
 
@@ -88,7 +89,7 @@ async function main() {
 
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);
-  console.log(`  DoorDash external_store_id: ${store.doordashExternalStoreId ?? store.id}`);
+  console.log(`  DoorDash external_store_id: ${getDoorDashExternalStoreIdFromEnv() ?? store.id}`);
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
   console.log(`  User:  ${SEED_USER.email}`);
   console.log(`  Login password: ${SEED_USER.password} (dev only)`);

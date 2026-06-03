@@ -12,5 +12,4 @@ export type StoreProfile = {
   longitude: number;
   enabledUberDirect: boolean;
   enabledDoorDashDrive: boolean;
-  doordashExternalStoreId: string | null;
 };

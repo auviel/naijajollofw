@@ -40,21 +40,28 @@ export function DeliveryListFilters({ filter, search }: DeliveryListFiltersProps
     return value ? `${pathname}?${value}` : pathname;
   }
 
-  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
+  useEffect(() => {
     const trimmed = query.trim();
-
-    if (trimmed) {
-      params.set("q", trimmed);
-    } else {
-      params.delete("q");
+    if (trimmed === search) {
+      return;
     }
 
-    startTransition(() => {
-      router.push(params.toString() ? `${pathname}?${params.toString()}` : pathname);
-    });
-  }
+    const timeout = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (trimmed) {
+        params.set("q", trimmed);
+      } else {
+        params.delete("q");
+      }
+
+      startTransition(() => {
+        router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname);
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [query, search, pathname, router, searchParams, startTransition]);
 
   return (
     <div className="mb-6 space-y-4">
@@ -88,24 +95,16 @@ export function DeliveryListFilters({ filter, search }: DeliveryListFiltersProps
         </div>
       </div>
 
-      <form onSubmit={submitSearch} className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by customer name or reference ID"
-            className="pl-11"
-            aria-label="Search deliveries"
-          />
-        </div>
-        <button
-          type="submit"
-          className="inline-flex h-12 w-full shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated px-4 text-sm font-medium text-foreground transition-colors duration-fast hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:w-auto"
-        >
-          Search
-        </button>
-      </form>
+      <div className="relative min-w-0">
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search by customer name or reference ID"
+          className="pl-11"
+          aria-label="Search deliveries"
+        />
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { createDefaultManifest } from "@/lib/domain/delivery/manifest";
 import {
   buildCreateDeliveryBody,
   formatUberAddressJson,
+  mapUberDeliveryResponse,
   mapUberDeliveryStatus,
 } from "@/lib/integrations/delivery/uber/mappers";
 import type { ProviderCreateDeliveryRequest } from "@/lib/integrations/delivery/types";
@@ -113,6 +114,35 @@ describe("mapUberDeliveryStatus", () => {
   it("maps webhook-style statuses", () => {
     expect(mapUberDeliveryStatus("EN_ROUTE_TO_PICKUP")).toBe("en_route_to_pickup");
     expect(mapUberDeliveryStatus("COMPLETED")).toBe("completed");
+  });
+});
+
+describe("mapUberDeliveryResponse", () => {
+  it("maps pincode value from top-level verification requirements", () => {
+    const mapped = mapUberDeliveryResponse({
+      id: "d-1",
+      status: "pending",
+      verification_requirements: {
+        pincode: { enabled: true, value: "4829" },
+      },
+    });
+
+    expect(mapped.proofOfDelivery?.pincodeValue).toBe("4829");
+  });
+
+  it("maps pincode value from dropoff.verification_requirements", () => {
+    const mapped = mapUberDeliveryResponse({
+      id: "d-1",
+      status: "dropoff",
+      dropoff: {
+        verification: { barcodes: null },
+        verification_requirements: {
+          pincode: { enabled: true, value: "0000" },
+        },
+      },
+    });
+
+    expect(mapped.proofOfDelivery?.pincodeValue).toBe("0000");
   });
 });
 

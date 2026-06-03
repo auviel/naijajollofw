@@ -81,7 +81,8 @@ npm run db:seed
 | Email | `store.manager@delivergo.local` |
 | Password | `DeliverGODev2026!` |
 | Store | Demo Market — 280 Lester St #102, Waterloo, ON |
-| Store id | `seed-store-waterloo` (used as DoorDash `external_store_id` unless overridden) |
+| Store id | `seed-store-waterloo` |
+| DoorDash store id | `DOORDASH_EXTERNAL_STORE_ID` in `.env` (e.g. `default`) |
 
 After seeding, register the store with DoorDash:
 
@@ -187,7 +188,8 @@ Use this before going live:
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` |
 | `UBER_*` | Sandbox creds first; switch to live when ready |
 | `UBER_LIVE_MODE` | `false` until production pilot |
-| `DOORDASH_*` | Optional — enables DoorDash quoting when set |
+| `DOORDASH_EXTERNAL_BUSINESS_ID` | Merchant id (often `default` in sandbox) |
+| `DOORDASH_EXTERNAL_STORE_ID` | Store id (often `default` in sandbox) |
 | `DOORDASH_LIVE_MODE` | `false` until DoorDash production access |
 | `DOORDASH_WEBHOOK_AUTHORIZATION` | From DoorDash webhook settings |
 | `MAPBOX_ACCESS_TOKEN` | Required for geocoding |
@@ -283,6 +285,7 @@ DOORDASH_DEVELOPER_ID=""
 DOORDASH_KEY_ID=""
 DOORDASH_SIGNING_SECRET=""
 DOORDASH_EXTERNAL_BUSINESS_ID="default"
+DOORDASH_EXTERNAL_STORE_ID="default"
 DOORDASH_API_BASE="https://openapi.doordash.com"
 DOORDASH_LIVE_MODE="false"
 DOORDASH_WEBHOOK_AUTHORIZATION="Bearer your-generated-token"
@@ -297,22 +300,17 @@ DoorDash identifies pickup locations with two IDs:
 | DoorDash field | deliverGO source |
 |----------------|------------------|
 | `external_business_id` | `DOORDASH_EXTERNAL_BUSINESS_ID` in `.env` |
-| `external_store_id` | Store profile → **DoorDash external store ID**, or **`Store.id`** if blank |
+| `external_store_id` | `DOORDASH_EXTERNAL_STORE_ID` in `.env`, or **`Store.id`** if unset |
 
 **Seed store id:** `seed-store-waterloo`
 
-Register it automatically with **`external_store_id` = `Store.id`** (Option B):
+Register or refresh the DoorDash store address from your deliverGO store profile:
 
 ```bash
 npm run doordash:register-store
 ```
 
-Uses `seed-store-waterloo` by default. Pass another store id as an argument. Re-run anytime to refresh name, phone, or address. If you previously set a DoorDash override to `default`, this script clears it so quotes use `Store.id`.
-
-Or register manually in the DoorDash portal:
-
-- `external_business_id` = your `DOORDASH_EXTERNAL_BUSINESS_ID`
-- `external_store_id` = `seed-store-waterloo` (or override under **Store profile → Delivery carriers**)
+Uses `DOORDASH_EXTERNAL_STORE_ID` from `.env` (falls back to `Store.id`). Re-run after updating pickup address in **Store profile**.
 
 Pickup address and phone should match your deliverGO store profile.
 
@@ -330,7 +328,6 @@ Until enabled, DoorDash quotes may fail while Uber still works.
 **Store profile → Delivery carriers**
 
 - Enable/disable Uber Direct and DoorDash Drive per store
-- Override DoorDash `external_store_id` when it differs from `Store.id`
 
 ### 6. DoorDash webhooks
 

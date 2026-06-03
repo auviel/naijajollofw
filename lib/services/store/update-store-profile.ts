@@ -1,4 +1,5 @@
 import { updateStoreProfileSchema } from "@/lib/domain/store/validation";
+import { isDoorDashEnabled } from "@/lib/config/environment";
 import {
   mapStoreToProfile,
   storeRepository,
@@ -67,12 +68,7 @@ export async function updateStoreProfile(
       ? { enabledUberDirect: parsed.enabledUberDirect }
       : {}),
     ...(parsed.enabledDoorDashDrive !== undefined
-      ? { enabledDoorDashDrive: parsed.enabledDoorDashDrive }
-      : {}),
-    ...(parsed.doordashExternalStoreId !== undefined
-      ? {
-          doordashExternalStoreId: parsed.doordashExternalStoreId.trim() || null,
-        }
+      ? { enabledDoorDashDrive: isDoorDashEnabled() ? parsed.enabledDoorDashDrive : false }
       : {}),
   });
 

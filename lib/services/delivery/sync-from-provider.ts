@@ -10,7 +10,7 @@ import { getDeliveryProviderById } from "@/lib/integrations/delivery/provider.re
 import type { ProviderDelivery } from "@/lib/integrations/delivery/types";
 import { logger } from "@/lib/utils/logger";
 
-function buildProofUpdate(
+export function buildProofUpdate(
   proof?: ProviderDelivery["proofOfDelivery"],
 ): ProofOfDeliveryData | undefined {
   if (!proof) {
@@ -36,9 +36,18 @@ function buildProofUpdate(
   };
 }
 
+function getStoredPincode(delivery: Delivery): string | null {
+  const stored = delivery.proofOfDelivery as ProofOfDeliveryData | null;
+  return stored?.pincodeValue ?? null;
+}
+
 function shouldSyncFromProvider(delivery: Delivery): boolean {
   if (!delivery.providerDeliveryId) {
     return false;
+  }
+
+  if (delivery.podPincode && !getStoredPincode(delivery)) {
+    return true;
   }
 
   if (!isTerminalStatus(delivery.status as DeliveryStatus)) {

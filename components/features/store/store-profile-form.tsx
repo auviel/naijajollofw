@@ -22,7 +22,7 @@ type StoreProfileFormProps = {
   store: StoreProfile;
   configuredProviders: {
     uber: boolean;
-    doordash: boolean;
+    doordashEnabled: boolean;
   };
 };
 
@@ -62,10 +62,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [enabledUberDirect, setEnabledUberDirect] = useState(store.enabledUberDirect);
   const [enabledDoorDashDrive, setEnabledDoorDashDrive] = useState(
-    store.enabledDoorDashDrive,
-  );
-  const [doordashExternalStoreId, setDoordashExternalStoreId] = useState(
-    store.doordashExternalStoreId ?? "",
+    configuredProviders.doordashEnabled ? store.enabledDoorDashDrive : false,
   );
   const [fieldErrors, setFieldErrors] = useState<StoreProfileFormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -144,8 +141,9 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
           addressLine2: addressLine2.trim() || undefined,
           addressQuery: addressQuery.trim(),
           enabledUberDirect,
-          enabledDoorDashDrive,
-          doordashExternalStoreId: doordashExternalStoreId.trim() || undefined,
+          enabledDoorDashDrive: configuredProviders.doordashEnabled
+            ? enabledDoorDashDrive
+            : false,
         }),
       });
 
@@ -257,13 +255,12 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
         </CardContent>
       </Card>
 
-      {configuredProviders.uber || configuredProviders.doordash ? (
+      {configuredProviders.uber || !configuredProviders.doordashEnabled ? (
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold text-foreground">Delivery carriers</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Choose which providers appear when quoting a new delivery. Credentials still
-              come from environment variables.
+              Choose which carriers appear when quoting a new delivery.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -280,13 +277,13 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
                     Uber Direct
                   </span>
                   <span className="block text-sm text-text-secondary">
-                    Quote and dispatch via Uber Direct.
+                    Quote and send deliveries with Uber couriers.
                   </span>
                 </span>
               </label>
             ) : null}
 
-            {configuredProviders.doordash ? (
+            {configuredProviders.doordashEnabled ? (
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -299,26 +296,25 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
                     DoorDash Drive
                   </span>
                   <span className="block text-sm text-text-secondary">
-                    Quote and dispatch via DoorDash Dashers.
+                    Quote and send deliveries with DoorDash Dashers.
                   </span>
                 </span>
               </label>
-            ) : null}
-
-            {configuredProviders.doordash ? (
-              <FormField
-                id="doordashExternalStoreId"
-                label="DoorDash external store ID"
-                hint={`Defaults to this store's deliverGO id (${store.id}). Register the same value in the DoorDash Developer Portal.`}
-              >
-                <Input
-                  name="doordashExternalStoreId"
-                  value={doordashExternalStoreId}
-                  onChange={(event) => setDoordashExternalStoreId(event.target.value)}
-                  placeholder={store.id}
-                />
-              </FormField>
-            ) : null}
+            ) : (
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3">
+                <span className="mt-0.5 rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-text-secondary">
+                  Coming soon
+                </span>
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    DoorDash Drive
+                  </span>
+                  <span className="block text-sm text-text-secondary">
+                    Not available in Canada yet. Uber Direct is ready to use today.
+                  </span>
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : null}

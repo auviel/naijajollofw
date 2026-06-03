@@ -4,6 +4,7 @@ import { getStoreEnabledProviderIds } from "@/lib/domain/store/delivery-settings
 import {
   getConfiguredDeliveryProviderIds,
   isDoorDashConfigured,
+  isDoorDashEnabled,
   isUberConfigured,
 } from "@/lib/config/environment";
 import type { DeliveryProvider } from "./provider.interface";
@@ -49,7 +50,7 @@ export function getDeliveryProviderById(providerId: DeliveryProviderId): Deliver
     throw new Error("Uber Direct is not configured.");
   }
 
-  if (providerId === "doordash_drive" && !isDoorDashConfigured()) {
+  if (providerId === "doordash_drive" && (!isDoorDashConfigured() || !isDoorDashEnabled())) {
     throw new Error("DoorDash Drive is not configured.");
   }
 

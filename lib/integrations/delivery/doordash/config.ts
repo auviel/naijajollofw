@@ -34,6 +34,11 @@ export function getDoorDashConfig(): DoorDashConfig {
   };
 }
 
+export function getDoorDashExternalStoreIdFromEnv(): string | null {
+  const value = process.env.DOORDASH_EXTERNAL_STORE_ID?.trim();
+  return value || null;
+}
+
 export function getDoorDashWebhookAuthorization(): string | null {
   const value = process.env.DOORDASH_WEBHOOK_AUTHORIZATION?.trim();
   return value || null;

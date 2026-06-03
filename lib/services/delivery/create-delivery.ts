@@ -12,6 +12,7 @@ import {
 import { getDoorDashExternalStoreId } from "@/lib/domain/store/delivery-settings";
 import { getDeliveryProviderById } from "@/lib/integrations/delivery/provider.registry";
 import type { ProviderDelivery, ProviderQuoteRequest } from "@/lib/integrations/delivery/types";
+import { buildProofUpdate } from "@/lib/services/delivery/sync-from-provider";
 import { geocodeAddress } from "@/lib/services/geocoding/geocode-address";
 import { AppError, isAppError } from "@/lib/utils/errors";
 import { generateDeliveryExternalId } from "@/lib/utils/id";
@@ -109,6 +110,8 @@ export async function createDelivery(input: unknown): Promise<CreateDeliveryResu
     }
   }
 
+  const proofOfDelivery = buildProofUpdate(providerDelivery.proofOfDelivery);
+
   const delivery = await deliveryRepository.create({
     externalId: providerId === "doordash_drive" ? quoteId : externalId,
     storeId: store.id,
@@ -137,6 +140,7 @@ export async function createDelivery(input: unknown): Promise<CreateDeliveryResu
     providerDeliveryId: providerDelivery.providerDeliveryId,
     providerOrderId: providerDelivery.providerOrderId,
     providerPayload: providerDelivery.raw as Prisma.InputJsonValue,
+    ...(proofOfDelivery ? { proofOfDelivery } : {}),
   });
 
   logger.info("delivery.created", {

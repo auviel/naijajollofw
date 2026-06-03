@@ -57,6 +57,16 @@ export function mapUberQuoteResponse(raw: UberDeliveryQuoteResponse): ProviderQu
   };
 }
 
+/** Read generated dropoff PIN from Uber delivery responses (create/get/webhook payloads). */
+export function extractUberPincode(raw: UberDeliveryResponse): string | undefined {
+  return (
+    raw.dropoff?.verification_requirements?.pincode?.value ??
+    raw.verification_requirements?.pincode?.value ??
+    raw.dropoff?.verification?.pincode?.value ??
+    raw.dropoff?.verification?.pin_code?.value
+  );
+}
+
 export function mapUberDeliveryStatus(status: string): ReturnType<typeof mapProviderStatusToDomain> {
   const normalized = status.toLowerCase().replace(/-/g, "_");
 
@@ -83,8 +93,7 @@ export function mapUberDeliveryStatus(status: string): ReturnType<typeof mapProv
 export function mapUberDeliveryResponse(raw: UberDeliveryResponse): ProviderDelivery {
   const proof = raw.dropoff?.verification;
   const courier = raw.courier;
-  const pincodeValue =
-    proof?.pincode?.value ?? raw.verification_requirements?.pincode?.value;
+  const pincodeValue = extractUberPincode(raw);
 
   return {
     providerDeliveryId: raw.id,

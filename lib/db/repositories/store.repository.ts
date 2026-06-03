@@ -17,7 +17,6 @@ export function mapStoreToProfile(store: Store): StoreProfile {
     longitude: store.longitude,
     enabledUberDirect: store.enabledUberDirect,
     enabledDoorDashDrive: store.enabledDoorDashDrive,
-    doordashExternalStoreId: store.doordashExternalStoreId,
   };
 }
 
@@ -39,7 +38,6 @@ export type UpdateStoreData = {
   longitude: number;
   enabledUberDirect?: boolean;
   enabledDoorDashDrive?: boolean;
-  doordashExternalStoreId?: string | null;
 };
 
 export const storeRepository = {
@@ -61,8 +59,7 @@ export const storeRepository = {
   },
 
   async update(id: string, data: UpdateStoreData): Promise<Store> {
-    const { enabledUberDirect, enabledDoorDashDrive, doordashExternalStoreId, ...addressData } =
-      data;
+    const { enabledUberDirect, enabledDoorDashDrive, ...addressData } = data;
 
     return prisma.store.update({
       where: { id },
@@ -70,9 +67,6 @@ export const storeRepository = {
         ...addressData,
         ...(enabledUberDirect !== undefined ? { enabledUberDirect } : {}),
         ...(enabledDoorDashDrive !== undefined ? { enabledDoorDashDrive } : {}),
-        ...(doordashExternalStoreId !== undefined
-          ? { doordashExternalStoreId }
-          : {}),
       },
     });
   },

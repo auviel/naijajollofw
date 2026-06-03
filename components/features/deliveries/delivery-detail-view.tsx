@@ -20,6 +20,11 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
   const hadScheduledPickup = Boolean(
     delivery.scheduledFor || delivery.pickupReadyAt,
   );
+  const otherProofSummary = formatPodConfigSummary({
+    ...delivery.podConfig,
+    pincode: false,
+  });
+  const hasOtherProof = otherProofSummary !== "None";
 
   return (
     <div className="space-y-6">
@@ -55,22 +60,38 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
                 <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
                   {fee}
                 </p>
-                <p className="mt-1 text-text-tertiary">{delivery.currency}</p>
               </div>
 
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
-                  Proof requested
-                </p>
-                <p className="mt-1 text-foreground">
-                  {formatPodConfigSummary(delivery.podConfig)}
-                </p>
-                {delivery.podConfig.pincode && delivery.pincodeValue ? (
-                  <p className="mt-2 font-mono text-sm text-foreground">
-                    Customer PIN: {delivery.pincodeValue}
+              {hasOtherProof ? (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                    Proof requested
                   </p>
-                ) : null}
-              </div>
+                  <p className="mt-1 text-foreground">{otherProofSummary}</p>
+                </div>
+              ) : null}
+
+              {delivery.podConfig.pincode ? (
+                <div className="rounded-md border border-border bg-background px-3 py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                    Delivery PIN
+                  </p>
+                  {delivery.pincodeValue ? (
+                    <>
+                      <p className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-foreground">
+                        {delivery.pincodeValue}
+                      </p>
+                      <p className="mt-2 text-sm text-text-secondary">
+                        Share this if the customer calls the store.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-text-secondary">
+                      PIN will appear here shortly after the delivery is sent.
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

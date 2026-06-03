@@ -14,6 +14,7 @@ import type { ProviderQuoteRequest } from "@/lib/integrations/delivery/types";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { geocodeAddress } from "@/lib/services/geocoding/geocode-address";
 import { AppError, isAppError } from "@/lib/utils/errors";
+import { getDoorDashUserMessage } from "@/lib/integrations/delivery/doordash/user-errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 
 export type CreateQuoteResult = {
@@ -109,11 +110,14 @@ export async function createQuote(input: unknown): Promise<CreateQuoteResult> {
 
     failures.push({
       providerId: provider.id,
-      error: isAppError(result.reason)
-        ? result.reason.message
-        : result.reason instanceof Error
-          ? result.reason.message
-          : "Unable to get a quote",
+      error:
+        provider.id === "doordash_drive" && isAppError(result.reason)
+          ? getDoorDashUserMessage(result.reason)
+          : isAppError(result.reason)
+            ? result.reason.message
+            : result.reason instanceof Error
+              ? result.reason.message
+              : "Unable to get a quote",
     });
   });
 

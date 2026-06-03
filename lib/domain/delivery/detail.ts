@@ -8,6 +8,7 @@ import type {
 } from "@/lib/domain/delivery/types";
 import { isCancellable } from "@/lib/domain/delivery/status";
 import type { ProofOfDeliveryData } from "@/lib/db/repositories/delivery.repository";
+import { extractUberPincode } from "@/lib/integrations/delivery/uber/mappers";
 import type { UberDeliveryResponse } from "@/lib/integrations/delivery/uber/types";
 
 function parseProofOfDelivery(
@@ -73,13 +74,7 @@ function parsePincodeFromPayload(payload: unknown): string | null {
     return null;
   }
 
-  const raw = payload as UberDeliveryResponse;
-
-  return (
-    raw.verification_requirements?.pincode?.value ??
-    raw.dropoff?.verification?.pincode?.value ??
-    null
-  );
+  return extractUberPincode(payload as UberDeliveryResponse) ?? null;
 }
 
 export function mapDeliveryToDetail(delivery: Delivery): DeliveryDetail {

@@ -26,13 +26,18 @@ export function isDoorDashConfigured(): boolean {
   );
 }
 
+/** DoorDash quoting is opt-in — off until Canada sandbox is approved. */
+export function isDoorDashEnabled(): boolean {
+  return process.env.DOORDASH_ENABLED === "true";
+}
+
 /** Providers with credentials configured in the environment. */
 export function getConfiguredDeliveryProviderIds(): DeliveryProviderId[] {
   const providers: DeliveryProviderId[] = [];
   if (isUberConfigured()) {
     providers.push("uber_direct");
   }
-  if (isDoorDashConfigured()) {
+  if (isDoorDashConfigured() && isDoorDashEnabled()) {
     providers.push("doordash_drive");
   }
   return providers;

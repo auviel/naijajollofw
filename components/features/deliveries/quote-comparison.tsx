@@ -72,65 +72,76 @@ function QuoteOption({
         <input
           type="radio"
           name="delivery-provider"
-          className="mt-1 h-4 w-4 border-border-strong"
+          className="mt-1.5 h-4 w-4 shrink-0 border-border-strong"
           checked={selected}
           disabled={isExpired}
           onChange={onSelect}
         />
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">
-              {DELIVERY_PROVIDER_LABELS[quote.providerId]}
-            </span>
-            {recommended ? (
-              <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
-                Recommended
-              </span>
-            ) : null}
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-base font-semibold text-foreground">
+                  {DELIVERY_PROVIDER_LABELS[quote.providerId]}
+                </span>
+                {recommended ? (
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+                    Recommended
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">
                 Delivery fee
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+              <p className="mt-0.5 text-2xl font-bold tabular-nums leading-none text-foreground">
                 {formatCadFromCents(quote.feeCents)}
               </p>
             </div>
-            <div
-              className={`flex items-center gap-1.5 text-sm ${isExpired ? "text-error" : "text-text-secondary"}`}
-            >
-              <Clock className="h-4 w-4 shrink-0" aria-hidden />
+          </div>
+
+          <div
+            className={`mt-3 flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm ${
+              isExpired
+                ? "border-error/20 bg-error/5 text-error"
+                : "border-border bg-background text-text-secondary"
+            }`}
+          >
+            <Clock className="h-4 w-4 shrink-0" aria-hidden />
             {isExpired ? (
-              <span>Quote expired</span>
+              <span>Quote expired — get a new quote</span>
             ) : (
               <span>
-                Valid for {formatCountdown(remainingSeconds)} ·{" "}
+                <span className="font-medium text-foreground">
+                  {formatCountdown(remainingSeconds)} left
+                </span>
+                <span className="text-text-tertiary"> · </span>
                 {getQuoteAcceptWindowLabel(quote.providerId)}
               </span>
             )}
-            </div>
           </div>
 
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            {quote.pickupDurationMinutes !== undefined ? (
-              <div>
-                <dt className="text-text-tertiary">Courier arrives in</dt>
-                <dd className="mt-0.5 font-medium text-foreground">
-                  ~{quote.pickupDurationMinutes} min
-                </dd>
-              </div>
-            ) : null}
-            {quote.dropoffEta ? (
-              <div>
-                <dt className="text-text-tertiary">Delivered by</dt>
-                <dd className="mt-0.5 font-medium text-foreground">
-                  {formatDateTime(quote.dropoffEta)}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
+          {quote.pickupDurationMinutes !== undefined || quote.dropoffEta ? (
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-3 text-sm">
+              {quote.pickupDurationMinutes !== undefined ? (
+                <div>
+                  <dt className="text-text-tertiary">Courier arrives</dt>
+                  <dd className="mt-0.5 font-medium text-foreground">
+                    ~{quote.pickupDurationMinutes} min
+                  </dd>
+                </div>
+              ) : null}
+              {quote.dropoffEta ? (
+                <div className={quote.pickupDurationMinutes !== undefined ? "text-right" : ""}>
+                  <dt className="text-text-tertiary">Delivered by</dt>
+                  <dd className="mt-0.5 font-medium text-foreground">
+                    {formatDateTime(quote.dropoffEta)}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
         </div>
       </div>
     </label>
