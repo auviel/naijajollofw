@@ -5,9 +5,11 @@ import {
 } from "@/lib/db/repositories/delivery.repository";
 import {
   parseDeliveryListFilter,
+  shouldPollDeliveries,
   type DeliveryListFilter,
 } from "@/lib/domain/delivery/filters";
 import type { DeliveryListItem } from "@/lib/domain/delivery/types";
+import { syncActiveDeliveriesForStore } from "@/lib/services/delivery/sync-active-deliveries";
 
 export type ListDeliveriesInput = {
   filter?: DeliveryListFilter | string;
@@ -30,6 +32,10 @@ export async function listDeliveries(
     typeof input.filter === "string" ? input.filter : input.filter,
   );
   const search = input.search?.trim() ?? "";
+
+  if (shouldPollDeliveries(filter)) {
+    await syncActiveDeliveriesForStore(user.storeId);
+  }
 
   const deliveries = await deliveryRepository.findManyForStore({
     storeId: user.storeId,

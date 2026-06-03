@@ -2,10 +2,8 @@ import { Suspense } from "react";
 import { DashboardPage, DashboardPageBody, PageHeader, PrimaryLink } from "../layout";
 import { DeliveryListEmpty } from "@/components/features/deliveries/delivery-list";
 import { DeliveryListFilters } from "@/components/features/deliveries/delivery-list-filters";
-import { DeliveryListRefresh } from "@/components/features/deliveries/delivery-list-refresh";
-import { DeliveryList } from "@/components/features/deliveries/delivery-list";
+import { DeliveryListLive } from "@/components/features/deliveries/delivery-list-live";
 import { listDeliveries } from "@/lib/services/delivery/list-deliveries";
-import { shouldPollDeliveries } from "@/lib/domain/delivery/filters";
 
 type DeliveriesPageProps = {
   searchParams: Promise<{
@@ -36,10 +34,7 @@ export default async function DeliveriesPage({ searchParams }: DeliveriesPagePro
         {items.length === 0 ? (
           <DeliveryListEmpty hasSearch={Boolean(search)} filter={filter} />
         ) : (
-          <>
-            <DeliveryListRefresh enabled={shouldPollDeliveries(filter)} />
-            <DeliveryList items={items} />
-          </>
+          <DeliveryListLive initialItems={items} filter={filter} search={search} />
         )}
       </DashboardPageBody>
     </DashboardPage>

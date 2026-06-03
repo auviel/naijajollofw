@@ -15,8 +15,17 @@ function getDateFormatter(): Intl.DateTimeFormat {
   return cachedFormatter;
 }
 
-export function formatDateTime(date: Date): string {
-  return getDateFormatter().format(date);
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (date == null) {
+    return "—";
+  }
+
+  const parsed = date instanceof Date ? date : new Date(date);
+  if (!Number.isFinite(parsed.getTime())) {
+    return "—";
+  }
+
+  return getDateFormatter().format(parsed);
 }
 
 export function truncateText(text: string, maxLength: number): string {

@@ -105,19 +105,12 @@ export class UberDirectClient {
     deliveryId: string,
     input: ProviderCancelRequest,
   ): Promise<void> {
-    const delivery = await this.getDeliveryRaw(deliveryId);
-    const orderId = delivery.uuid ?? delivery.id;
-
-    await this.request<unknown>(`/v1/eats/orders/${orderId}/cancel`, {
-      method: "POST",
-      body: buildCancelOrderBody(input),
-    });
-  }
-
-  private async getDeliveryRaw(deliveryId: string): Promise<UberDeliveryResponse> {
-    return this.request<UberDeliveryResponse>(
-      `/v1/customers/${this.config.customerId}/deliveries/${deliveryId}`,
-      { method: "GET" },
+    await this.request<unknown>(
+      `/v1/customers/${this.config.customerId}/deliveries/${deliveryId}/cancel`,
+      {
+        method: "POST",
+        body: buildCancelOrderBody(input),
+      },
     );
   }
 

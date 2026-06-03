@@ -357,7 +357,6 @@
 - [ ] Roles admin + multi-store (Organizations API)
 - [ ] Barcode POD + order reference scanning
 - [ ] Return deliveries
-- [ ] Email/SMS notifications to customers
 - [ ] Embedded map (tracking URL link-out is sufficient for v1)
 - [ ] Analytics dashboard (delivery volume, spend, avg fee)
 
