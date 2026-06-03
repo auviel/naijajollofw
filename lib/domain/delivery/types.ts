@@ -15,6 +15,7 @@ export type DeliveryStatus =
 export type ProofOfDeliveryConfig = {
   signature: boolean;
   picture: boolean;
+  pincode: boolean;
 };
 
 export type CreateDeliveryInput = {
@@ -73,6 +74,7 @@ export type DeliveryProofOfDelivery = {
   signatureImageUrl?: string;
   signerName?: string;
   pictureImageUrl?: string;
+  pincodeValue?: string;
   fetchedAt?: string;
   pending?: boolean;
 };
@@ -97,6 +99,7 @@ export type DeliveryDetail = {
   pickup: DeliveryLocation;
   dropoff: DeliveryLocation;
   podConfig: ProofOfDeliveryConfig;
+  pincodeValue: string | null;
   proofOfDelivery: DeliveryProofOfDelivery | null;
   courier: CourierInfo | null;
   cancellable: boolean;

@@ -59,7 +59,7 @@
   }
 
   body {
-    @apply min-h-dvh bg-background text-foreground font-sans antialiased;
+    @apply flex min-h-dvh h-dvh flex-col bg-background text-foreground font-sans antialiased;
   }
 
   a {

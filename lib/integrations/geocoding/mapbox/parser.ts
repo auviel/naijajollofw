@@ -45,10 +45,19 @@ function parseLine1(feature: MapboxFeature): string {
   return feature.text.trim();
 }
 
+function parseCountry(feature: MapboxFeature): string {
+  const shortCode = contextValue(feature, "country")?.short_code;
+  if (shortCode) {
+    return shortCode.toUpperCase();
+  }
+
+  return "CA";
+}
+
 /** Parse a Mapbox Geocoding API feature into a normalized Canadian address. */
 export function parseMapboxFeature(feature: MapboxFeature): NormalizedAddress {
   const [longitude, latitude] = feature.center;
-  const country = contextValue(feature, "country")?.short_code ?? "CA";
+  const country = parseCountry(feature);
 
   return {
     line1: parseLine1(feature),

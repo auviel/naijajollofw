@@ -26,7 +26,8 @@ function parseProofOfDelivery(
   const hasContent =
     Boolean(stored.signatureImageUrl) ||
     Boolean(stored.pictureImageUrl) ||
-    Boolean(stored.signerName);
+    Boolean(stored.signerName) ||
+    Boolean(stored.pincodeValue);
 
   if (!hasContent) {
     return { pending: true, fetchedAt: stored.fetchedAt };
@@ -36,6 +37,7 @@ function parseProofOfDelivery(
     signatureImageUrl: stored.signatureImageUrl,
     signerName: stored.signerName,
     pictureImageUrl: stored.pictureImageUrl,
+    pincodeValue: stored.pincodeValue,
     fetchedAt: stored.fetchedAt,
   };
 }
@@ -66,6 +68,20 @@ function parseCourierFromPayload(payload: unknown): CourierInfo | null {
   return hasData ? info : null;
 }
 
+function parsePincodeFromPayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const raw = payload as UberDeliveryResponse;
+
+  return (
+    raw.verification_requirements?.pincode?.value ??
+    raw.dropoff?.verification?.pincode?.value ??
+    null
+  );
+}
+
 export function mapDeliveryToDetail(delivery: Delivery): DeliveryDetail {
   const status = delivery.status as DeliveryStatus;
 
@@ -93,7 +109,12 @@ export function mapDeliveryToDetail(delivery: Delivery): DeliveryDetail {
     podConfig: {
       signature: delivery.podSignature,
       picture: delivery.podPicture,
+      pincode: delivery.podPincode,
     },
+    pincodeValue: delivery.podPincode
+      ? ((delivery.proofOfDelivery as ProofOfDeliveryData | null)?.pincodeValue ??
+        parsePincodeFromPayload(delivery.providerPayload))
+      : null,
     proofOfDelivery: parseProofOfDelivery(delivery),
     courier: parseCourierFromPayload(delivery.providerPayload),
     cancellable: isCancellable(status),

@@ -20,6 +20,7 @@ export function DeliveryListEmpty({
   if (hasSearch || filter !== "all") {
     return (
       <EmptyState
+        className="flex-1"
         icon={<SearchX className="h-6 w-6" aria-hidden />}
         title="No deliveries found"
         description="Try a different search term or filter to find what you're looking for."
@@ -29,6 +30,7 @@ export function DeliveryListEmpty({
 
   return (
     <EmptyState
+      className="flex-1"
       icon={<Package className="h-6 w-6" aria-hidden />}
       title="No deliveries yet"
       description="Create your first delivery to dispatch an Uber Direct courier from your store."

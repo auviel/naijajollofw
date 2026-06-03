@@ -54,6 +54,18 @@ describe("parseMapboxFeature", () => {
     expect(address.latitude).toBe(43.648809);
     expect(address.longitude).toBe(-79.390984);
   });
+
+  it("normalizes lowercase Mapbox country codes", () => {
+    const address = parseMapboxFeature({
+      ...torontoFeature,
+      context: [
+        ...(torontoFeature.context ?? []).filter((item) => !item.id.startsWith("country.")),
+        { id: "country.5", text: "Canada", short_code: "ca" },
+      ],
+    });
+
+    expect(address.country).toBe("CA");
+  });
 });
 
 describe("mapMapboxFeatureToGeocodedAddress", () => {
@@ -62,6 +74,18 @@ describe("mapMapboxFeatureToGeocodedAddress", () => {
 
     expect(result.confidence).toBe("high");
     expect(result.preview).toContain("Toronto");
+    expect(result.address.country).toBe("CA");
+  });
+
+  it("accepts lowercase Mapbox country codes", () => {
+    const result = mapMapboxFeatureToGeocodedAddress({
+      ...torontoFeature,
+      context: [
+        ...(torontoFeature.context ?? []).filter((item) => !item.id.startsWith("country.")),
+        { id: "country.5", text: "Canada", short_code: "ca" },
+      ],
+    });
+
     expect(result.address.country).toBe("CA");
   });
 

@@ -40,16 +40,16 @@ export function QuoteCard({ quote }: QuoteCardProps) {
   return (
     <Card className="border-accent/30 bg-accent-subtle/30">
       <CardHeader>
-        <h2 className="text-lg font-semibold text-foreground">Delivery quote</h2>
+        <h2 className="text-lg font-semibold text-foreground">Quote</h2>
         <p className="mt-1 text-sm text-text-secondary">
-          Confirm the fee and timing before sending the delivery.
+          Review the price before you send.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-baseline justify-between gap-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
-              Estimated fee
+              Delivery fee
             </p>
             <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
               {formatCadFromCents(quote.feeCents)}
@@ -60,9 +60,9 @@ export function QuoteCard({ quote }: QuoteCardProps) {
           >
             <Clock className="h-4 w-4" aria-hidden />
             {isExpired ? (
-              <span>Quote expired — request a new quote</span>
+              <span>Quote expired — get a new one</span>
             ) : (
-              <span>Expires in {formatCountdown(remainingSeconds)}</span>
+              <span>Valid for {formatCountdown(remainingSeconds)}</span>
             )}
           </div>
         </div>
@@ -70,7 +70,7 @@ export function QuoteCard({ quote }: QuoteCardProps) {
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           {quote.pickupDurationMinutes !== undefined ? (
             <div>
-              <dt className="text-text-tertiary">Pickup ETA</dt>
+              <dt className="text-text-tertiary">Courier arrives in</dt>
               <dd className="mt-0.5 font-medium text-foreground">
                 ~{quote.pickupDurationMinutes} min
               </dd>
@@ -78,7 +78,7 @@ export function QuoteCard({ quote }: QuoteCardProps) {
           ) : null}
           {quote.dropoffEta ? (
             <div>
-              <dt className="text-text-tertiary">Delivery ETA</dt>
+              <dt className="text-text-tertiary">Delivered by</dt>
               <dd className="mt-0.5 font-medium text-foreground">
                 {formatDateTime(new Date(quote.dropoffEta))}
               </dd>

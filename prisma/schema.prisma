@@ -89,6 +89,7 @@ model Delivery {
   scheduledFor       DateTime?
   podSignature       Boolean        @default(false)
   podPicture         Boolean        @default(true)
+  podPincode         Boolean        @default(false)
   proofOfDelivery    Json?
   cancelledAt        DateTime?
   cancelReason       String?

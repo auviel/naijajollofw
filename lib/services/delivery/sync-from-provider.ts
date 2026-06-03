@@ -20,7 +20,8 @@ function buildProofUpdate(
   const hasContent =
     Boolean(proof.signatureImageUrl) ||
     Boolean(proof.pictureImageUrl) ||
-    Boolean(proof.signerName);
+    Boolean(proof.signerName) ||
+    Boolean(proof.pincodeValue);
 
   if (!hasContent) {
     return undefined;
@@ -30,6 +31,7 @@ function buildProofUpdate(
     signatureImageUrl: proof.signatureImageUrl,
     signerName: proof.signerName,
     pictureImageUrl: proof.pictureImageUrl,
+    pincodeValue: proof.pincodeValue,
     fetchedAt: new Date().toISOString(),
   };
 }

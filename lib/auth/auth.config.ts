@@ -11,13 +11,18 @@ export const authConfig = {
   },
   providers: [],
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.sub = user.id;
         token.storeId = user.storeId;
         token.storeName = user.storeName;
         token.role = user.role;
       }
+
+      if (trigger === "update" && session?.storeName) {
+        token.storeName = session.storeName;
+      }
+
       return token;
     },
     session({ session, token }) {

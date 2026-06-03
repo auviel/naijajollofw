@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PickupSection } from "@/components/features/deliveries/pickup-section";
+import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
 import {
   AddressPreview,
   canRequestQuote,
@@ -23,12 +23,9 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/domain/delivery/schedule";
 import type { DeliveryQuote, ProofOfDeliveryConfig } from "@/lib/domain/delivery/types";
-import type { StoreProfile } from "@/lib/domain/store/types";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 
-type DeliveryFormProps = {
-  store: StoreProfile;
-};
+type DeliveryFormProps = Record<string, never>;
 
 type ScheduleMode = "asap" | "scheduled";
 
@@ -69,7 +66,7 @@ async function readApiError(response: Response): Promise<string> {
   return body.error ?? "Something went wrong. Please try again.";
 }
 
-export function DeliveryForm({ store }: DeliveryFormProps) {
+export function DeliveryForm(_props: DeliveryFormProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
 
@@ -82,7 +79,8 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
   );
   const [pod, setPod] = useState<ProofOfDeliveryConfig>({
     signature: false,
-    picture: true,
+    picture: false,
+    pincode: true,
   });
 
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(null);
@@ -94,6 +92,7 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [isQuoting, setIsQuoting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const scheduleBounds = useMemo(
     () => ({
@@ -109,6 +108,19 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
     }
     return new Date(scheduledAt);
   }, [scheduleMode, scheduledAt]);
+
+  const scheduleSummary = useMemo(() => {
+    if (scheduleMode === "scheduled" && scheduledAt) {
+      return new Date(scheduledAt).toLocaleString("en-CA", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    }
+
+    return "ASAP — sent when you submit";
+  }, [scheduleMode, scheduledAt]);
+
+  const showScheduleOptions = scheduleOpen || scheduleMode === "scheduled";
 
   const clearQuote = useCallback(() => {
     setQuote(null);
@@ -147,7 +159,7 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
         setGeocoded(body.data);
       } catch {
         setGeocoded(null);
-        setGeocodeError("Unable to verify address. Check your connection and try again.");
+        setGeocodeError("Could not check address. Try again.");
       } finally {
         setIsGeocoding(false);
       }
@@ -214,12 +226,12 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
 
     const errors = runFieldValidation();
     if (Object.keys(errors).length > 0) {
-      setFormError("Fix the highlighted fields before sending the delivery.");
+      setFormError("Fix the highlighted fields first.");
       return;
     }
 
     if (!quote || !isQuoteValid(quote)) {
-      setFormError("Request a valid quote before sending the delivery.");
+      setFormError("Get a quote first, then send the delivery.");
       return;
     }
 
@@ -264,13 +276,11 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6" noValidate>
-      <PickupSection store={store} />
-
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-foreground">Dropoff</h2>
+          <h2 className="text-lg font-semibold text-foreground">Customer</h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Where the courier delivers the order.
+            Who is receiving the order and where should it go?
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -293,7 +303,7 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
             id="dropoffPhone"
             label="Customer phone"
             error={fieldErrors.dropoffPhone}
-            hint="Canadian number — 10 digits or +1 format."
+            hint="10-digit Canadian number."
           >
             <Input
               name="dropoffPhone"
@@ -312,21 +322,20 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
 
           <FormField
             id="dropoffAddress"
-            label="Dropoff address"
+            label="Delivery address"
             error={fieldErrors.dropoffAddress}
-            hint="Enter a complete Canadian address. We verify it with Mapbox before quoting."
+            hint="Start typing, then pick an address from the list."
           >
-            <Input
+            <AddressAutocomplete
               name="dropoffAddress"
               value={dropoffAddress}
-              onChange={(event) => {
-                setDropoffAddress(event.target.value);
+              onChange={(nextValue) => {
+                setDropoffAddress(nextValue);
                 if (fieldErrors.dropoffAddress) {
                   setFieldErrors((current) => ({ ...current, dropoffAddress: undefined }));
                 }
               }}
               placeholder="123 King St W, Kitchener, ON N2G 1A1"
-              autoComplete="street-address"
             />
           </FormField>
 
@@ -340,58 +349,9 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-foreground">Schedule</h2>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-label="Pickup schedule"
-          >
-            <Button
-              type="button"
-              variant={scheduleMode === "asap" ? "primary" : "secondary"}
-              onClick={() => setScheduleMode("asap")}
-            >
-              ASAP
-            </Button>
-            <Button
-              type="button"
-              variant={scheduleMode === "scheduled" ? "primary" : "secondary"}
-              onClick={() => setScheduleMode("scheduled")}
-            >
-              Schedule pickup
-            </Button>
-          </div>
-
-          {scheduleMode === "scheduled" ? (
-            <FormField
-              id="scheduledAt"
-              label="Pickup ready time"
-              hint="Must be at least 15 minutes from now and within 30 days."
-            >
-              <Input
-                name="scheduledAt"
-                type="datetime-local"
-                min={scheduleBounds.min}
-                max={scheduleBounds.max}
-                value={scheduledAt}
-                onChange={(event) => setScheduledAt(event.target.value)}
-              />
-            </FormField>
-          ) : (
-            <p className="text-sm text-text-secondary">
-              Courier dispatched as soon as possible after you send the delivery.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Tell the courier what to collect at dropoff.
+            How should the courier confirm the delivery?
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -399,16 +359,40 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
             <input
               type="checkbox"
               className="mt-1 h-4 w-4 rounded border-border-strong"
-              checked={pod.picture}
+              checked={pod.pincode}
               onChange={(event) =>
-                setPod((current) => ({ ...current, picture: event.target.checked }))
+                setPod((current) => ({
+                  ...current,
+                  pincode: event.target.checked,
+                  picture: event.target.checked ? false : current.picture,
+                }))
               }
             />
             <span>
-              <span className="block text-sm font-medium text-foreground">Photo proof</span>
+              <span className="block text-sm font-medium text-foreground">PIN code</span>
               <span className="block text-sm text-text-secondary">
-                Courier takes a photo at dropoff — good for leave-at-door deliveries. On by
-                default.
+                Customer gets a 4-digit code by text. They must meet the courier to share it.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-border-strong"
+              checked={pod.picture}
+              onChange={(event) =>
+                setPod((current) => ({
+                  ...current,
+                  picture: event.target.checked,
+                  pincode: event.target.checked ? false : current.pincode,
+                }))
+              }
+            />
+            <span>
+              <span className="block text-sm font-medium text-foreground">Photo</span>
+              <span className="block text-sm text-text-secondary">
+                Courier takes a photo at the door. Best for leave-at-door orders.
               </span>
             </span>
           </label>
@@ -423,15 +407,89 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
               }
             />
             <span>
-              <span className="block text-sm font-medium text-foreground">
-                Signature required
-              </span>
+              <span className="block text-sm font-medium text-foreground">Signature</span>
               <span className="block text-sm text-text-secondary">
-                Courier collects a signature and signer name from the recipient.
+                Customer signs when they receive the order.
               </span>
             </span>
           </label>
         </CardContent>
+      </Card>
+
+      <Card>
+        {showScheduleOptions ? (
+          <>
+            <CardHeader>
+              <h2 className="text-lg font-semibold text-foreground">When to pick up</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                When should the courier collect the order from your store?
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div
+                className="flex flex-wrap gap-2"
+                role="group"
+                aria-label="Pickup schedule"
+              >
+                <Button
+                  type="button"
+                  variant={scheduleMode === "asap" ? "primary" : "secondary"}
+                  onClick={() => {
+                    setScheduleMode("asap");
+                    setScheduleOpen(false);
+                  }}
+                >
+                  ASAP
+                </Button>
+                <Button
+                  type="button"
+                  variant={scheduleMode === "scheduled" ? "primary" : "secondary"}
+                  onClick={() => {
+                    setScheduleMode("scheduled");
+                    setScheduleOpen(true);
+                  }}
+                >
+                  Schedule for later
+                </Button>
+              </div>
+
+              {scheduleMode === "scheduled" ? (
+                <FormField
+                  id="scheduledAt"
+                  label="Pickup time"
+                  hint="Must be at least 15 minutes from now."
+                >
+                  <Input
+                    name="scheduledAt"
+                    type="datetime-local"
+                    min={scheduleBounds.min}
+                    max={scheduleBounds.max}
+                    value={scheduledAt}
+                    onChange={(event) => setScheduledAt(event.target.value)}
+                  />
+                </FormField>
+              ) : (
+                <p className="text-sm text-text-secondary">
+                  A courier will be sent as soon as you submit this delivery.
+                </p>
+              )}
+            </CardContent>
+          </>
+        ) : (
+          <CardContent className="flex items-center justify-between gap-4 py-5">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">When to pick up</h2>
+              <p className="mt-1 text-sm text-text-secondary">{scheduleSummary}</p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setScheduleOpen(true)}
+            >
+              Change
+            </Button>
+          </CardContent>
+        )}
       </Card>
 
       {quote ? <QuoteCard quote={quote} /> : null}
@@ -449,7 +507,7 @@ export function DeliveryForm({ store }: DeliveryFormProps) {
           disabled={!canQuote}
           onClick={handleGetQuote}
         >
-          {isQuoting ? "Getting quote…" : "Get delivery quote"}
+          {isQuoting ? "Getting quote…" : "Get quote"}
         </Button>
         <Button type="submit" disabled={!canSend}>
           {isSubmitting ? "Sending…" : "Send delivery"}

@@ -20,8 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-CA" className={`${inter.variable} h-full min-h-dvh`}>
-      <body className="min-h-dvh">
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+      <body>
+        <AuthSessionProvider>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        </AuthSessionProvider>
       </body>
     </html>
   );

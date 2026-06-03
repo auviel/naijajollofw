@@ -1,14 +1,16 @@
-import { PageHeader } from "../../layout";
+import { DashboardPage, DashboardPageBody, PageHeader } from "../../layout";
 import { DeliveryForm } from "@/components/features/deliveries/delivery-form";
-import { requireSessionContext } from "@/lib/auth/session";
 
 export default async function NewDeliveryPage() {
-  const { store } = await requireSessionContext();
-
   return (
-    <>
-      <PageHeader title="New delivery" />
-      <DeliveryForm store={store} />
-    </>
+    <DashboardPage>
+      <PageHeader
+        title="New delivery"
+        description="Send an order from your store to a customer."
+      />
+      <DashboardPageBody>
+        <DeliveryForm />
+      </DashboardPageBody>
+    </DashboardPage>
   );
 }

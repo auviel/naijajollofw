@@ -4,6 +4,7 @@ import { normalizeCanadianPhone } from "@/lib/utils/phone";
 export const proofOfDeliveryConfigSchema = z.object({
   signature: z.boolean(),
   picture: z.boolean(),
+  pincode: z.boolean(),
 });
 
 const canadianPhoneSchema = z
@@ -21,7 +22,8 @@ export const createDeliverySchema = z.object({
   scheduledPickupAt: z.coerce.date().optional(),
   proofOfDelivery: proofOfDeliveryConfigSchema.default({
     signature: false,
-    picture: true,
+    picture: false,
+    pincode: true,
   }),
   idempotencyKey: z.string().optional(),
 });

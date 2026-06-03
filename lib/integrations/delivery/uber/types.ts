@@ -49,7 +49,11 @@ export type UberDeliveryResponse = {
     verification?: {
       picture?: { image_url?: string };
       signature_proof?: { image_url?: string; signer_name?: string };
+      pincode?: { value?: string; entered?: boolean };
     };
+  };
+  verification_requirements?: {
+    pincode?: { enabled?: boolean; value?: string };
   };
   pickup_ready?: string;
   pickup_eta?: string;

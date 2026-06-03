@@ -39,7 +39,7 @@ const mockCreateInput: ProviderCreateDeliveryRequest = {
       formatted: "200 University Ave W, Waterloo, ON N2L 3G1, CA",
     },
   },
-  proofOfDelivery: { signature: false, picture: true },
+  proofOfDelivery: { signature: false, picture: true, pincode: false },
   liveMode: false,
 };
 
@@ -137,5 +137,20 @@ describe("buildCreateDeliveryBody", () => {
     );
 
     expect(body.test_specifications).toBeUndefined();
+  });
+
+  it("includes pincode verification when enabled", () => {
+    const body = buildCreateDeliveryBody(
+      {
+        ...mockCreateInput,
+        proofOfDelivery: { signature: false, picture: false, pincode: true },
+      },
+      createDefaultManifest(),
+      true,
+    );
+
+    expect(body.dropoff_verification).toEqual({
+      pincode: { enabled: true },
+    });
   });
 });

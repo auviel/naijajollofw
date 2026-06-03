@@ -54,8 +54,9 @@ export function DeliveryProofSection({ proof }: DeliveryProofSectionProps) {
 
   const hasSignature = Boolean(proof.signatureImageUrl);
   const hasPhoto = Boolean(proof.pictureImageUrl);
+  const hasPincode = Boolean(proof.pincodeValue);
 
-  if (!hasSignature && !hasPhoto && !proof.signerName) {
+  if (!hasSignature && !hasPhoto && !proof.signerName && !hasPincode) {
     return (
       <Card>
         <CardHeader>
@@ -76,6 +77,17 @@ export function DeliveryProofSection({ proof }: DeliveryProofSectionProps) {
         <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
       </CardHeader>
       <CardContent className="space-y-6">
+        {proof.pincodeValue ? (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+              PIN verified
+            </p>
+            <p className="mt-1 font-mono text-lg font-semibold text-foreground">
+              {proof.pincodeValue}
+            </p>
+          </div>
+        ) : null}
+
         {proof.signerName ? (
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">

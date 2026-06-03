@@ -8,6 +8,11 @@ export type GeocodedAddress = {
   preview: string;
 };
 
+export type AddressSuggestion = {
+  id: string;
+  label: string;
+};
+
 export type MapboxContextItem = {
   id: string;
   text: string;

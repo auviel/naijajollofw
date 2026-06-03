@@ -8,6 +8,7 @@ import { DeliveryProofSection } from "@/components/features/deliveries/delivery-
 import { DeliveryStatusBadge } from "@/components/features/deliveries/delivery-status-badge";
 import { DeliveryStatusTimeline } from "@/components/features/deliveries/delivery-status-timeline";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { formatPodConfigSummary } from "@/lib/domain/delivery/pod";
 import { shouldRefreshDeliveryDetail } from "@/lib/domain/delivery/timeline";
 import type { DeliveryDetail } from "@/lib/domain/delivery/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
@@ -98,9 +99,13 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
                   Proof requested
                 </p>
                 <p className="mt-1 text-foreground">
-                  {delivery.podConfig.picture ? "Photo" : "No photo"}
-                  {delivery.podConfig.signature ? " · Signature" : ""}
+                  {formatPodConfigSummary(delivery.podConfig)}
                 </p>
+                {delivery.podConfig.pincode && delivery.pincodeValue ? (
+                  <p className="mt-2 font-mono text-sm text-foreground">
+                    Customer PIN: {delivery.pincodeValue}
+                  </p>
+                ) : null}
               </div>
             </CardContent>
           </Card>

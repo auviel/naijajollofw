@@ -13,7 +13,7 @@ export default function DashboardLayout({
   return (
     <DashboardProviders>
       <SkipLink />
-      <div className="flex min-h-dvh flex-col bg-background">
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
         <SandboxBanner />
         <div className="flex min-h-0 flex-1">
           <Sidebar />
@@ -24,7 +24,7 @@ export default function DashboardLayout({
               tabIndex={-1}
               className="flex min-h-0 flex-1 flex-col overflow-auto pb-20 focus:outline-none md:pb-0"
             >
-              <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col p-4 md:p-6 lg:p-8">
+              <div className="mx-auto flex min-h-full w-full max-w-6xl flex-1 flex-col p-4 md:p-6 lg:p-8">
                 {children}
               </div>
             </main>
@@ -37,3 +37,4 @@ export default function DashboardLayout({
 }
 
 export { PageHeader, PrimaryLink } from "@/components/layout/page-header";
+export { DashboardPage, DashboardPageBody } from "@/components/layout/dashboard-page";

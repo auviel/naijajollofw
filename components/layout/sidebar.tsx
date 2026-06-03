@@ -1,4 +1,4 @@
-import { Package, Plus } from "lucide-react";
+import { Package, Plus, Store } from "lucide-react";
 import { auth } from "@/lib/auth/index";
 import { LogoutButton } from "@/components/features/auth/logout-button";
 import { SandboxBadge } from "@/components/layout/sandbox-badge";
@@ -9,7 +9,7 @@ export async function Sidebar() {
   const session = await auth();
 
   return (
-    <aside className="hidden w-60 shrink-0 self-stretch border-r border-border bg-surface md:flex md:min-h-0 md:flex-col">
+    <aside className="hidden w-60 shrink-0 border-r border-border bg-surface md:flex md:h-full md:min-h-0 md:flex-col">
       <div className="border-b border-border px-5 py-6">
         <div className="flex items-center justify-between gap-2">
           <span className="text-lg font-semibold tracking-tight">deliverGO</span>
@@ -28,6 +28,11 @@ export async function Sidebar() {
           href="/dashboard/deliveries/new"
           label="New delivery"
           icon={<Plus className="h-5 w-5" />}
+        />
+        <SidebarNavLink
+          href="/dashboard/store"
+          label="Store profile"
+          icon={<Store className="h-5 w-5" />}
         />
       </nav>
 

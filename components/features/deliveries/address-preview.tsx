@@ -15,7 +15,7 @@ export function AddressPreview({
   if (isLoading) {
     return (
       <div className="rounded-lg border border-border bg-surface p-4 text-sm text-text-secondary">
-        Verifying address…
+        Checking address…
       </div>
     );
   }
@@ -38,12 +38,9 @@ export function AddressPreview({
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
-        Verified address
+        Address confirmed
       </p>
       <p className="mt-2 text-sm text-foreground">{result.preview}</p>
-      <p className="mt-1 text-xs text-text-tertiary">
-        Confidence: {result.confidence}
-      </p>
     </div>
   );
 }

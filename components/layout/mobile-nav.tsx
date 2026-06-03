@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, Plus } from "lucide-react";
+import { Package, Plus, Store } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const items = [
@@ -13,6 +13,7 @@ const items = [
     excludePaths: ["/dashboard/deliveries/new"],
   },
   { href: "/dashboard/deliveries/new", label: "New", icon: Plus, excludePaths: [] },
+  { href: "/dashboard/store", label: "Store", icon: Store, excludePaths: [] },
 ];
 
 function isActive(pathname: string, href: string, excludePaths: string[]) {
@@ -28,7 +29,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden">
-      <div className="grid grid-cols-2">
+      <div className="grid grid-cols-3">
         {items.map(({ href, label, icon: Icon, excludePaths }) => {
           const active = isActive(pathname, href, excludePaths);
 

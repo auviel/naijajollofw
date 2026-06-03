@@ -83,6 +83,8 @@ export function mapUberDeliveryStatus(status: string): ReturnType<typeof mapProv
 export function mapUberDeliveryResponse(raw: UberDeliveryResponse): ProviderDelivery {
   const proof = raw.dropoff?.verification;
   const courier = raw.courier;
+  const pincodeValue =
+    proof?.pincode?.value ?? raw.verification_requirements?.pincode?.value;
 
   return {
     providerDeliveryId: raw.id,
@@ -92,11 +94,12 @@ export function mapUberDeliveryResponse(raw: UberDeliveryResponse): ProviderDeli
     currency: (raw.currency ?? "cad").toUpperCase(),
     trackingUrl: raw.tracking_url ?? "",
     liveMode: raw.live_mode ?? false,
-    proofOfDelivery: proof
+    proofOfDelivery: proof || pincodeValue
       ? {
-          signatureImageUrl: proof.signature_proof?.image_url,
-          signerName: proof.signature_proof?.signer_name,
-          pictureImageUrl: proof.picture?.image_url,
+          signatureImageUrl: proof?.signature_proof?.image_url,
+          signerName: proof?.signature_proof?.signer_name,
+          pictureImageUrl: proof?.picture?.image_url,
+          pincodeValue,
         }
       : undefined,
     courier:
@@ -176,6 +179,12 @@ function buildDropoffVerification(proofOfDelivery: ProofOfDeliveryConfig) {
       enabled: true,
       collect_signer_name: true,
       collect_signer_relationship: false,
+    };
+  }
+
+  if (proofOfDelivery.pincode) {
+    verification.pincode = {
+      enabled: true,
     };
   }
 

@@ -110,6 +110,7 @@ export async function createDelivery(input: unknown): Promise<CreateDeliveryResu
     scheduledFor: parsed.scheduledPickupAt,
     podSignature: parsed.proofOfDelivery.signature,
     podPicture: parsed.proofOfDelivery.picture,
+    podPincode: parsed.proofOfDelivery.pincode,
     liveMode: providerDelivery.liveMode,
     providerDeliveryId: providerDelivery.providerDeliveryId,
     providerOrderId: providerDelivery.providerOrderId,

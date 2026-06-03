@@ -12,6 +12,7 @@ export type ProofOfDeliveryData = {
   signatureImageUrl?: string;
   signerName?: string;
   pictureImageUrl?: string;
+  pincodeValue?: string;
   fetchedAt?: string;
 };
 
@@ -54,6 +55,7 @@ export type CreateDeliveryData = {
   scheduledFor?: Date;
   podSignature?: boolean;
   podPicture?: boolean;
+  podPincode?: boolean;
   liveMode?: boolean;
   providerDeliveryId?: string;
   providerOrderId?: string;

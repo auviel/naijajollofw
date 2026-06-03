@@ -50,6 +50,7 @@ export type ProviderDelivery = {
     signatureImageUrl?: string;
     signerName?: string;
     pictureImageUrl?: string;
+    pincodeValue?: string;
   };
   courier?: {
     name?: string;

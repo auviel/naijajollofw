@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { PageHeader, PrimaryLink } from "../layout";
+import { DashboardPage, DashboardPageBody, PageHeader, PrimaryLink } from "../layout";
 import { DeliveryListEmpty } from "@/components/features/deliveries/delivery-list";
 import { DeliveryListFilters } from "@/components/features/deliveries/delivery-list-filters";
 import { DeliveryListRefresh } from "@/components/features/deliveries/delivery-list-refresh";
@@ -22,7 +22,7 @@ export default async function DeliveriesPage({ searchParams }: DeliveriesPagePro
   });
 
   return (
-    <>
+    <DashboardPage>
       <PageHeader
         title="Deliveries"
         action={<PrimaryLink href="/dashboard/deliveries/new">New delivery</PrimaryLink>}
@@ -32,14 +32,16 @@ export default async function DeliveriesPage({ searchParams }: DeliveriesPagePro
         <DeliveryListFilters filter={filter} search={search} />
       </Suspense>
 
-      {items.length === 0 ? (
-        <DeliveryListEmpty hasSearch={Boolean(search)} filter={filter} />
-      ) : (
-        <>
-          <DeliveryListRefresh enabled={shouldPollDeliveries(filter)} />
-          <DeliveryList items={items} />
-        </>
-      )}
-    </>
+      <DashboardPageBody>
+        {items.length === 0 ? (
+          <DeliveryListEmpty hasSearch={Boolean(search)} filter={filter} />
+        ) : (
+          <>
+            <DeliveryListRefresh enabled={shouldPollDeliveries(filter)} />
+            <DeliveryList items={items} />
+          </>
+        )}
+      </DashboardPageBody>
+    </DashboardPage>
   );
 }
