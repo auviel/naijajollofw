@@ -101,14 +101,14 @@ export function CancelDeliveryButton({
 
       {open ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cancel-delivery-title"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-lg rounded-lg border border-border bg-surface-elevated p-5 shadow-sm"
+            className="max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface-elevated p-5 shadow-sm safe-bottom sm:max-w-lg sm:rounded-lg"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 id="cancel-delivery-title" className="text-lg font-semibold text-foreground">
@@ -161,10 +161,11 @@ export function CancelDeliveryButton({
                 </p>
               ) : null}
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
                   variant="secondary"
+                  className="w-full sm:w-auto"
                   onClick={() => setOpen(false)}
                   disabled={isSubmitting}
                 >
@@ -173,6 +174,7 @@ export function CancelDeliveryButton({
                 <Button
                   type="button"
                   variant="destructive"
+                  className="w-full sm:w-auto"
                   onClick={handleCancel}
                   disabled={isSubmitting || (reason === "OTHER" && !details.trim())}
                 >

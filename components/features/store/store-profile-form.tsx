@@ -156,7 +156,7 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl space-y-6 pb-2 sm:pb-0" noValidate>
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold text-foreground">Pickup location</h2>
@@ -250,7 +250,7 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
       ) : null}
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSaving}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={isSaving}>
           {isSaving ? "Saving…" : "Save store profile"}
         </Button>
       </div>

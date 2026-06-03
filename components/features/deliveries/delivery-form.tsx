@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
+import { PickupDatetimePicker } from "@/components/features/deliveries/pickup-datetime-picker";
 import {
   AddressPreview,
   canRequestQuote,
 } from "@/components/features/deliveries/address-preview";
 import { isQuoteValid, QuoteCard } from "@/components/features/deliveries/quote-card";
+import { CollapsibleSettingCard } from "@/components/ui/collapsible-setting-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
@@ -25,6 +27,10 @@ import {
 import type { DeliveryQuote, ProofOfDeliveryConfig } from "@/lib/domain/delivery/types";
 import { formatPodConfigSummary } from "@/lib/domain/delivery/pod";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
+import {
+  SCROLL_INTO_VIEW_MARGIN_CLASS,
+  scrollIntoViewSmooth,
+} from "@/lib/utils/scroll-into-view";
 
 type DeliveryFormProps = Record<string, never>;
 
@@ -97,6 +103,8 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
   const quoteRequestRef = useRef(0);
+  const pickupSectionRef = useRef<HTMLDivElement>(null);
+  const wasScheduledRef = useRef(false);
 
   const scheduleBounds = useMemo(
     () => ({
@@ -127,6 +135,14 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   const showScheduleOptions = scheduleOpen || scheduleMode === "scheduled";
   const podSummary = useMemo(() => formatPodConfigSummary(pod), [pod]);
   const showPodOptions = podOpen;
+
+  useEffect(() => {
+    if (scheduleMode === "scheduled" && !wasScheduledRef.current) {
+      scrollIntoViewSmooth(pickupSectionRef.current);
+    }
+
+    wasScheduledRef.current = scheduleMode === "scheduled";
+  }, [scheduleMode]);
 
   const clearQuote = useCallback(() => {
     setQuote(null);
@@ -314,10 +330,10 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl space-y-4 pb-2 sm:space-y-5 sm:pb-0" noValidate>
       <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-foreground">Customer</h2>
+        <CardHeader className="py-4">
+          <h2 className="text-base font-semibold text-foreground">Customer</h2>
           <p className="mt-1 text-sm text-text-secondary">
             Who is receiving the order and where should it go?
           </p>
@@ -386,172 +402,129 @@ export function DeliveryForm(_props: DeliveryFormProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        {showPodOptions ? (
-          <>
-            <CardHeader>
-              <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
-              <p className="mt-1 text-sm text-text-secondary">
-                How should the courier confirm the delivery?
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-border-strong"
-                  checked={pod.pincode}
-                  onChange={(event) =>
-                    setPod((current) => ({
-                      ...current,
-                      pincode: event.target.checked,
-                      picture: event.target.checked ? false : current.picture,
-                    }))
-                  }
-                />
-                <span>
-                  <span className="block text-sm font-medium text-foreground">PIN code</span>
-                  <span className="block text-sm text-text-secondary">
-                    Customer gets a 4-digit code by text. They must meet the courier to share it.
-                  </span>
-                </span>
-              </label>
+      <CollapsibleSettingCard
+        title="Proof of delivery"
+        summary={podSummary}
+        expanded={showPodOptions}
+        onExpand={() => setPodOpen(true)}
+        onCollapse={() => setPodOpen(false)}
+        expandedDescription="How should the courier confirm the delivery?"
+      >
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-border-strong"
+            checked={pod.pincode}
+            onChange={(event) =>
+              setPod((current) => ({
+                ...current,
+                pincode: event.target.checked,
+                picture: event.target.checked ? false : current.picture,
+              }))
+            }
+          />
+          <span>
+            <span className="block text-sm font-medium text-foreground">PIN code</span>
+            <span className="block text-sm text-text-secondary">
+              Customer gets a 4-digit code by text. They must meet the courier to share it.
+            </span>
+          </span>
+        </label>
 
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-border-strong"
-                  checked={pod.picture}
-                  onChange={(event) =>
-                    setPod((current) => ({
-                      ...current,
-                      picture: event.target.checked,
-                      pincode: event.target.checked ? false : current.pincode,
-                    }))
-                  }
-                />
-                <span>
-                  <span className="block text-sm font-medium text-foreground">Photo</span>
-                  <span className="block text-sm text-text-secondary">
-                    Courier takes a photo at the door. Best for leave-at-door orders.
-                  </span>
-                </span>
-              </label>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-border-strong"
+            checked={pod.picture}
+            onChange={(event) =>
+              setPod((current) => ({
+                ...current,
+                picture: event.target.checked,
+                pincode: event.target.checked ? false : current.pincode,
+              }))
+            }
+          />
+          <span>
+            <span className="block text-sm font-medium text-foreground">Photo</span>
+            <span className="block text-sm text-text-secondary">
+              Courier takes a photo at the door. Best for leave-at-door orders.
+            </span>
+          </span>
+        </label>
 
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-border-strong"
-                  checked={pod.signature}
-                  onChange={(event) =>
-                    setPod((current) => ({ ...current, signature: event.target.checked }))
-                  }
-                />
-                <span>
-                  <span className="block text-sm font-medium text-foreground">Signature</span>
-                  <span className="block text-sm text-text-secondary">
-                    Customer signs when they receive the order.
-                  </span>
-                </span>
-              </label>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-border-strong"
+            checked={pod.signature}
+            onChange={(event) =>
+              setPod((current) => ({ ...current, signature: event.target.checked }))
+            }
+          />
+          <span>
+            <span className="block text-sm font-medium text-foreground">Signature</span>
+            <span className="block text-sm text-text-secondary">
+              Customer signs when they receive the order.
+            </span>
+          </span>
+        </label>
+      </CollapsibleSettingCard>
 
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setPodOpen(false)}
-              >
-                Done
-              </Button>
-            </CardContent>
-          </>
-        ) : (
-          <CardContent className="flex items-center justify-between gap-4 py-5">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
-              <p className="mt-1 text-sm text-text-secondary">{podSummary}</p>
-            </div>
-            <Button type="button" variant="secondary" onClick={() => setPodOpen(true)}>
-              Change
-            </Button>
-          </CardContent>
-        )}
-      </Card>
+      <CollapsibleSettingCard
+        title="When to pick up"
+        summary={scheduleSummary}
+        expanded={showScheduleOptions}
+        onExpand={() => setScheduleOpen(true)}
+        onCollapse={() => setScheduleOpen(false)}
+        expandedDescription="When should the courier collect the order from your store?"
+      >
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Pickup schedule">
+          <Button
+            type="button"
+            variant={scheduleMode === "asap" ? "primary" : "secondary"}
+            className="h-10"
+            onClick={() => {
+              setScheduleMode("asap");
+              setScheduleOpen(false);
+            }}
+          >
+            ASAP
+          </Button>
+          <Button
+            type="button"
+            variant={scheduleMode === "scheduled" ? "primary" : "secondary"}
+            className="h-10"
+            onClick={() => {
+              setScheduleMode("scheduled");
+              setScheduleOpen(true);
+            }}
+          >
+            Schedule for later
+          </Button>
+        </div>
 
-      <Card>
-        {showScheduleOptions ? (
-          <>
-            <CardHeader>
-              <h2 className="text-lg font-semibold text-foreground">When to pick up</h2>
-              <p className="mt-1 text-sm text-text-secondary">
-                When should the courier collect the order from your store?
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div
-                className="flex flex-wrap gap-2"
-                role="group"
-                aria-label="Pickup schedule"
-              >
-                <Button
-                  type="button"
-                  variant={scheduleMode === "asap" ? "primary" : "secondary"}
-                  onClick={() => {
-                    setScheduleMode("asap");
-                    setScheduleOpen(false);
-                  }}
-                >
-                  ASAP
-                </Button>
-                <Button
-                  type="button"
-                  variant={scheduleMode === "scheduled" ? "primary" : "secondary"}
-                  onClick={() => {
-                    setScheduleMode("scheduled");
-                    setScheduleOpen(true);
-                  }}
-                >
-                  Schedule for later
-                </Button>
-              </div>
-
-              {scheduleMode === "scheduled" ? (
-                <FormField
-                  id="scheduledAt"
-                  label="Pickup time"
-                  hint="Must be at least 15 minutes from now."
-                >
-                  <Input
-                    name="scheduledAt"
-                    type="datetime-local"
-                    min={scheduleBounds.min}
-                    max={scheduleBounds.max}
-                    value={scheduledAt}
-                    onChange={(event) => setScheduledAt(event.target.value)}
-                  />
-                </FormField>
-              ) : (
-                <p className="text-sm text-text-secondary">
-                  A courier will be sent as soon as you submit this delivery.
-                </p>
-              )}
-            </CardContent>
-          </>
-        ) : (
-          <CardContent className="flex items-center justify-between gap-4 py-5">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">When to pick up</h2>
-              <p className="mt-1 text-sm text-text-secondary">{scheduleSummary}</p>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setScheduleOpen(true)}
+        {scheduleMode === "scheduled" ? (
+          <div ref={pickupSectionRef} className={SCROLL_INTO_VIEW_MARGIN_CLASS}>
+            <FormField
+              id="scheduledAt"
+              label="Pickup time"
+              hint="Must be at least 15 minutes from now."
             >
-              Change
-            </Button>
-          </CardContent>
+              <PickupDatetimePicker
+                name="scheduledAt"
+                value={scheduledAt}
+                onChange={setScheduledAt}
+                min={scheduleBounds.min}
+                max={scheduleBounds.max}
+              />
+            </FormField>
+          </div>
+        ) : (
+          <p className="text-sm text-text-secondary">
+            A courier will be sent as soon as you submit this delivery.
+          </p>
         )}
-      </Card>
+      </CollapsibleSettingCard>
 
       {isQuoting && !quote ? (
         <div className="rounded-lg border border-border bg-surface p-4 text-sm text-text-secondary">
@@ -572,13 +545,14 @@ export function DeliveryForm(_props: DeliveryFormProps) {
           <Button
             type="button"
             variant="secondary"
+            className="w-full sm:w-auto"
             disabled={!addressVerified || isQuoting}
             onClick={() => void requestQuote()}
           >
             {isQuoting ? "Getting quote…" : "Refresh quote"}
           </Button>
         ) : null}
-        <Button type="submit" disabled={!canSend}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={!canSend}>
           {isSubmitting ? "Sending…" : "Send delivery"}
         </Button>
       </div>

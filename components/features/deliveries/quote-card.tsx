@@ -46,7 +46,7 @@ export function QuoteCard({ quote }: QuoteCardProps) {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-baseline justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
               Delivery fee
@@ -58,7 +58,7 @@ export function QuoteCard({ quote }: QuoteCardProps) {
           <div
             className={`flex items-center gap-1.5 text-sm ${isExpired ? "text-error" : "text-text-secondary"}`}
           >
-            <Clock className="h-4 w-4" aria-hidden />
+            <Clock className="h-4 w-4 shrink-0" aria-hidden />
             {isExpired ? (
               <span>Quote expired — get a new one</span>
             ) : (

@@ -62,11 +62,11 @@ function DeliveryListRow({ delivery }: { delivery: DeliveryListItem }) {
       href={`/dashboard/deliveries/${delivery.id}`}
       className="group block rounded-lg border border-border bg-surface-elevated p-4 transition-colors duration-fast hover:bg-surface"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-medium text-foreground">{delivery.dropoffName}</p>
-            <span className="font-mono text-xs text-text-tertiary">
+            <span className="max-w-full truncate font-mono text-xs text-text-tertiary">
               {delivery.externalId}
             </span>
           </div>
@@ -81,14 +81,14 @@ function DeliveryListRow({ delivery }: { delivery: DeliveryListItem }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <div className="text-right">
+        <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:flex-col sm:items-end">
+          <div className="text-left sm:text-right">
             <DeliveryStatusBadge status={delivery.status} />
             <p className="mt-2 text-sm font-semibold tabular-nums text-foreground">
               {fee}
             </p>
           </div>
-          <ChevronRight className="h-5 w-5 text-text-tertiary transition-transform duration-fast group-hover:translate-x-0.5" />
+          <ChevronRight className="hidden h-5 w-5 text-text-tertiary transition-transform duration-fast group-hover:translate-x-0.5 sm:block" />
         </div>
       </div>
     </Link>

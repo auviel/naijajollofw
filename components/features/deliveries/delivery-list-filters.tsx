@@ -58,36 +58,38 @@ export function DeliveryListFilters({ filter, search }: DeliveryListFiltersProps
 
   return (
     <div className="mb-6 space-y-4">
-      <div
-        className="flex flex-wrap gap-2 border-b border-border"
-        role="tablist"
-        aria-label="Filter deliveries"
-      >
-        {DELIVERY_LIST_FILTERS.map((item) => {
-          const isActive = filter === item.value;
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <div
+          className="flex min-w-max gap-2 border-b border-border"
+          role="tablist"
+          aria-label="Filter deliveries"
+        >
+          {DELIVERY_LIST_FILTERS.map((item) => {
+            const isActive = filter === item.value;
 
-          return (
-            <Link
-              key={item.value}
-              href={buildHref(item.value)}
-              role="tab"
-              className={cn(
-                "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
-                isActive
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-text-secondary hover:text-foreground",
-              )}
-              aria-selected={isActive}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.value}
+                href={buildHref(item.value)}
+                role="tab"
+                className={cn(
+                  "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
+                  isActive
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-text-secondary hover:text-foreground",
+                )}
+                aria-selected={isActive}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
-      <form onSubmit={submitSearch} className="flex gap-2">
-        <div className="relative flex-1">
+      <form onSubmit={submitSearch} className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
           <Input
             value={query}
@@ -99,7 +101,7 @@ export function DeliveryListFilters({ filter, search }: DeliveryListFiltersProps
         </div>
         <button
           type="submit"
-          className="inline-flex h-12 items-center justify-center rounded-md border border-border bg-surface-elevated px-4 text-sm font-medium text-foreground transition-colors duration-fast hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+          className="inline-flex h-12 w-full shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated px-4 text-sm font-medium text-foreground transition-colors duration-fast hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:w-auto"
         >
           Search
         </button>

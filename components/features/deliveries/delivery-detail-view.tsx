@@ -29,11 +29,11 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
     <div className="space-y-6">
       <DeliveryDetailRefresh enabled={shouldRefreshDeliveryDetail(delivery.status)} />
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 gap-y-1">
             <DeliveryStatusBadge status={delivery.status} />
-            <span className="font-mono text-sm text-text-tertiary">
+            <span className="break-all font-mono text-xs text-text-tertiary sm:break-normal sm:truncate">
               {delivery.externalId}
             </span>
           </div>
@@ -55,7 +55,7 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
 
         <Link
           href="/dashboard/deliveries"
-          className="text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
+          className="shrink-0 text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
         >
           ← Back to deliveries
         </Link>

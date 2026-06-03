@@ -13,7 +13,7 @@ export async function Sidebar() {
   const storeAddress = context?.store ? formatStoreProfileAddress(context.store) : null;
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-border bg-surface md:flex md:h-full md:min-h-0 md:flex-col">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start overflow-hidden border-r border-border bg-surface md:flex">
       <div className="border-b border-border px-5 py-6">
         <div className="flex items-center justify-between gap-2">
           <span className="text-lg font-semibold tracking-tight">deliverGO</span>
@@ -21,7 +21,7 @@ export async function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
         <SidebarNavLink
           href="/dashboard/deliveries"
           label="Deliveries"
@@ -40,7 +40,7 @@ export async function Sidebar() {
         />
       </nav>
 
-      <div className="border-t border-border p-4">
+      <div className="shrink-0 border-t border-border p-4">
         <p className="text-xs font-medium text-foreground">
           {session?.user?.storeName ?? "Store"}
         </p>

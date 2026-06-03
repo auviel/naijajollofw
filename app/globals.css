@@ -62,6 +62,10 @@
     @apply flex min-h-dvh h-dvh flex-col bg-background text-foreground font-sans antialiased;
   }
 
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   a {
     @apply text-link;
   }
