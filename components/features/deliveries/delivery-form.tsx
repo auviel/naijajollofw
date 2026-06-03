@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
 import {
@@ -23,6 +23,7 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/domain/delivery/schedule";
 import type { DeliveryQuote, ProofOfDeliveryConfig } from "@/lib/domain/delivery/types";
+import { formatPodConfigSummary } from "@/lib/domain/delivery/pod";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 
 type DeliveryFormProps = Record<string, never>;
@@ -84,6 +85,7 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   });
 
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(null);
+  const [verifiedAddress, setVerifiedAddress] = useState<string | null>(null);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
@@ -93,6 +95,8 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   const [isQuoting, setIsQuoting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [podOpen, setPodOpen] = useState(false);
+  const quoteRequestRef = useRef(0);
 
   const scheduleBounds = useMemo(
     () => ({
@@ -121,6 +125,8 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   }, [scheduleMode, scheduledAt]);
 
   const showScheduleOptions = scheduleOpen || scheduleMode === "scheduled";
+  const podSummary = useMemo(() => formatPodConfigSummary(pod), [pod]);
+  const showPodOptions = podOpen;
 
   const clearQuote = useCallback(() => {
     setQuote(null);
@@ -128,15 +134,19 @@ export function DeliveryForm(_props: DeliveryFormProps) {
 
   useEffect(() => {
     clearQuote();
+    quoteRequestRef.current += 1;
   }, [dropoffAddress, scheduleMode, scheduledAt, clearQuote]);
 
   useEffect(() => {
     const query = dropoffAddress.trim();
     if (query.length < 5) {
       setGeocoded(null);
+      setVerifiedAddress(null);
       setGeocodeError(null);
       return;
     }
+
+    setVerifiedAddress(null);
 
     const timeout = window.setTimeout(async () => {
       setIsGeocoding(true);
@@ -151,14 +161,17 @@ export function DeliveryForm(_props: DeliveryFormProps) {
 
         if (!response.ok) {
           setGeocoded(null);
+          setVerifiedAddress(null);
           setGeocodeError(await readApiError(response));
           return;
         }
 
         const body = (await response.json()) as { data: GeocodedAddress };
         setGeocoded(body.data);
+        setVerifiedAddress(query);
       } catch {
         setGeocoded(null);
+        setVerifiedAddress(null);
         setGeocodeError("Could not check address. Try again.");
       } finally {
         setIsGeocoding(false);
@@ -168,45 +181,35 @@ export function DeliveryForm(_props: DeliveryFormProps) {
     return () => window.clearTimeout(timeout);
   }, [dropoffAddress]);
 
-  const dropoffReady =
-    dropoffName.trim().length > 0 &&
-    dropoffPhone.trim().length >= 10 &&
-    canRequestQuote(geocoded);
+  const addressVerified =
+    verifiedAddress === dropoffAddress.trim() && canRequestQuote(geocoded);
 
-  const canQuote = dropoffReady && !isQuoting;
-  const canSend = dropoffReady && isQuoteValid(quote) && !isSubmitting;
-
-  function runFieldValidation() {
-    const errors = validateDeliveryFormFields({
-      dropoffName,
-      dropoffPhone,
-      geocoded,
-      geocodeError,
-    });
-    setFieldErrors(errors);
-    return errors;
-  }
-
-  async function handleGetQuote() {
-    setFormError(null);
-    const errors = runFieldValidation();
-    if (Object.keys(errors).length > 0) {
+  const requestQuote = useCallback(async () => {
+    const query = dropoffAddress.trim();
+    if (!query || !addressVerified) {
       return;
     }
 
+    const requestId = ++quoteRequestRef.current;
     setIsQuoting(true);
+    setFormError(null);
 
     try {
       const response = await fetch("/api/deliveries/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dropoffAddress: dropoffAddress.trim(),
+          dropoffAddress: query,
           ...(scheduledPickupAt ? { scheduledPickupAt: scheduledPickupAt.toISOString() } : {}),
         }),
       });
 
+      if (requestId !== quoteRequestRef.current) {
+        return;
+      }
+
       if (!response.ok) {
+        setQuote(null);
         setFormError(await readApiError(response));
         return;
       }
@@ -214,11 +217,47 @@ export function DeliveryForm(_props: DeliveryFormProps) {
       const body = (await response.json()) as QuoteApiResponse;
       setQuote(parseQuote(body.data.quote));
       setGeocoded(body.data.geocoded);
+      setVerifiedAddress(query);
     } catch {
-      setFormError("Unable to get a quote. Please try again.");
+      if (requestId === quoteRequestRef.current) {
+        setQuote(null);
+        setFormError("Unable to get a quote. Please try again.");
+      }
     } finally {
-      setIsQuoting(false);
+      if (requestId === quoteRequestRef.current) {
+        setIsQuoting(false);
+      }
     }
+  }, [addressVerified, dropoffAddress, scheduledPickupAt]);
+
+  useEffect(() => {
+    if (isGeocoding || !addressVerified) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void requestQuote();
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [addressVerified, isGeocoding, requestQuote, scheduledPickupAt, scheduleMode]);
+
+  const dropoffReady =
+    dropoffName.trim().length > 0 &&
+    dropoffPhone.trim().length >= 10 &&
+    addressVerified;
+
+  const canSend = dropoffReady && isQuoteValid(quote) && !isSubmitting && !isQuoting;
+
+  function runFieldValidation() {
+    const errors = validateDeliveryFormFields({
+      dropoffName,
+      dropoffPhone,
+      addressVerified,
+      geocodeError,
+    });
+    setFieldErrors(errors);
+    return errors;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -231,7 +270,7 @@ export function DeliveryForm(_props: DeliveryFormProps) {
     }
 
     if (!quote || !isQuoteValid(quote)) {
-      setFormError("Get a quote first, then send the delivery.");
+      setFormError("Waiting for a delivery quote. Check the address and try again.");
       return;
     }
 
@@ -275,7 +314,7 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl space-y-6" noValidate>
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold text-foreground">Customer</h2>
@@ -348,72 +387,94 @@ export function DeliveryForm(_props: DeliveryFormProps) {
       </Card>
 
       <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
-          <p className="mt-1 text-sm text-text-secondary">
-            How should the courier confirm the delivery?
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-border-strong"
-              checked={pod.pincode}
-              onChange={(event) =>
-                setPod((current) => ({
-                  ...current,
-                  pincode: event.target.checked,
-                  picture: event.target.checked ? false : current.picture,
-                }))
-              }
-            />
-            <span>
-              <span className="block text-sm font-medium text-foreground">PIN code</span>
-              <span className="block text-sm text-text-secondary">
-                Customer gets a 4-digit code by text. They must meet the courier to share it.
-              </span>
-            </span>
-          </label>
+        {showPodOptions ? (
+          <>
+            <CardHeader>
+              <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                How should the courier confirm the delivery?
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-border-strong"
+                  checked={pod.pincode}
+                  onChange={(event) =>
+                    setPod((current) => ({
+                      ...current,
+                      pincode: event.target.checked,
+                      picture: event.target.checked ? false : current.picture,
+                    }))
+                  }
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">PIN code</span>
+                  <span className="block text-sm text-text-secondary">
+                    Customer gets a 4-digit code by text. They must meet the courier to share it.
+                  </span>
+                </span>
+              </label>
 
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-border-strong"
-              checked={pod.picture}
-              onChange={(event) =>
-                setPod((current) => ({
-                  ...current,
-                  picture: event.target.checked,
-                  pincode: event.target.checked ? false : current.pincode,
-                }))
-              }
-            />
-            <span>
-              <span className="block text-sm font-medium text-foreground">Photo</span>
-              <span className="block text-sm text-text-secondary">
-                Courier takes a photo at the door. Best for leave-at-door orders.
-              </span>
-            </span>
-          </label>
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-border-strong"
+                  checked={pod.picture}
+                  onChange={(event) =>
+                    setPod((current) => ({
+                      ...current,
+                      picture: event.target.checked,
+                      pincode: event.target.checked ? false : current.pincode,
+                    }))
+                  }
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">Photo</span>
+                  <span className="block text-sm text-text-secondary">
+                    Courier takes a photo at the door. Best for leave-at-door orders.
+                  </span>
+                </span>
+              </label>
 
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-border-strong"
-              checked={pod.signature}
-              onChange={(event) =>
-                setPod((current) => ({ ...current, signature: event.target.checked }))
-              }
-            />
-            <span>
-              <span className="block text-sm font-medium text-foreground">Signature</span>
-              <span className="block text-sm text-text-secondary">
-                Customer signs when they receive the order.
-              </span>
-            </span>
-          </label>
-        </CardContent>
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-border-strong"
+                  checked={pod.signature}
+                  onChange={(event) =>
+                    setPod((current) => ({ ...current, signature: event.target.checked }))
+                  }
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">Signature</span>
+                  <span className="block text-sm text-text-secondary">
+                    Customer signs when they receive the order.
+                  </span>
+                </span>
+              </label>
+
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPodOpen(false)}
+              >
+                Done
+              </Button>
+            </CardContent>
+          </>
+        ) : (
+          <CardContent className="flex items-center justify-between gap-4 py-5">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Proof of delivery</h2>
+              <p className="mt-1 text-sm text-text-secondary">{podSummary}</p>
+            </div>
+            <Button type="button" variant="secondary" onClick={() => setPodOpen(true)}>
+              Change
+            </Button>
+          </CardContent>
+        )}
       </Card>
 
       <Card>
@@ -492,6 +553,12 @@ export function DeliveryForm(_props: DeliveryFormProps) {
         )}
       </Card>
 
+      {isQuoting && !quote ? (
+        <div className="rounded-lg border border-border bg-surface p-4 text-sm text-text-secondary">
+          Getting quote…
+        </div>
+      ) : null}
+
       {quote ? <QuoteCard quote={quote} /> : null}
 
       {formError ? (
@@ -501,14 +568,16 @@ export function DeliveryForm(_props: DeliveryFormProps) {
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={!canQuote}
-          onClick={handleGetQuote}
-        >
-          {isQuoting ? "Getting quote…" : "Get quote"}
-        </Button>
+        {quote && !isQuoteValid(quote) ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!addressVerified || isQuoting}
+            onClick={() => void requestQuote()}
+          >
+            {isQuoting ? "Getting quote…" : "Refresh quote"}
+          </Button>
+        ) : null}
         <Button type="submit" disabled={!canSend}>
           {isSubmitting ? "Sending…" : "Send delivery"}
         </Button>

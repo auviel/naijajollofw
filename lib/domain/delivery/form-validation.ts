@@ -1,5 +1,3 @@
-import { canRequestQuote } from "@/components/features/deliveries/address-preview";
-import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 
 export type DeliveryFormField = "dropoffName" | "dropoffPhone" | "dropoffAddress";
@@ -9,7 +7,7 @@ export type DeliveryFormErrors = Partial<Record<DeliveryFormField, string>>;
 export function validateDeliveryFormFields(input: {
   dropoffName: string;
   dropoffPhone: string;
-  geocoded: GeocodedAddress | null;
+  addressVerified: boolean;
   geocodeError: string | null;
 }): DeliveryFormErrors {
   const errors: DeliveryFormErrors = {};
@@ -22,7 +20,7 @@ export function validateDeliveryFormFields(input: {
     errors.dropoffPhone = "Enter a valid Canadian phone number (10 digits).";
   }
 
-  if (!canRequestQuote(input.geocoded)) {
+  if (!input.addressVerified) {
     errors.dropoffAddress =
       input.geocodeError ?? "Enter and verify a complete Canadian address.";
   }

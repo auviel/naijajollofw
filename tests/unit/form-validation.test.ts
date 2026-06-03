@@ -3,30 +3,13 @@ import {
   validateDeliveryFormFields,
   validateLoginFields,
 } from "@/lib/domain/delivery/form-validation";
-import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
-
-const geocodedAddress: GeocodedAddress = {
-  address: {
-    line1: "200 University Ave W",
-    city: "Waterloo",
-    province: "ON",
-    postalCode: "N2L 3G1",
-    country: "CA",
-    latitude: 43.4723,
-    longitude: -80.5449,
-    formatted: "200 University Ave W, Waterloo, ON N2L 3G1, CA",
-  },
-  relevance: 0.9,
-  confidence: "high",
-  preview: "200 University Ave W, Waterloo, ON N2L 3G1, CA",
-};
 
 describe("validateDeliveryFormFields", () => {
   it("returns no errors for valid input", () => {
     const errors = validateDeliveryFormFields({
       dropoffName: "Jane Doe",
       dropoffPhone: "5195550100",
-      geocoded: geocodedAddress,
+      addressVerified: true,
       geocodeError: null,
     });
 
@@ -37,7 +20,7 @@ describe("validateDeliveryFormFields", () => {
     const errors = validateDeliveryFormFields({
       dropoffName: "",
       dropoffPhone: "123",
-      geocoded: null,
+      addressVerified: false,
       geocodeError: "No matching address found.",
     });
 

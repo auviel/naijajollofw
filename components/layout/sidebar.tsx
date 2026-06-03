@@ -3,10 +3,14 @@ import { auth } from "@/lib/auth/index";
 import { LogoutButton } from "@/components/features/auth/logout-button";
 import { SandboxBadge } from "@/components/layout/sandbox-badge";
 import { SidebarNavLink } from "@/components/layout/sidebar-nav-link";
+import { formatStoreProfileAddress } from "@/lib/domain/store/format";
+import { getSessionContext } from "@/lib/auth/session";
 import { isUberLiveMode } from "@/lib/config/environment";
 
 export async function Sidebar() {
   const session = await auth();
+  const context = await getSessionContext();
+  const storeAddress = context?.store ? formatStoreProfileAddress(context.store) : null;
 
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border bg-surface md:flex md:h-full md:min-h-0 md:flex-col">
@@ -41,7 +45,7 @@ export async function Sidebar() {
           {session?.user?.storeName ?? "Store"}
         </p>
         <p className="text-xs text-text-tertiary">
-          {session?.user?.name ?? "Store manager"}
+          {storeAddress ?? "Store address"}
         </p>
         <div className="mt-2">
           <LogoutButton />

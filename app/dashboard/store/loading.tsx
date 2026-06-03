@@ -8,7 +8,7 @@ export default function StoreProfileLoading() {
         <Skeleton className="h-8 w-40" />
       </div>
       <DashboardPageBody>
-        <div className="mx-auto w-full max-w-2xl space-y-4">
+        <div className="mx-auto w-full max-w-4xl space-y-4">
           <Skeleton className="h-72 w-full rounded-lg" />
           <Skeleton className="h-12 w-40" />
         </div>

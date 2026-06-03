@@ -1,9 +1,13 @@
 import { auth } from "@/lib/auth/index";
 import { SandboxBadge } from "@/components/layout/sandbox-badge";
+import { formatStoreProfileAddress } from "@/lib/domain/store/format";
+import { getSessionContext } from "@/lib/auth/session";
 import { isUberLiveMode } from "@/lib/config/environment";
 
 export async function TopBar() {
   const session = await auth();
+  const context = await getSessionContext();
+  const storeAddress = context?.store ? formatStoreProfileAddress(context.store) : null;
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -17,7 +21,7 @@ export async function TopBar() {
             {session?.user?.storeName ?? "Store"}
           </p>
           <p className="truncate text-xs text-text-tertiary">
-            {session?.user?.name ?? "Store manager"}
+            {storeAddress ?? "Store address"}
           </p>
         </div>
 
@@ -28,7 +32,7 @@ export async function TopBar() {
               {session?.user?.storeName ?? "Store"}
             </p>
             <p className="truncate text-xs text-text-tertiary">
-              {session?.user?.name ?? "Store manager"}
+              {storeAddress ?? "Store address"}
             </p>
           </div>
         </div>

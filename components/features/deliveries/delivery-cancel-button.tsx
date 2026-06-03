@@ -108,7 +108,7 @@ export function CancelDeliveryButton({
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-lg border border-border bg-surface-elevated p-5 shadow-sm"
+            className="w-full max-w-lg rounded-lg border border-border bg-surface-elevated p-5 shadow-sm"
             onClick={(event) => event.stopPropagation()}
           >
             <h3 id="cancel-delivery-title" className="text-lg font-semibold text-foreground">

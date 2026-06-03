@@ -156,7 +156,7 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl space-y-6" noValidate>
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold text-foreground">Pickup location</h2>
