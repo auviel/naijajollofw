@@ -85,9 +85,13 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
                         Share this if the customer calls the store.
                       </p>
                     </>
-                  ) : (
+                  ) : delivery.liveMode ? (
                     <p className="mt-1 text-sm text-text-secondary">
                       PIN will appear here shortly after the delivery is sent.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-text-secondary">
+                      Ask the customer for the PIN in their text message.
                     </p>
                   )}
                 </div>

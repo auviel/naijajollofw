@@ -35,6 +35,7 @@ export function mapDeliveryToRecord(delivery: Delivery): DeliveryRecord {
 export type CreateDeliveryData = {
   externalId: string;
   storeId: string;
+  customerId?: string;
   providerId?: string;
   quoteId?: string;
   pickupName: string;

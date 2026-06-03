@@ -7,7 +7,7 @@ export const proofOfDeliveryConfigSchema = z.object({
   pincode: z.boolean(),
 });
 
-const canadianPhoneSchema = z
+export const canadianPhoneSchema = z
   .string()
   .min(10, "Valid phone number is required")
   .refine((value) => normalizeCanadianPhone(value) !== null, {

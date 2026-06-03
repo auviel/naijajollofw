@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { AddressSuggestion } from "@/lib/integrations/geocoding/types";
 
@@ -13,6 +13,9 @@ type AddressAutocompleteProps = {
   placeholder?: string;
   autoComplete?: string;
   disabled?: boolean;
+  verified?: boolean;
+  isVerifying?: boolean;
+  verifyError?: string | null;
 };
 
 async function readApiError(response: Response): Promise<string> {
@@ -28,6 +31,9 @@ export function AddressAutocomplete({
   placeholder,
   autoComplete = "off",
   disabled,
+  verified = false,
+  isVerifying = false,
+  verifyError = null,
 }: AddressAutocompleteProps) {
   const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,36 +158,81 @@ export function AddressAutocomplete({
     }
   }
 
+  const showStatus = verified || isVerifying;
+
   return (
     <div ref={containerRef} className="relative">
-      <Input
-        id={id}
-        name={name}
-        value={value}
-        disabled={disabled}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-controls={listboxId}
-        aria-autocomplete="list"
-        aria-activedescendant={
-          activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
-        }
-        onChange={(event) => {
-          userEditedRef.current = true;
-          onChange(event.target.value);
-        }}
-        onFocus={() => {
-          if (suggestions.length > 0) {
-            setIsOpen(true);
+      <div
+        className={cn(
+          "flex h-12 w-full items-stretch overflow-hidden rounded-md border bg-background transition-colors",
+          verifyError
+            ? "border-error/30"
+            : verified
+              ? "border-success/25"
+              : "border-border-strong",
+          "focus-within:outline focus-within:outline-2 focus-within:outline-offset-0 focus-within:outline-foreground",
+          disabled && "cursor-not-allowed opacity-50",
+        )}
+      >
+        <input
+          id={id}
+          name={name}
+          value={value}
+          disabled={disabled}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
           }
-        }}
-        onKeyDown={handleKeyDown}
-      />
+          className="min-w-0 flex-1 bg-transparent px-4 text-base text-foreground placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed"
+          onChange={(event) => {
+            userEditedRef.current = true;
+            onChange(event.target.value);
+          }}
+          onFocus={() => {
+            if (suggestions.length > 0) {
+              setIsOpen(true);
+            }
+          }}
+          onKeyDown={handleKeyDown}
+        />
+
+        {showStatus ? (
+          <div
+            className={cn(
+              "flex shrink-0 items-center border-l px-3",
+              verified ? "border-success/15 bg-success/5" : "border-border bg-surface",
+            )}
+          >
+            {verified ? (
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-success"
+                aria-label="Address verified"
+              >
+                <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                Verified
+              </span>
+            ) : (
+              <span className="whitespace-nowrap text-xs font-medium text-text-secondary">
+                Checking…
+              </span>
+            )}
+          </div>
+        ) : null}
+      </div>
 
       {isLoading ? (
         <p className="mt-1 text-xs text-text-tertiary">Searching…</p>
+      ) : null}
+
+      {verifyError ? (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {verifyError}
+        </p>
       ) : null}
 
       {suggestError ? (

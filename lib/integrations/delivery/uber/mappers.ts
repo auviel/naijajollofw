@@ -57,14 +57,52 @@ export function mapUberQuoteResponse(raw: UberDeliveryQuoteResponse): ProviderQu
   };
 }
 
+/** Uber sandbox often returns 0000 after robo-courier runs; SMS still sends the real PIN. */
+export function isUberSandboxPinPlaceholder(
+  value: string,
+  liveMode: boolean,
+): boolean {
+  return !liveMode && value === "0000";
+}
+
+/** Prefer a stored real PIN over a sandbox placeholder from later syncs. */
+export function resolveUberPincode(
+  stored: string | null | undefined,
+  incoming: string | undefined,
+  liveMode: boolean,
+): string | undefined {
+  const normalizedIncoming =
+    incoming && !isUberSandboxPinPlaceholder(incoming, liveMode)
+      ? incoming
+      : undefined;
+  const normalizedStored =
+    stored && !isUberSandboxPinPlaceholder(stored, liveMode) ? stored : undefined;
+
+  return normalizedIncoming ?? normalizedStored;
+}
+
 /** Read generated dropoff PIN from Uber delivery responses (create/get/webhook payloads). */
-export function extractUberPincode(raw: UberDeliveryResponse): string | undefined {
-  return (
-    raw.dropoff?.verification_requirements?.pincode?.value ??
-    raw.verification_requirements?.pincode?.value ??
-    raw.dropoff?.verification?.pincode?.value ??
-    raw.dropoff?.verification?.pin_code?.value
-  );
+export function extractUberPincode(
+  raw: UberDeliveryResponse,
+  liveMode = raw.live_mode ?? false,
+): string | undefined {
+  const candidates = [
+    raw.verification_requirements?.pincode?.value,
+    raw.dropoff?.verification_requirements?.pincode?.value,
+    raw.dropoff?.verification?.pincode?.value,
+    raw.dropoff?.verification?.pin_code?.value,
+  ];
+
+  for (const value of candidates) {
+    if (value && !isUberSandboxPinPlaceholder(value, liveMode)) {
+      return value;
+    }
+  }
+
+  const fallback = candidates.find(Boolean);
+  return fallback && !isUberSandboxPinPlaceholder(fallback, liveMode)
+    ? fallback
+    : undefined;
 }
 
 export function mapUberDeliveryStatus(status: string): ReturnType<typeof mapProviderStatusToDomain> {
@@ -93,7 +131,8 @@ export function mapUberDeliveryStatus(status: string): ReturnType<typeof mapProv
 export function mapUberDeliveryResponse(raw: UberDeliveryResponse): ProviderDelivery {
   const proof = raw.dropoff?.verification;
   const courier = raw.courier;
-  const pincodeValue = extractUberPincode(raw);
+  const liveMode = raw.live_mode ?? false;
+  const pincodeValue = extractUberPincode(raw, liveMode);
 
   return {
     providerDeliveryId: raw.id,

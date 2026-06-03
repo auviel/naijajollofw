@@ -36,15 +36,6 @@ export function DeliveryDetailHeader({ delivery }: DeliveryDetailHeaderProps) {
               ·
             </span>
             <span>Created {formatDateTime(delivery.createdAt)}</span>
-            <span aria-hidden className="hidden sm:inline">
-              ·
-            </span>
-            <span
-              className="max-w-full truncate font-mono"
-              title={delivery.externalId}
-            >
-              {delivery.externalId}
-            </span>
           </div>
 
           {delivery.scheduledFor ? (

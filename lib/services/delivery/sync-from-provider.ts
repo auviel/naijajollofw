@@ -7,6 +7,10 @@ import {
 import type { DeliveryProviderId, DeliveryStatus } from "@/lib/domain/delivery/types";
 import { isTerminalStatus } from "@/lib/domain/delivery/status";
 import { getDeliveryProviderById } from "@/lib/integrations/delivery/provider.registry";
+import {
+  isUberSandboxPinPlaceholder,
+  resolveUberPincode,
+} from "@/lib/integrations/delivery/uber/mappers";
 import type { ProviderDelivery } from "@/lib/integrations/delivery/types";
 import { logger } from "@/lib/utils/logger";
 
@@ -41,12 +45,21 @@ function getStoredPincode(delivery: Delivery): string | null {
   return stored?.pincodeValue ?? null;
 }
 
+function hasUsableStoredPincode(delivery: Delivery): boolean {
+  const stored = getStoredPincode(delivery);
+  if (!stored) {
+    return false;
+  }
+
+  return !isUberSandboxPinPlaceholder(stored, delivery.liveMode);
+}
+
 function shouldSyncFromProvider(delivery: Delivery): boolean {
   if (!delivery.providerDeliveryId) {
     return false;
   }
 
-  if (delivery.podPincode && !getStoredPincode(delivery)) {
+  if (delivery.podPincode && !hasUsableStoredPincode(delivery)) {
     return true;
   }
 
@@ -68,7 +81,19 @@ export async function syncDeliveryFromProvider(delivery: Delivery): Promise<Deli
       delivery.providerId as DeliveryProviderId,
     );
     const synced = await provider.getDelivery(delivery.providerDeliveryId!);
-    const proofOfDelivery = buildProofUpdate(synced.proofOfDelivery);
+    const pincodeValue = resolveUberPincode(
+      getStoredPincode(delivery),
+      synced.proofOfDelivery?.pincodeValue,
+      synced.liveMode,
+    );
+    const proofOfDelivery = buildProofUpdate(
+      synced.proofOfDelivery || pincodeValue
+        ? {
+            ...synced.proofOfDelivery,
+            pincodeValue,
+          }
+        : undefined,
+    );
 
     return deliveryRepository.update(delivery.id, delivery.storeId, {
       status: synced.status,

@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
+import {
+  CustomerNameAutocomplete,
+  customerSearchResultToFormValues,
+} from "@/components/features/customers/customer-autocomplete";
 import { PickupDatetimePicker } from "@/components/features/deliveries/pickup-datetime-picker";
 import {
-  AddressPreview,
   canRequestQuote,
 } from "@/components/features/deliveries/address-preview";
 import {
@@ -37,6 +40,8 @@ import {
 } from "@/lib/domain/delivery/types";
 import { formatPodConfigSummary } from "@/lib/domain/delivery/pod";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
+import type { CustomerDetail } from "@/lib/domain/customer/types";
+import { phoneE164ToFormValue } from "@/lib/domain/customer/format";
 import {
   SCROLL_INTO_VIEW_MARGIN_CLASS,
   scrollIntoViewSmooth,
@@ -88,6 +93,7 @@ async function readApiError(response: Response): Promise<string> {
 
 export function DeliveryForm(_props: DeliveryFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { success, error: toastError } = useToast();
 
   const [dropoffName, setDropoffName] = useState("");
@@ -121,6 +127,43 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   const quoteRequestRef = useRef(0);
   const pickupSectionRef = useRef<HTMLDivElement>(null);
   const wasScheduledRef = useRef(false);
+  const prefilledCustomerRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const customerId = searchParams.get("customerId");
+    if (!customerId || prefilledCustomerRef.current === customerId) {
+      return;
+    }
+
+    prefilledCustomerRef.current = customerId;
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/customers/${customerId}`);
+        if (!response.ok) {
+          return;
+        }
+
+        const body = (await response.json()) as { data: CustomerDetail };
+        const customer = body.data;
+        const primaryPhone =
+          customer.phones.find((phone) => phone.isPrimary) ?? customer.phones[0];
+        const primaryAddress =
+          customer.addresses.find((address) => address.isPrimary) ??
+          customer.addresses[0];
+
+        setDropoffName(customer.name);
+        if (primaryPhone) {
+          setDropoffPhone(phoneE164ToFormValue(primaryPhone.phoneE164));
+        }
+        if (primaryAddress) {
+          setDropoffAddress(primaryAddress.formatted);
+        }
+      } catch {
+        // Ignore prefill failures — user can still enter details manually.
+      }
+    })();
+  }, [searchParams]);
 
   const scheduleBounds = useMemo(
     () => ({
@@ -368,22 +411,34 @@ export function DeliveryForm(_props: DeliveryFormProps) {
         <CardHeader className="py-4">
           <h2 className="text-base font-semibold text-foreground">Customer</h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Who is receiving the order and where should it go?
+            Start typing the customer name to use a saved profile, or enter new details.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField id="dropoffName" label="Customer name" error={fieldErrors.dropoffName}>
-            <Input
+          <FormField
+            id="dropoffName"
+            label="Customer name"
+            error={fieldErrors.dropoffName}
+            hint="Matching saved customers appear as you type."
+          >
+            <CustomerNameAutocomplete
+              id="dropoffName"
               name="dropoffName"
               value={dropoffName}
-              onChange={(event) => {
-                setDropoffName(event.target.value);
+              onChange={(nextValue) => {
+                setDropoffName(nextValue);
                 if (fieldErrors.dropoffName) {
                   setFieldErrors((current) => ({ ...current, dropoffName: undefined }));
                 }
               }}
-              placeholder="Jane Doe"
-              autoComplete="name"
+              onSelect={(customer) => {
+                const values = customerSearchResultToFormValues(customer);
+                setDropoffName(values.dropoffName);
+                setDropoffPhone(values.dropoffPhone);
+                setDropoffAddress(values.dropoffAddress);
+                setFieldErrors({});
+              }}
+              disabled={isSubmitting}
             />
           </FormField>
 
@@ -417,6 +472,9 @@ export function DeliveryForm(_props: DeliveryFormProps) {
             <AddressAutocomplete
               name="dropoffAddress"
               value={dropoffAddress}
+              verified={addressVerified}
+              isVerifying={isGeocoding}
+              verifyError={geocodeError}
               onChange={(nextValue) => {
                 setDropoffAddress(nextValue);
                 if (fieldErrors.dropoffAddress) {
@@ -426,12 +484,6 @@ export function DeliveryForm(_props: DeliveryFormProps) {
               placeholder="123 King St W, Kitchener, ON N2G 1A1"
             />
           </FormField>
-
-          <AddressPreview
-            result={geocoded}
-            isLoading={isGeocoding}
-            error={geocodeError}
-          />
         </CardContent>
       </Card>
 

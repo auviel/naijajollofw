@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
-import { AddressPreview } from "@/components/features/deliveries/address-preview";
+import { canRequestQuote } from "@/components/features/deliveries/address-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
@@ -111,6 +111,8 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
 
     return () => window.clearTimeout(timeout);
   }, [addressQuery, addressLine2, initialAddressQuery, store]);
+
+  const addressVerified = canRequestQuote(geocoded) && !isGeocoding && !geocodeError;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -237,6 +239,9 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
             <AddressAutocomplete
               name="addressQuery"
               value={addressQuery}
+              verified={addressVerified}
+              isVerifying={isGeocoding}
+              verifyError={geocodeError}
               onChange={(nextValue) => {
                 setAddressQuery(nextValue);
                 if (fieldErrors.addressQuery) {
@@ -246,12 +251,6 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
               placeholder="280 Lester St, Waterloo, ON N2L 0G2"
             />
           </FormField>
-
-          <AddressPreview
-            result={geocoded}
-            isLoading={isGeocoding}
-            error={geocodeError}
-          />
         </CardContent>
       </Card>
 

@@ -11,7 +11,9 @@ import {
 } from "@/lib/domain/store/format";
 import { getDoorDashExternalStoreId } from "@/lib/domain/store/delivery-settings";
 import { getDeliveryProviderById } from "@/lib/integrations/delivery/provider.registry";
+import { resolveUberPincode } from "@/lib/integrations/delivery/uber/mappers";
 import type { ProviderDelivery, ProviderQuoteRequest } from "@/lib/integrations/delivery/types";
+import { upsertCustomerFromDropoff } from "@/lib/services/customer/upsert-from-dropoff";
 import { buildProofUpdate } from "@/lib/services/delivery/sync-from-provider";
 import { geocodeAddress } from "@/lib/services/geocoding/geocode-address";
 import { AppError, isAppError } from "@/lib/utils/errors";
@@ -110,11 +112,31 @@ export async function createDelivery(input: unknown): Promise<CreateDeliveryResu
     }
   }
 
-  const proofOfDelivery = buildProofUpdate(providerDelivery.proofOfDelivery);
+  const pincodeValue = resolveUberPincode(
+    undefined,
+    providerDelivery.proofOfDelivery?.pincodeValue,
+    providerDelivery.liveMode,
+  );
+  const proofOfDelivery = buildProofUpdate(
+    providerDelivery.proofOfDelivery || pincodeValue
+      ? {
+          ...providerDelivery.proofOfDelivery,
+          pincodeValue,
+        }
+      : undefined,
+  );
+
+  const customerId = await upsertCustomerFromDropoff({
+    storeId: store.id,
+    name: parsed.dropoffName.trim(),
+    phoneE164: dropoffPhone,
+    address: geocoded.address,
+  });
 
   const delivery = await deliveryRepository.create({
     externalId: providerId === "doordash_drive" ? quoteId : externalId,
     storeId: store.id,
+    customerId,
     providerId: provider.id,
     quoteId,
     pickupName: store.name,

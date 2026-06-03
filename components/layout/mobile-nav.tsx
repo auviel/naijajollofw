@@ -2,17 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, Plus, Store } from "lucide-react";
+import { Package, Store, Users } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const items = [
-  {
-    href: "/dashboard/deliveries",
-    label: "Deliveries",
-    icon: Package,
-    excludePaths: ["/dashboard/deliveries/new"],
-  },
-  { href: "/dashboard/deliveries/new", label: "New", icon: Plus, excludePaths: [] },
+  { href: "/dashboard/deliveries", label: "Deliveries", icon: Package, excludePaths: [] },
+  { href: "/dashboard/customers", label: "Customers", icon: Users, excludePaths: [] },
   { href: "/dashboard/store", label: "Store", icon: Store, excludePaths: [] },
 ];
 

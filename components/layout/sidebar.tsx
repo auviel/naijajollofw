@@ -1,4 +1,4 @@
-import { Package, Plus, Store } from "lucide-react";
+import { Package, Store, Users } from "lucide-react";
 import { auth } from "@/lib/auth/index";
 import { LogoutButton } from "@/components/features/auth/logout-button";
 import { SidebarNavLink } from "@/components/layout/sidebar-nav-link";
@@ -21,12 +21,11 @@ export async function Sidebar() {
           href="/dashboard/deliveries"
           label="Deliveries"
           icon={<Package className="h-5 w-5" />}
-          excludePaths={["/dashboard/deliveries/new"]}
         />
         <SidebarNavLink
-          href="/dashboard/deliveries/new"
-          label="New delivery"
-          icon={<Plus className="h-5 w-5" />}
+          href="/dashboard/customers"
+          label="Customers"
+          icon={<Users className="h-5 w-5" />}
         />
         <SidebarNavLink
           href="/dashboard/store"

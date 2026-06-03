@@ -47,6 +47,7 @@ model Store {
 
   users      User[]
   deliveries Delivery[]
+  customers  Customer[]
 }
 
 model User {
@@ -63,11 +64,65 @@ model User {
   @@index([storeId])
 }
 
+model Customer {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  phones     CustomerPhone[]
+  addresses  CustomerAddress[]
+  deliveries Delivery[]
+
+  @@index([storeId, updatedAt(sort: Desc)])
+  @@index([storeId, name])
+}
+
+model CustomerPhone {
+  id         String   @id @default(cuid())
+  storeId    String
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  phoneE164  String
+  label      String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([storeId, phoneE164])
+  @@index([customerId])
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  line1      String
+  line2      String?
+  city       String
+  province   String
+  postalCode String
+  country    String   @default("CA")
+  latitude   Float
+  longitude  Float
+  formatted  String
+  label      String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@index([customerId, postalCode, line1])
+}
+
 model Delivery {
   id                 String         @id @default(cuid())
   externalId         String         @unique
   storeId            String
   store              Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customerId         String?
+  customer           Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   providerId         String         @default("uber_direct")
   providerDeliveryId String?
   providerOrderId    String?
@@ -104,6 +159,7 @@ model Delivery {
   webhookEvents WebhookEvent[]
 
   @@index([storeId, createdAt(sort: Desc)])
+  @@index([customerId])
   @@index([providerDeliveryId])
   @@index([status])
 }

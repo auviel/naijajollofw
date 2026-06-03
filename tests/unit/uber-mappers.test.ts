@@ -5,6 +5,7 @@ import {
   formatUberAddressJson,
   mapUberDeliveryResponse,
   mapUberDeliveryStatus,
+  resolveUberPincode,
 } from "@/lib/integrations/delivery/uber/mappers";
 import type { ProviderCreateDeliveryRequest } from "@/lib/integrations/delivery/types";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
@@ -134,15 +135,38 @@ describe("mapUberDeliveryResponse", () => {
     const mapped = mapUberDeliveryResponse({
       id: "d-1",
       status: "dropoff",
+      live_mode: true,
       dropoff: {
-        verification: { barcodes: null },
+        verification_requirements: {
+          pincode: { enabled: true, value: "4829" },
+        },
+      },
+    });
+
+    expect(mapped.proofOfDelivery?.pincodeValue).toBe("4829");
+  });
+
+  it("ignores sandbox placeholder pin 0000", () => {
+    const mapped = mapUberDeliveryResponse({
+      id: "d-1",
+      status: "dropoff",
+      live_mode: false,
+      dropoff: {
         verification_requirements: {
           pincode: { enabled: true, value: "0000" },
         },
       },
     });
 
-    expect(mapped.proofOfDelivery?.pincodeValue).toBe("0000");
+    expect(mapped.proofOfDelivery?.pincodeValue).toBeUndefined();
+  });
+});
+
+describe("resolveUberPincode", () => {
+  it("prefers a stored real pin over sandbox placeholder syncs", () => {
+    expect(resolveUberPincode("0835", "0000", false)).toBe("0835");
+    expect(resolveUberPincode(null, "0835", false)).toBe("0835");
+    expect(resolveUberPincode(null, "0000", false)).toBeUndefined();
   });
 });
 

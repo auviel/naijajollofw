@@ -8,7 +8,10 @@ import type {
 } from "@/lib/domain/delivery/types";
 import { isCancellable } from "@/lib/domain/delivery/status";
 import type { ProofOfDeliveryData } from "@/lib/db/repositories/delivery.repository";
-import { extractUberPincode } from "@/lib/integrations/delivery/uber/mappers";
+import {
+  extractUberPincode,
+  resolveUberPincode,
+} from "@/lib/integrations/delivery/uber/mappers";
 import type { UberDeliveryResponse } from "@/lib/integrations/delivery/uber/types";
 
 function parseProofOfDelivery(
@@ -69,12 +72,15 @@ function parseCourierFromPayload(payload: unknown): CourierInfo | null {
   return hasData ? info : null;
 }
 
-function parsePincodeFromPayload(payload: unknown): string | null {
+function parsePincodeFromPayload(
+  payload: unknown,
+  liveMode: boolean,
+): string | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
 
-  return extractUberPincode(payload as UberDeliveryResponse) ?? null;
+  return extractUberPincode(payload as UberDeliveryResponse, liveMode) ?? null;
 }
 
 export function mapDeliveryToDetail(delivery: Delivery): DeliveryDetail {
@@ -108,8 +114,12 @@ export function mapDeliveryToDetail(delivery: Delivery): DeliveryDetail {
       pincode: delivery.podPincode,
     },
     pincodeValue: delivery.podPincode
-      ? ((delivery.proofOfDelivery as ProofOfDeliveryData | null)?.pincodeValue ??
-        parsePincodeFromPayload(delivery.providerPayload))
+      ? (resolveUberPincode(
+          (delivery.proofOfDelivery as ProofOfDeliveryData | null)?.pincodeValue,
+          parsePincodeFromPayload(delivery.providerPayload, delivery.liveMode) ??
+            undefined,
+          delivery.liveMode,
+        ) ?? null)
       : null,
     proofOfDelivery: parseProofOfDelivery(delivery),
     courier: parseCourierFromPayload(delivery.providerPayload),

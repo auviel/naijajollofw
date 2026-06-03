@@ -68,9 +68,6 @@ function DeliveryListRow({ delivery }: { delivery: DeliveryListItem }) {
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-medium text-foreground">{delivery.dropoffName}</p>
             <DeliveryProviderBadge providerId={delivery.providerId} />
-            <span className="max-w-full truncate font-mono text-xs text-text-tertiary">
-              {delivery.externalId}
-            </span>
           </div>
           <p className="mt-1 text-sm text-text-secondary">
             {truncateText(delivery.dropoffAddress, 72)}
