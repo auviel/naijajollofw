@@ -194,6 +194,11 @@ Use this before going live:
 | `DOORDASH_WEBHOOK_AUTHORIZATION` | From DoorDash webhook settings |
 | `MAPBOX_ACCESS_TOKEN` | Required for geocoding |
 | `UBER_WEBHOOK_SIGNING_SECRET` | From Uber dashboard webhook settings |
+| `WHATSAPP_ENABLED` | Set `true` after Meta WhatsApp Cloud API is configured |
+| `WHATSAPP_ACCESS_TOKEN` | Meta system user token |
+| `WHATSAPP_APP_SECRET` | Meta app secret (webhook signature verify) |
+| `WHATSAPP_VERIFY_TOKEN` | Custom string for GET webhook verification |
+| `WHATSAPP_PHONE_NUMBER_ID` | Meta Phone number ID from API Setup |
 
 4. Run migrations against Neon once:
 
@@ -217,6 +222,8 @@ All dashboard API routes require an authenticated session except webhook routes 
 | `/api/deliveries/[id]/cancel` | POST | Session |
 | `/api/webhooks/uber` | POST | HMAC signature |
 | `/api/webhooks/doordash` | POST | Authorization header |
+| `/api/webhooks/whatsapp` | GET, POST | Verify token / HMAC signature |
+| `/api/store/whatsapp` | GET, PATCH, POST, DELETE | Session |
 | `/api/me` | GET | Session |
 | `/api/health` | GET | Public |
 
@@ -378,6 +385,37 @@ DoorDash Drive **production access is gated** — demo + review required.
 5. Pilot one store before wider rollout
 
 See [Drive FAQs](https://developer.doordash.com/en-US/docs/drive/overview/faqs) and [Manage credentials](https://developer.doordash.com/en-US/docs/drive/how_to/manage_credentials).
+
+## WhatsApp staff dispatch (Phase 15)
+
+Staff text your Meta WhatsApp test number → deliverGO matches **Customers**, quotes, confirms with `YES`, creates a delivery. Full plan: [WHATSAPP_IMPLEMENTATION.md](./WHATSAPP_IMPLEMENTATION.md).
+
+### Meta setup (sandbox)
+
+1. Create a Meta app with **Connect with customers through WhatsApp**
+2. In **WhatsApp → API Setup**, copy **Phone number ID** and generate an access token
+3. Add your staff phone as a **test recipient** (up to 5 numbers)
+4. Set env vars: `WHATSAPP_ENABLED=true`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`
+5. Register webhook URL (requires public HTTPS):
+
+```
+https://your-app.vercel.app/api/webhooks/whatsapp
+```
+
+Subscribe to **messages**. Use the same string for Meta verify token and `WHATSAPP_VERIFY_TOKEN`.
+
+### deliverGO setup
+
+1. Open **Store profile → WhatsApp dispatch**
+2. Enable WhatsApp, paste **Phone number ID**
+3. Add allowlisted **staff phones** (same numbers verified in Meta)
+4. Text the bot: `PING` → `pong`, then send a customer name → quote → `YES`
+
+Local dev: use ngrok the same way as Uber webhooks:
+
+```
+https://YOUR-SUBDOMAIN.ngrok-free.app/api/webhooks/whatsapp
+```
 
 ## License
 

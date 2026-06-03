@@ -544,6 +544,23 @@ Document exact strings from sandbox responses in `lib/integrations/delivery/door
 
 ---
 
+## Phase 15 — WhatsApp staff dispatch (Option 4)
+
+> Full plan: **[WHATSAPP_IMPLEMENTATION.md](./WHATSAPP_IMPLEMENTATION.md)**
+
+Staff text a WhatsApp bot number → deliverGO matches **Customers**, quotes, confirms with `YES`, creates delivery → staff forwards tracking to customer on normal WhatsApp.
+
+- [x] Phase 15.0 — Meta Cloud API + webhook route
+- [x] Phase 15.1 — Staff allowlist + store ↔ phone mapping
+- [x] Phase 15.2 — Commands + customer lookup
+- [x] Phase 15.3 — Quote over WhatsApp
+- [x] Phase 15.4 — Confirm + `createDelivery`
+- [x] Phase 15.5 — Security + idempotency
+- [ ] Phase 15.6 — Production number + business verification
+- [ ] Phase 15.7 — Tests + manual E2E on Meta test number
+
+---
+
 ## Progress tracker
 
 | Phase | Name | Status |
@@ -563,6 +580,7 @@ Document exact strings from sandbox responses in `lib/integrations/delivery/door
 | 12 | Polish & quality | [x] |
 | 13 | Testing & deployment | [~] |
 | 14 | DoorDash Drive | [x] |
+| 15 | WhatsApp staff dispatch | [ ] |
 
 ---
 
@@ -572,6 +590,7 @@ Document exact strings from sandbox responses in `lib/integrations/delivery/door
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md)
 - [STYLING.md](./STYLING.md)
+- [WHATSAPP_IMPLEMENTATION.md](./WHATSAPP_IMPLEMENTATION.md) — Phase 15 staff bot (Option 4)
 
 ### Uber Direct
 
@@ -581,6 +600,14 @@ Document exact strings from sandbox responses in `lib/integrations/delivery/door
 - [Delivery Status Webhook](https://developer.uber.com/docs/deliveries/direct/api/webhook-dapi-statuschanged)
 - [Cancel Order](https://developer.uber.com/docs/deliveries/direct/api/v1/post-eats-orders-orderid-cancel)
 - [Uber Direct SDK (npm)](https://www.npmjs.com/package/uber-direct)
+
+### WhatsApp Cloud API (Phase 15)
+
+- [WhatsApp Cloud API overview](https://developers.facebook.com/docs/whatsapp/cloud-api/)
+- [Get started](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started/)
+- [Webhooks](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks)
+- [Send messages](https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages)
+- [Pricing](https://developers.facebook.com/docs/whatsapp/pricing)
 
 ### DoorDash Drive
 

@@ -8,7 +8,9 @@ import type {
 } from "@/lib/domain/delivery/types";
 import { createQuoteSchema } from "@/lib/domain/delivery/validation";
 import { storeProfileToAddress } from "@/lib/domain/store/format";
+import type { StoreProfile } from "@/lib/domain/store/types";
 import { getDoorDashExternalStoreId } from "@/lib/domain/store/delivery-settings";
+import { storeRepository } from "@/lib/db/repositories/store.repository";
 import { getEnabledDeliveryProvidersForStore } from "@/lib/integrations/delivery/provider.registry";
 import type { ProviderQuoteRequest } from "@/lib/integrations/delivery/types";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
@@ -31,7 +33,7 @@ function mapProviderQuote(
 }
 
 function buildQuoteRequest(
-  store: Awaited<ReturnType<typeof requireSessionContext>>["store"],
+  store: StoreProfile,
   geocoded: GeocodedAddress,
   scheduledPickupAt: Date | undefined,
   dropoffName: string,
@@ -53,8 +55,27 @@ function buildQuoteRequest(
   };
 }
 
+export async function createQuoteForStore(
+  storeId: string,
+  input: unknown,
+): Promise<CreateQuoteResult> {
+  const store = await storeRepository.getProfileById(storeId);
+  if (!store) {
+    throw new AppError("NOT_FOUND", "Store not found", 404);
+  }
+
+  return createQuoteWithStore(store, input);
+}
+
 export async function createQuote(input: unknown): Promise<CreateQuoteResult> {
   const { store } = await requireSessionContext();
+  return createQuoteWithStore(store, input);
+}
+
+async function createQuoteWithStore(
+  store: StoreProfile,
+  input: unknown,
+): Promise<CreateQuoteResult> {
   const parsed = createQuoteSchema.parse(input);
 
   if (parsed.scheduledPickupAt) {

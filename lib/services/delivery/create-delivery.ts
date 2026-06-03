@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { requireSessionContext } from "@/lib/auth/session";
 import { isProviderLiveMode } from "@/lib/config/environment";
 import { deliveryRepository } from "@/lib/db/repositories/delivery.repository";
+import { storeRepository } from "@/lib/db/repositories/store.repository";
 import { validateScheduledPickupAt } from "@/lib/domain/delivery/schedule";
 import type { DeliveryProviderId } from "@/lib/domain/delivery/types";
 import { createDeliverySchema } from "@/lib/domain/delivery/validation";
@@ -9,6 +10,7 @@ import {
   formatStoreProfileAddress,
   storeProfileToAddress,
 } from "@/lib/domain/store/format";
+import type { StoreProfile } from "@/lib/domain/store/types";
 import { getDoorDashExternalStoreId } from "@/lib/domain/store/delivery-settings";
 import { getDeliveryProviderById } from "@/lib/integrations/delivery/provider.registry";
 import { resolveUberPincode } from "@/lib/integrations/delivery/uber/mappers";
@@ -24,10 +26,32 @@ import { normalizeCanadianPhone } from "@/lib/utils/phone";
 export type CreateDeliveryResult = {
   id: string;
   externalId: string;
+  trackingUrl?: string;
 };
+
+export async function createDeliveryForStore(
+  storeId: string,
+  input: unknown,
+  options?: { source?: string },
+): Promise<CreateDeliveryResult> {
+  const store = await storeRepository.getProfileById(storeId);
+  if (!store) {
+    throw new AppError("NOT_FOUND", "Store not found", 404);
+  }
+
+  return createDeliveryWithStore(store, input, options);
+}
 
 export async function createDelivery(input: unknown): Promise<CreateDeliveryResult> {
   const { store } = await requireSessionContext();
+  return createDeliveryWithStore(store, input);
+}
+
+async function createDeliveryWithStore(
+  store: StoreProfile,
+  input: unknown,
+  options?: { source?: string },
+): Promise<CreateDeliveryResult> {
   const parsed = createDeliverySchema.parse(input);
   const providerId = parsed.providerId as DeliveryProviderId;
 
@@ -163,6 +187,7 @@ export async function createDelivery(input: unknown): Promise<CreateDeliveryResu
     providerOrderId: providerDelivery.providerOrderId,
     providerPayload: providerDelivery.raw as Prisma.InputJsonValue,
     ...(proofOfDelivery ? { proofOfDelivery } : {}),
+    source: options?.source ?? "dashboard",
   });
 
   logger.info("delivery.created", {
@@ -173,5 +198,9 @@ export async function createDelivery(input: unknown): Promise<CreateDeliveryResu
     liveMode: delivery.liveMode,
   });
 
-  return { id: delivery.id, externalId: delivery.externalId };
+  return {
+    id: delivery.id,
+    externalId: delivery.externalId,
+    trackingUrl: delivery.trackingUrl ?? undefined,
+  };
 }

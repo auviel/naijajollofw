@@ -61,6 +61,7 @@ export type CreateDeliveryData = {
   providerDeliveryId?: string;
   providerOrderId?: string;
   providerPayload?: Prisma.InputJsonValue;
+  source?: string;
 };
 
 export type UpdateDeliveryData = Partial<

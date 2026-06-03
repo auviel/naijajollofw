@@ -1,5 +1,6 @@
 import { DashboardPage, DashboardPageBody, PageHeader } from "../layout";
 import { StoreProfileForm } from "@/components/features/store/store-profile-form";
+import { WhatsAppSettingsForm } from "@/components/features/store/whatsapp-settings-form";
 import { requireSessionContext } from "@/lib/auth/session";
 import { isDoorDashEnabled, isUberConfigured } from "@/lib/config/environment";
 
@@ -17,6 +18,7 @@ export default async function StoreProfilePage() {
             doordashEnabled: isDoorDashEnabled(),
           }}
         />
+        <WhatsAppSettingsForm store={store} />
       </DashboardPageBody>
     </DashboardPage>
   );
