@@ -20,7 +20,10 @@ export async function StorefrontHeader() {
         storeName={storeName}
         cartItemCount={cart.itemCount}
       />
-      <StorefrontMobileNav cartItemCount={cart.itemCount} />
+      <StorefrontMobileNav
+        storeName={storeName}
+        cartItemCount={cart.itemCount}
+      />
     </Suspense>
   );
 }

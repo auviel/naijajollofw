@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ItemCustomizePanel } from "@/components/features/storefront/item-customize-panel";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
 
+const MENU_SCROLL_KEY = "storefront-menu-scroll";
+
 type ItemDetailClientProps = {
   item: MenuItemDetail;
   scheduleLabel?: string | null;
@@ -15,6 +17,14 @@ export function ItemDetailClient({
   scheduleLabel = null,
 }: ItemDetailClientProps) {
   const router = useRouter();
+
+  function handleAdded() {
+    router.push("/");
+    window.setTimeout(() => {
+      router.refresh();
+      restoreMenuScroll();
+    }, 80);
+  }
 
   return (
     <div>
@@ -28,10 +38,33 @@ export function ItemDetailClient({
         item={item}
         variant="page"
         scheduleLabel={scheduleLabel}
-        onAdded={() => {
-          router.refresh();
-        }}
+        onAdded={handleAdded}
       />
     </div>
   );
+}
+
+function restoreMenuScroll(attempt = 0) {
+  const raw = sessionStorage.getItem(MENU_SCROLL_KEY);
+  if (raw == null) {
+    return;
+  }
+  const top = Number(raw);
+  if (!Number.isFinite(top)) {
+    sessionStorage.removeItem(MENU_SCROLL_KEY);
+    return;
+  }
+
+  const root = document.getElementById("storefront-scroll");
+  if (!root && attempt < 12) {
+    window.requestAnimationFrame(() => restoreMenuScroll(attempt + 1));
+    return;
+  }
+
+  sessionStorage.removeItem(MENU_SCROLL_KEY);
+  if (root) {
+    root.scrollTop = top;
+  } else {
+    window.scrollTo(0, top);
+  }
 }

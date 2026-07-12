@@ -9,7 +9,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useToast } from "@/components/ui/toast";
 
 export type AddedToCartItem = {
   name: string;
@@ -35,7 +34,6 @@ const StorefrontUiContext = createContext<StorefrontUiContextValue | null>(
 const ADDED_POPOVER_MS = 6000;
 
 export function StorefrontUiProvider({ children }: { children: ReactNode }) {
-  const { success } = useToast();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [addedToCart, setAddedToCart] = useState<AddedToCartItem | null>(null);
@@ -63,28 +61,25 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
     setCartOpen(false);
   }, []);
 
-  const notifyItemAdded = useCallback(
-    (item: AddedToCartItem) => {
-      const desktop =
-        typeof window !== "undefined" &&
-        window.matchMedia("(min-width: 640px)").matches;
+  const notifyItemAdded = useCallback((item: AddedToCartItem) => {
+    const desktop =
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 640px)").matches;
 
-      if (!desktop) {
-        success("Added to cart");
-        return;
-      }
+    // Mobile: Uber-style “View order” bar (driven by cart count) — no toast.
+    if (!desktop) {
+      return;
+    }
 
-      if (dismissTimerRef.current != null) {
-        window.clearTimeout(dismissTimerRef.current);
-      }
-      setAddedToCart(item);
-      dismissTimerRef.current = window.setTimeout(() => {
-        setAddedToCart(null);
-        dismissTimerRef.current = null;
-      }, ADDED_POPOVER_MS);
-    },
-    [success],
-  );
+    if (dismissTimerRef.current != null) {
+      window.clearTimeout(dismissTimerRef.current);
+    }
+    setAddedToCart(item);
+    dismissTimerRef.current = window.setTimeout(() => {
+      setAddedToCart(null);
+      dismissTimerRef.current = null;
+    }, ADDED_POPOVER_MS);
+  }, []);
 
   const value = useMemo(
     () => ({

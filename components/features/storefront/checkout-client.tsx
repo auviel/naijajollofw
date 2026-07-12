@@ -23,7 +23,7 @@ import { formatScheduledForLabel } from "@/lib/domain/store/schedule-slots";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
-import { ShoppingBag } from "@/components/ui/icons";
+import { ChevronRight, ShoppingBag, X } from "@/components/ui/icons";
 
 async function readApiError(response: Response): Promise<string> {
   const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -78,6 +78,7 @@ export function CheckoutClient({
   const [formError, setFormError] = useState<string | null>(null);
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   const mustSchedule = !openStatus.isOpen;
   const scheduleLabel = scheduledFor
@@ -315,7 +316,7 @@ export function CheckoutClient({
         </h1>
         <p className="text-sm text-text-secondary">
           {initialCart.itemCount} item{initialCart.itemCount === 1 ? "" : "s"} ·{" "}
-          {formatCadFromCents(initialCart.subtotalCents)} before tax & tip
+          {formatCadFromCents(initialCart.subtotalCents)} before tax
         </p>
         {environment === "sandbox" && configured ? (
           <p className="text-xs text-text-tertiary">
@@ -325,36 +326,112 @@ export function CheckoutClient({
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
-          Your order
-        </h2>
-        <ul className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+            Your order
+          </h2>
+          <Link
+            href="/cart"
+            className="text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
+          >
+            Edit cart
+          </Link>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {initialCart.items.map((line) => (
-            <li
+            <button
               key={line.id}
-              className="flex gap-3 rounded-lg border border-border bg-surface-elevated p-3"
+              type="button"
+              onClick={() => setOrderDetailsOpen(true)}
+              className="relative shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label={`${line.quantity > 1 ? `${line.quantity}× ` : ""}${line.name}`}
             >
-              <CartLineThumbnail line={line} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-foreground">
-                    {line.quantity > 1 ? `${line.quantity}× ` : null}
-                    {line.name}
-                  </p>
-                  <p className="shrink-0 text-sm font-medium text-foreground">
-                    {formatCadFromCents(line.lineTotalCents)}
-                  </p>
-                </div>
-                {line.modifiers.length > 0 ? (
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {line.modifiers.map((modifier) => modifier.name).join(", ")}
-                  </p>
-                ) : null}
-              </div>
-            </li>
+              <CartLineThumbnail line={line} size="md" className="rounded-xl" />
+              {line.quantity > 1 ? (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[11px] font-semibold text-background">
+                  {line.quantity}
+                </span>
+              ) : null}
+            </button>
           ))}
-        </ul>
+          <button
+            type="button"
+            onClick={() => setOrderDetailsOpen(true)}
+            className="inline-flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border-strong bg-surface text-center text-xs font-medium text-text-secondary transition-colors hover:border-foreground hover:text-foreground sm:h-[4.5rem] sm:w-[4.5rem]"
+          >
+            View
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
       </section>
+
+      {orderDetailsOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="checkout-order-details-title"
+          onClick={() => setOrderDetailsOpen(false)}
+        >
+          <div
+            className="flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+              <h2
+                id="checkout-order-details-title"
+                className="font-display text-2xl font-semibold text-foreground"
+              >
+                Your order
+              </h2>
+              <button
+                type="button"
+                onClick={() => setOrderDetailsOpen(false)}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground hover:bg-surface"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+            <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+              {initialCart.items.map((line) => (
+                <li
+                  key={line.id}
+                  className="flex gap-3 rounded-lg border border-border bg-surface-elevated p-3"
+                >
+                  <CartLineThumbnail line={line} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium text-foreground">
+                        {line.quantity > 1 ? `${line.quantity}× ` : null}
+                        {line.name}
+                      </p>
+                      <p className="shrink-0 text-sm font-medium text-foreground">
+                        {formatCadFromCents(line.lineTotalCents)}
+                      </p>
+                    </div>
+                    {line.modifiers.length > 0 ? (
+                      <p className="mt-1 text-sm text-text-secondary">
+                        {line.modifiers
+                          .map((modifier) => modifier.name)
+                          .join(", ")}
+                      </p>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-border px-5 py-4">
+              <Link
+                href="/cart"
+                className="flex h-11 w-full items-center justify-center rounded-md border border-border text-sm font-medium text-foreground transition-colors hover:bg-surface"
+              >
+                Edit cart
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {!configured ? (
         <div className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
@@ -513,7 +590,7 @@ export function CheckoutClient({
         </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium" htmlFor="checkout-email">
-            Email for receipt{" "}
+            Email{" "}
             <span className="font-normal text-text-tertiary">(optional)</span>
           </label>
           <input

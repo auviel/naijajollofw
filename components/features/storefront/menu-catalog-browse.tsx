@@ -217,7 +217,13 @@ function FeaturedItemCard({
         if (isDesktopViewport()) {
           event.preventDefault();
           onOpenDesktop();
+          return;
         }
+        const root = document.getElementById("storefront-scroll");
+        sessionStorage.setItem(
+          "storefront-menu-scroll",
+          String(root?.scrollTop ?? window.scrollY),
+        );
       }}
       onMouseEnter={() => {
         if (isDesktopViewport()) {
@@ -305,7 +311,13 @@ function MenuItemCard({
         if (isDesktopViewport()) {
           event.preventDefault();
           onOpenDesktop();
+          return;
         }
+        const root = document.getElementById("storefront-scroll");
+        sessionStorage.setItem(
+          "storefront-menu-scroll",
+          String(root?.scrollTop ?? window.scrollY),
+        );
       }}
       onMouseEnter={() => {
         if (isDesktopViewport()) {
