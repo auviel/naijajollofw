@@ -21,8 +21,8 @@ export async function StorefrontHeader() {
         cartItemCount={cart.itemCount}
       />
       <StorefrontMobileNav
-        storeName={storeName}
         cartItemCount={cart.itemCount}
+        cartSubtotalCents={cart.subtotalCents}
       />
     </Suspense>
   );

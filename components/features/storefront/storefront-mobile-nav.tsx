@@ -9,8 +9,8 @@ import { Home, Search, ShoppingBag, User } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 
 type StorefrontMobileNavProps = {
-  storeName: string;
   cartItemCount: number;
+  cartSubtotalCents: number;
 };
 
 const HIDDEN_PREFIXES = [
@@ -28,8 +28,8 @@ function shouldHideNav(pathname: string) {
 }
 
 export function StorefrontMobileNav({
-  storeName,
   cartItemCount,
+  cartSubtotalCents,
 }: StorefrontMobileNavProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -74,8 +74,8 @@ export function StorefrontMobileNav({
       {showViewOrder ? (
         <div className="pointer-events-auto mx-auto flex justify-center">
           <ViewOrderBar
-            storeName={storeName}
             itemCount={cartItemCount}
+            subtotalCents={cartSubtotalCents}
             onViewOrder={openCart}
           />
         </div>
