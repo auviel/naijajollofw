@@ -13,6 +13,29 @@ const SEED_USER = {
   role: UserRole.STORE_MANAGER,
 } as const;
 
+/** Storefront diner for account / checkout tests */
+const SEED_DINER = {
+  email: "diner@delivergo.local",
+  password: "DeliverGODev2026!",
+  name: "Demo Diner",
+  phoneE164: "+15195550100",
+  role: UserRole.DINER,
+} as const;
+
+const SEED_DINER_ADDRESS = {
+  line1: "200 University Ave W",
+  line2: null as string | null,
+  city: "Waterloo",
+  province: "ON",
+  postalCode: "N2L 3G1",
+  country: "CA",
+  latitude: 43.4723,
+  longitude: -80.5449,
+  formatted: "200 University Ave W, Waterloo, ON N2L 3G1, Canada",
+  label: "Home",
+  isPrimary: true,
+} as const;
+
 const SEED_STORE_BASE = {
   name: "Naija Jollof Waterloo",
   phone: "+15198851517",
@@ -86,6 +109,89 @@ async function main() {
       storeId: store.id,
     },
   });
+
+  const dinerPasswordHash = await bcrypt.hash(SEED_DINER.password, 12);
+  const existingDiner = await prisma.user.findUnique({
+    where: { email: SEED_DINER.email },
+    select: { id: true, customerId: true },
+  });
+
+  let dinerCustomerId = existingDiner?.customerId ?? null;
+  if (!dinerCustomerId) {
+    const phoneRow = await prisma.customerPhone.findUnique({
+      where: {
+        storeId_phoneE164: {
+          storeId: store.id,
+          phoneE164: SEED_DINER.phoneE164,
+        },
+      },
+      select: { customerId: true },
+    });
+    dinerCustomerId = phoneRow?.customerId ?? null;
+  }
+
+  if (!dinerCustomerId) {
+    const customer = await prisma.customer.create({
+      data: {
+        storeId: store.id,
+        name: SEED_DINER.name,
+        phones: {
+          create: {
+            storeId: store.id,
+            phoneE164: SEED_DINER.phoneE164,
+            isPrimary: true,
+            label: "Mobile",
+          },
+        },
+      },
+    });
+    dinerCustomerId = customer.id;
+  } else {
+    await prisma.customer.update({
+      where: { id: dinerCustomerId },
+      data: { name: SEED_DINER.name },
+    });
+  }
+
+  const diner = await prisma.user.upsert({
+    where: { email: SEED_DINER.email },
+    update: {
+      name: SEED_DINER.name,
+      role: SEED_DINER.role,
+      passwordHash: dinerPasswordHash,
+      storeId: store.id,
+      phoneE164: SEED_DINER.phoneE164,
+      customerId: dinerCustomerId,
+      emailVerifiedAt: new Date(),
+    },
+    create: {
+      email: SEED_DINER.email,
+      name: SEED_DINER.name,
+      role: SEED_DINER.role,
+      passwordHash: dinerPasswordHash,
+      storeId: store.id,
+      phoneE164: SEED_DINER.phoneE164,
+      customerId: dinerCustomerId,
+      emailVerifiedAt: new Date(),
+    },
+  });
+
+  const primaryAddress = await prisma.customerAddress.findFirst({
+    where: { customerId: dinerCustomerId, isPrimary: true },
+  });
+  if (primaryAddress) {
+    await prisma.customerAddress.update({
+      where: { id: primaryAddress.id },
+      data: { ...SEED_DINER_ADDRESS },
+    });
+  } else {
+    await prisma.customerAddress.create({
+      data: {
+        customerId: dinerCustomerId,
+        ...SEED_DINER_ADDRESS,
+      },
+    });
+  }
 
   // Reset and seed menu matching Naija Jollof Waterloo (Uber Eats layout).
   await prisma.cartItem.deleteMany({
@@ -424,8 +530,9 @@ async function main() {
   console.log(`  Store: ${store.name} (${store.id})`);
   console.log(`  DoorDash external_store_id: ${getDoorDashExternalStoreIdFromEnv() ?? store.id}`);
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
-  console.log(`  User:  ${SEED_USER.email}`);
-  console.log(`  Login password: ${SEED_USER.password} (dev only)`);
+  console.log(`  Staff:  ${SEED_USER.email}`);
+  console.log(`  Diner:  ${SEED_DINER.email} (${diner.id})`);
+  console.log(`  Login password: ${SEED_USER.password} (dev only — both accounts)`);
   console.log(
     `  Menu: ${categoryDefs.length} categories · ${items.length} items`,
   );

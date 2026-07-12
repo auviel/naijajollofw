@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { DashboardPage, DashboardPageBody, PageHeader } from "../layout";
 import { HoursScheduleForm } from "@/components/features/store/hours-schedule-form";
 import { PrepMinutesForm } from "@/components/features/store/prep-minutes-form";
 import { getStaffStoreHours } from "@/lib/services/store/store-hours";
 import { getStorePrepMinutes } from "@/lib/services/store/update-prep-minutes";
+
+export const metadata: Metadata = {
+  title: "Hours & prep",
+};
 
 export default async function HoursPage() {
   const [{ prepMinutes, storeName }, hours] = await Promise.all([

@@ -1,17 +1,15 @@
-import { DeliveryListSkeleton } from "@/components/features/deliveries/delivery-list-skeleton";
 import { DashboardPage, DashboardPageBody } from "@/components/layout/dashboard-page";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/** Brief skeleton while /dashboard/deliveries redirects to courier orders. */
 export default function DeliveriesLoading() {
   return (
     <DashboardPage>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-12 w-36" />
+      <div className="mb-6">
+        <Skeleton className="h-8 w-48" />
       </div>
-      <Skeleton className="mb-6 h-12 w-full max-w-xl" />
       <DashboardPageBody>
-        <DeliveryListSkeleton />
+        <Skeleton className="h-24 w-full rounded-lg" />
       </DashboardPageBody>
     </DashboardPage>
   );

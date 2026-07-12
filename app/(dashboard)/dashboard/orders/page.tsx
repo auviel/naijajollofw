@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ClipboardList } from "@/components/ui/icons";
 import {
@@ -13,6 +14,15 @@ import { listStaffOrders } from "@/lib/services/order/list-staff-orders";
 type PageProps = {
   searchParams: Promise<{ filter?: string; channel?: string; q?: string }>;
 };
+
+export async function generateMetadata({
+  searchParams,
+}: PageProps): Promise<Metadata> {
+  const params = await searchParams;
+  return {
+    title: params.channel === "courier" ? "Courier orders" : "All orders",
+  };
+}
 
 export default async function OrdersListPage({ searchParams }: PageProps) {
   const params = await searchParams;

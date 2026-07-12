@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { DashboardPage, DashboardPageBody, PageHeader } from "../../layout";
 import { CustomerForm } from "@/components/features/customers/customer-form";
+
+export const metadata: Metadata = {
+  title: "New customer",
+};
 
 export default function NewCustomerPage() {
   return (

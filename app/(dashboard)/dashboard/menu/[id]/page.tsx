@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DashboardPage, DashboardPageBody, PageHeader } from "../../layout";
 import { MenuItemForm } from "@/components/features/menu/menu-item-form";
@@ -8,6 +9,19 @@ import { isAppError } from "@/lib/utils/errors";
 type PageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  if (id === "new") return { title: "Menu item" };
+  try {
+    const item = await getMenuItem(id);
+    return { title: item.name };
+  } catch {
+    return { title: "Menu item" };
+  }
+}
 
 export default async function MenuItemAdminPage({ params }: PageProps) {
   const { id } = await params;

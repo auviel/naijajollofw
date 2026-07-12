@@ -1,7 +1,12 @@
-import { DashboardPage, DashboardPageBody, PageHeader, PrimaryLink } from "../layout";
-import { CreateCategoryForm } from "@/components/features/menu/create-category-form";
+import type { Metadata } from "next";
+import { DashboardPage, DashboardPageBody, PageHeader } from "../layout";
+import { MenuCreateActions } from "@/components/features/menu/menu-create-actions";
 import { MenuCatalogView } from "@/components/features/menu/menu-catalog";
 import { listMenuCatalog } from "@/lib/services/menu/list-menu";
+
+export const metadata: Metadata = {
+  title: "Menu",
+};
 
 export default async function MenuAdminPage() {
   const catalog = await listMenuCatalog();
@@ -11,10 +16,9 @@ export default async function MenuAdminPage() {
       <PageHeader
         title="Menu"
         description="Categories, items, and sold-out toggles for your storefront."
-        action={<PrimaryLink href="/dashboard/menu/new">New item</PrimaryLink>}
+        action={<MenuCreateActions />}
       />
-      <DashboardPageBody className="space-y-6">
-        <CreateCategoryForm />
+      <DashboardPageBody>
         <MenuCatalogView catalog={catalog} />
       </DashboardPageBody>
     </DashboardPage>

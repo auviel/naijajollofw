@@ -35,16 +35,17 @@ These sit on top of Uber's foundations for a modern, trustworthy B2B dashboard:
 
 ---
 
-## Brand identity (deliverGO × Uber)
+## Brand identity (staff dashboard)
 
-deliverGO is a **white-label dispatch tool** for merchants — it should feel like it belongs in Uber's ecosystem without copying Uber's consumer rider app wholesale.
+Staff UI is restaurant-ops first — not a white-label Uber clone.
 
 - **Tone:** Professional, calm, direct. No playful copy on error states.
 - **Voice examples:**
   - ✅ "Delivery quote ready — $8.42 CAD"
   - ✅ "Courier en route to pickup"
   - ❌ "Awesome! Your delivery is on its way 🚀"
-- **Logo area:** Wordmark `deliverGO` in semibold; optional small "Powered by Uber Direct" in footer of login + settings.
+- **Logo area:** Store name (from session) in the sidebar wordmark; subtitle “Staff dashboard”. Login uses “Staff sign in” — no “Powered by Uber Direct” footer.
+- **Carriers:** Uber Direct / DoorDash appear only in store profile and dispatch flows where staff pick a provider.
 
 ---
 
@@ -299,8 +300,9 @@ Centered illustration optional; prefer simple icon + text:
 ```
 ┌────────────────────────────────────────┐
 │                                        │
-│           deliverGO                    │
-│     Sign in to manage deliveries       │
+│           Staff sign in                │
+│  Manage kitchen orders, menu,          │
+│  and courier dispatch                  │
 │                                        │
 │     ┌──────────────────────────┐       │
 │     │  Email                   │       │
@@ -308,7 +310,6 @@ Centered illustration optional; prefer simple icon + text:
 │     │  [ Sign in ]             │       │
 │     └──────────────────────────┘       │
 │                                        │
-│     Powered by Uber Direct             │
 └────────────────────────────────────────┘
 ```
 
@@ -322,12 +323,14 @@ Centered illustration optional; prefer simple icon + text:
 ┌──────────┬─────────────────────────────────────────┐
 │ SIDEBAR  │  [Sandbox banner if test mode]          │
 │          ├─────────────────────────────────────────┤
-│ Logo     │  Page title              [Primary CTA]  │
-│          │                                         │
-│ Nav      │  ┌─────────────────────────────────┐    │
-│ • Deliv  │  │  Main content                   │    │
-│ • New    │  │                                 │    │
-│          │  └─────────────────────────────────┘    │
+│ Store    │  Page title              [Primary CTA]  │
+│ name     │                                         │
+│          │  ┌─────────────────────────────────┐    │
+│ Nav      │  │  Main content                   │    │
+│ • Orders │  │                                 │    │
+│ • Menu   │  └─────────────────────────────────┘    │
+│ • Courier│                                         │
+│ • …      │                                         │
 │          │                                         │
 │ Store    │                                         │
 │ Logout   │                                         │
@@ -336,15 +339,14 @@ Centered illustration optional; prefer simple icon + text:
 
 - Sidebar: `--surface` background, right border
 - Active nav item: black text + `--surface-elevated` pill or left bar accent
-- Store name at bottom of sidebar
+- Store name at top and bottom of sidebar
 
-### Deliveries list
+### Courier orders (`/dashboard/orders?channel=courier`)
 
-- Page title left, "New delivery" button right
-- Filter tabs below title (underline active tab — Uber pattern)
-- List as **rows** (not heavy table): each row is a clickable card
-  - Left: name + address
-  - Right: status badge + fee + chevron
+- Replaces the old standalone deliveries list (`/dashboard/deliveries` redirects here)
+- Page title left, "New delivery" button right when on courier channel
+- Filter tabs + order rows (status, fulfillment, fee)
+- Domain list filters / `list-deliveries` remain for detail + dispatch; list UI components were retired
 
 ### New delivery
 

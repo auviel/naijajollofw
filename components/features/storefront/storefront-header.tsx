@@ -2,13 +2,16 @@ import { Suspense } from "react";
 import { StorefrontHeaderBar } from "@/components/features/storefront/storefront-header-bar";
 import { StorefrontMobileNav } from "@/components/features/storefront/storefront-mobile-nav";
 import { getCart } from "@/lib/services/cart/cart-actions";
-import { storeRepository } from "@/lib/db/repositories/store.repository";
-import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
+import { buildSearchIndex } from "@/lib/domain/menu/search";
+import { getPublicStorefront } from "@/lib/services/storefront/get-public-menu";
 
 export async function StorefrontHeader() {
-  const [cart, storeId] = await Promise.all([getCart(), resolvePublicStoreId()]);
-  const store = await storeRepository.getProfileById(storeId);
-  const storeName = store?.name ?? "Order online";
+  const [cart, { store, catalog }] = await Promise.all([
+    getCart(),
+    getPublicStorefront(),
+  ]);
+  const storeName = store.name;
+  const searchIndex = buildSearchIndex(catalog);
 
   return (
     <Suspense
@@ -19,6 +22,7 @@ export async function StorefrontHeader() {
       <StorefrontHeaderBar
         storeName={storeName}
         cartItemCount={cart.itemCount}
+        searchIndex={searchIndex}
       />
       <StorefrontMobileNav
         cartItemCount={cart.itemCount}

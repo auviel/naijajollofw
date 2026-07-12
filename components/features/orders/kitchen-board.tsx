@@ -140,10 +140,10 @@ export function KitchenBoard({
   useEffect(() => {
     document.title =
       pendingCount > 0
-        ? `(${pendingCount}) Orders · deliverGO`
-        : "Orders · deliverGO";
+        ? `(${pendingCount}) Kitchen · Staff`
+        : "Kitchen · Staff";
     return () => {
-      document.title = "deliverGO";
+      document.title = "Kitchen · Staff";
     };
   }, [pendingCount]);
 
@@ -178,7 +178,7 @@ export function KitchenBoard({
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {KITCHEN_BOARD_COLUMNS.map((column) => {
           const columnOrders = items.filter((order) =>
             (column.statuses as readonly string[]).includes(order.status),

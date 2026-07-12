@@ -26,8 +26,7 @@ export function MenuCatalogEmpty() {
       className="flex-1"
       icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
       title="No menu yet"
-      description="Add a category, then create your first item."
-      action={<PrimaryLink href="/dashboard/menu/new">New item</PrimaryLink>}
+      description="Use New → New category, then add your first item."
     />
   );
 }

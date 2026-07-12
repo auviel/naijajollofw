@@ -4,20 +4,40 @@ import { NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
 
+function isStaffPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/dashboard") ||
+    pathname === "/staff" ||
+    pathname.startsWith("/staff/")
+  );
+}
+
+function staffLoginRedirect(request: { nextUrl: URL }, pathname: string) {
+  const loginUrl = new URL("/login", request.nextUrl);
+  const callback =
+    pathname === "/staff" || pathname.startsWith("/staff/")
+      ? "/dashboard"
+      : pathname;
+  loginUrl.searchParams.set("callbackUrl", callback);
+  return NextResponse.redirect(loginUrl);
+}
+
 export default auth((request) => {
   const { pathname } = request.nextUrl;
   const session = request.auth;
   const isLoggedIn = !!session;
   const role = session?.user?.role;
 
-  if (pathname.startsWith("/dashboard")) {
+  if (isStaffPath(pathname)) {
     if (!isLoggedIn) {
-      const loginUrl = new URL("/login", request.nextUrl);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+      return staffLoginRedirect(request, pathname);
     }
     if (role !== "STORE_MANAGER") {
       return NextResponse.redirect(new URL("/", request.nextUrl));
+    }
+    // Friendly alias — send staff home instead of 404.
+    if (pathname === "/staff" || pathname.startsWith("/staff/")) {
+      return NextResponse.redirect(new URL("/dashboard", request.nextUrl));
     }
     return NextResponse.next();
   }
@@ -63,6 +83,8 @@ export const config = {
   matcher: [
     "/dashboard",
     "/dashboard/:path*",
+    "/staff",
+    "/staff/:path*",
     "/login",
     "/signin",
     "/signup",

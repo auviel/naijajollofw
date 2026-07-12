@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardPage, DashboardPageBody, PageHeader } from "../../layout";
 import { OrderDetailView } from "@/components/features/orders/order-detail-view";
@@ -8,6 +9,18 @@ import { isAppError } from "@/lib/utils/errors";
 type PageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const order = await getStaffOrder(id);
+    return { title: `Order · ${order.customerName}` };
+  } catch {
+    return { title: "Order" };
+  }
+}
 
 export default async function OrderDetailPage({ params }: PageProps) {
   const { id } = await params;

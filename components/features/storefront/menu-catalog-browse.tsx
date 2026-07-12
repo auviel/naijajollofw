@@ -16,6 +16,8 @@ type MenuCatalogBrowseProps = {
   todayLabel: string;
   orderingEnabled: boolean;
   scheduleLabel?: string | null;
+  searchQuery?: string;
+  resultCount?: number;
 };
 
 function isDesktopViewport() {
@@ -31,17 +33,25 @@ export function MenuCatalogBrowse({
   todayLabel,
   orderingEnabled,
   scheduleLabel = null,
+  searchQuery,
+  resultCount,
 }: MenuCatalogBrowseProps) {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const isSearch = Boolean(searchQuery?.trim());
 
   return (
     <>
+      {isSearch && typeof resultCount === "number" ? (
+        <p className="mb-4 text-sm text-text-secondary">
+          {`Showing ${resultCount} ${resultCount === 1 ? "item" : "items"} for ‘${searchQuery!.trim()}’`}
+        </p>
+      ) : null}
       <div className="lg:flex lg:items-start lg:gap-10 xl:gap-12">
         <CategoryRail categories={categories} todayLabel={todayLabel} />
 
         <div className="mt-6 min-w-0 flex-1 space-y-10 lg:mt-0">
           {categories.map((category) => {
-            const featured = isFeaturedCategory(category.name);
+            const featured = isFeaturedCategory(category.name) && !isSearch;
             return (
               <section
                 key={category.id}

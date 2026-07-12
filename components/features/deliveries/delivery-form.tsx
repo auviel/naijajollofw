@@ -653,12 +653,3 @@ export function DeliveryForm() {
     </form>
   );
 }
-
-/** @deprecated Use DeliveryForm — kept for imports during migration. */
-export function DeliveryFormPlaceholder() {
-  return (
-    <p className="text-sm text-text-secondary">
-      Delivery form is loading…
-    </p>
-  );
-}

@@ -39,10 +39,16 @@ export function StorefrontMobileNav({
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { openMobileSearch, openCart, cartOpen } = useStorefrontUi();
+  const { openMobileSearch, openCart, cartOpen, mobileSearchOpen } =
+    useStorefrontUi();
   const reduce = useReducedMotion();
 
   if (cartOpen || shouldHideNav(pathname)) {
+    return null;
+  }
+
+  // Focused search with empty cart: no bottom chrome.
+  if (mobileSearchOpen && cartItemCount === 0) {
     return null;
   }
 
@@ -97,7 +103,7 @@ export function StorefrontMobileNav({
               onViewOrder={openCart}
             />
           </motion.div>
-        ) : (
+        ) : mobileSearchOpen ? null : (
           <motion.div
             key="tab-nav"
             className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-4 rounded-xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md"

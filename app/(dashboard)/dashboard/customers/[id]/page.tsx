@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DashboardPage, DashboardPageBody } from "../../layout";
 import { CustomerDetailView } from "@/components/features/customers/customer-detail-view";
@@ -11,6 +12,18 @@ import { getCustomer } from "@/lib/services/customer/get-customer";
 type CustomerDetailPageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: CustomerDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const customer = await getCustomer(id);
+    return { title: customer.name };
+  } catch {
+    return { title: "Customer" };
+  }
+}
 
 export default async function CustomerDetailPage({
   params,

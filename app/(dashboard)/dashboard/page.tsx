@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardPage, DashboardPageBody, PageHeader } from "./layout";
 import { KitchenBoard } from "@/components/features/orders/kitchen-board";
 import { listStaffOrders } from "@/lib/services/order/list-staff-orders";
+
+export const metadata: Metadata = {
+  title: "Kitchen board",
+};
 
 export default async function DashboardHomePage() {
   const { items, pendingAcceptanceCount } = await listStaffOrders({

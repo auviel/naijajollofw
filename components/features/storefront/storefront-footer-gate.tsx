@@ -1,13 +1,21 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
+import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 
 /**
  * App-flow routes stay chrome-light (no marketing footer).
  * Browse / info pages keep the full storefront footer.
+ * Active menu search stays focused (no footer).
  */
-function showStorefrontFooter(pathname: string): boolean {
+function showStorefrontFooter(
+  pathname: string,
+  searching: boolean,
+): boolean {
+  if (searching) {
+    return false;
+  }
   if (
     pathname === "/cart" ||
     pathname === "/checkout" ||
@@ -28,7 +36,13 @@ function showStorefrontFooter(pathname: string): boolean {
 
 export function StorefrontFooterGate({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
-  if (!showStorefrontFooter(pathname)) {
+  const searchParams = useSearchParams();
+  const { mobileSearchOpen } = useStorefrontUi();
+  const hasQuery = Boolean(searchParams.get("q")?.trim());
+  const searching =
+    mobileSearchOpen || (pathname === "/" && hasQuery);
+
+  if (!showStorefrontFooter(pathname, searching)) {
     return null;
   }
   return children;

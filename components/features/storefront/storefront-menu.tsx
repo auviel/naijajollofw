@@ -4,6 +4,10 @@ import { StorefrontHero } from "@/components/features/storefront/storefront-hero
 import { StorefrontMarketplaceLinks } from "@/components/features/storefront/storefront-marketplace-links";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UtensilsCrossed } from "@/components/ui/icons";
+import {
+  countFilteredItems,
+  filterCatalogByQuery,
+} from "@/lib/domain/menu/search";
 import type { MenuCatalog } from "@/lib/domain/menu/types";
 import type { StoreOpenStatus } from "@/lib/domain/store/hours";
 import type { StoreProfile } from "@/lib/domain/store/types";
@@ -25,19 +29,10 @@ export function StorefrontMenu({
   prepMinutes,
   searchQuery = "",
 }: StorefrontMenuProps) {
-  const needle = searchQuery.trim().toLowerCase();
-  const categories = catalog.categories
-    .map((category) => ({
-      ...category,
-      items: needle
-        ? category.items.filter(
-            (item) =>
-              item.name.toLowerCase().includes(needle) ||
-              (item.description?.toLowerCase().includes(needle) ?? false),
-          )
-        : category.items,
-    }))
-    .filter((category) => category.items.length > 0);
+  const needle = searchQuery.trim();
+  const isSearching = Boolean(needle);
+  const categories = filterCatalogByQuery(catalog, needle);
+  const matchCount = countFilteredItems(categories);
 
   const hasAnyMenuItems = catalog.categories.some(
     (category) => category.items.length > 0,
@@ -71,32 +66,51 @@ export function StorefrontMenu({
     );
   }
 
+  if (isSearching) {
+    return (
+      <div className="space-y-6">
+        <div id="menu" className="scroll-mt-24">
+          {categories.length === 0 ? (
+            <EmptyState
+              icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
+              title="No matches"
+              description={`Nothing matched “${searchQuery}”. Try another search.`}
+            />
+          ) : (
+            <MenuCatalogBrowse
+              categories={categories}
+              todayLabel={openStatus.todayLabel}
+              orderingEnabled={canOrder}
+              scheduleLabel={
+                openStatus.isOpen ? null : openStatus.nextOpenLabel
+              }
+              searchQuery={needle}
+              resultCount={matchCount}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <StorefrontHero
         store={store}
         openStatus={openStatus}
         prepMinutes={prepMinutes}
-        soldOut={!hasOrderable && !needle}
+        soldOut={!hasOrderable}
       />
 
       <div id="menu" className="scroll-mt-24">
-        {needle && categories.length === 0 ? (
-          <EmptyState
-            icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
-            title="No matches"
-            description={`Nothing matched “${searchQuery}”. Try another search.`}
-          />
-        ) : (
-          <MenuCatalogBrowse
-            categories={categories}
-            todayLabel={openStatus.todayLabel}
-            orderingEnabled={canOrder}
-            scheduleLabel={
-              openStatus.isOpen ? null : openStatus.nextOpenLabel
-            }
-          />
-        )}
+        <MenuCatalogBrowse
+          categories={categories}
+          todayLabel={openStatus.todayLabel}
+          orderingEnabled={canOrder}
+          scheduleLabel={
+            openStatus.isOpen ? null : openStatus.nextOpenLabel
+          }
+        />
       </div>
 
       <StorefrontFaq

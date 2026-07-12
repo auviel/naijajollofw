@@ -141,7 +141,7 @@ export function LoginForm() {
               setFieldErrors((current) => ({ ...current, email: undefined }));
             }
           }}
-          placeholder="store.manager@delivergo.local"
+          placeholder="you@restaurant.com"
         />
       </FormField>
 

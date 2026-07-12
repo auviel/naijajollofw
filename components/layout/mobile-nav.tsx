@@ -46,7 +46,7 @@ const items: NavItem[] = [
   },
   {
     href: "/dashboard/store",
-    label: "Store",
+    label: "Profile",
     icon: Store,
     kind: "store",
   },

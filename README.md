@@ -76,11 +76,14 @@ npm run db:seed
 
 **Seed credentials (local dev only):**
 
+| Account | Email | Password | Notes |
+|---------|-------|----------|-------|
+| Staff | `store.manager@delivergo.local` | `DeliverGODev2026!` | `/login` (or `/staff` → login) |
+| Diner | `diner@delivergo.local` | `DeliverGODev2026!` | Storefront `/signin` — verified email + default address |
+
 | Field | Value |
 |-------|-------|
-| Email | `store.manager@delivergo.local` |
-| Password | `DeliverGODev2026!` |
-| Store | Demo Market — 280 Lester St #102, Waterloo, ON |
+| Store | Naija Jollof Waterloo — 280 Lester St #102, Waterloo, ON |
 | Store id | `seed-store-waterloo` |
 | DoorDash store id | `DOORDASH_EXTERNAL_STORE_ID` in `.env` (e.g. `default`) |
 
@@ -100,10 +103,10 @@ See [DoorDash setup](#doordash-drive-setup) below.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to `/login`.
+Open [http://localhost:3000](http://localhost:3000) for the storefront.
 
-- Dashboard: `/dashboard/deliveries` (requires login)
-- Login: `/login`
+- Staff login: `/login` (alias `/staff` → login or dashboard)
+- Kitchen board: `/dashboard` (requires staff login; guests are redirected to `/login`)
 - Session API: `/api/me`
 - Geocode API: `POST /api/geocode` (auth required, Canada only)
 - Health check: `/api/health`

@@ -180,7 +180,10 @@ These stay unchecked on purpose — we are **not** doing them yet:
 | `/dashboard/menu/[id]` | Edit item + modifiers + photos |
 | `/dashboard/hours` | Open/closed, prep time estimates |
 | `/dashboard/customers` | Existing |
-| `/dashboard/deliveries` | Existing (manual dispatch + linked deliveries) |
+| `/dashboard/orders?channel=courier` | Courier / linked deliveries (preferred) |
+| `/dashboard/deliveries` | Redirects to courier orders |
+| `/dashboard/deliveries/new` | Manual / non-order dispatch |
+| `/dashboard/deliveries/[id]` | Carrier delivery detail |
 | `/dashboard/store` | Existing store profile + carrier toggles |
 
 ### Marketing (later)
@@ -251,7 +254,7 @@ pending_acceptance
    - **deliverGO:** from order detail, quote/compare carriers using existing delivery services → create `Delivery` → set `fulfillmentMethod = delivergo`, link `deliveryId` → map carrier progress to `out_for_delivery` → `completed`.
    - **manual:** set `fulfillmentMethod = manual`, optional note (courier / external ref) → `out_for_delivery` → later `completed`. **No** carrier API call.
 
-Standalone `/dashboard/deliveries/new` remains available for non-order dispatches.
+Standalone `/dashboard/deliveries/new` remains available for non-order dispatches. The deliveries index redirects to `/dashboard/orders?channel=courier`.
 
 ---
 

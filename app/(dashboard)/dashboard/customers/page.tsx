@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import {
   DashboardPage,
@@ -9,6 +10,10 @@ import { CustomerList } from "@/components/features/customers/customer-list";
 import { CustomerListEmpty } from "@/components/features/customers/customer-list";
 import { CustomerListFilters } from "@/components/features/customers/customer-list-filters";
 import { listCustomers } from "@/lib/services/customer/list-customers";
+
+export const metadata: Metadata = {
+  title: "Customers",
+};
 
 type CustomersPageProps = {
   searchParams: Promise<{ q?: string }>;

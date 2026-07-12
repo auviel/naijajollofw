@@ -4,6 +4,7 @@ import { StorefrontHeader } from "@/components/features/storefront/storefront-he
 import { MotionPageShell } from "@/components/motion/motion-page-shell";
 import { StorefrontProviders } from "@/components/providers/storefront-providers";
 import { Outfit } from "next/font/google";
+import { Suspense } from "react";
 
 const outfit = Outfit({
   variable: "--font-storefront-display",
@@ -29,9 +30,11 @@ export default function StorefrontLayout({
         >
           <MotionPageShell>{children}</MotionPageShell>
         </main>
-        <StorefrontFooterGate>
-          <StorefrontFooter />
-        </StorefrontFooterGate>
+        <Suspense fallback={null}>
+          <StorefrontFooterGate>
+            <StorefrontFooter />
+          </StorefrontFooterGate>
+        </Suspense>
       </div>
     </StorefrontProviders>
   );
