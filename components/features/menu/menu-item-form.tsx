@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import {
   formatCentsAsDollarsInput,
@@ -229,18 +230,14 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <FormField id="itemCategory" label="Category">
-            <select
-              id="itemCategory"
+            <Select
               value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
-              className="flex h-12 w-full rounded-md border border-border-strong bg-background px-4 text-base text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-foreground"
-            >
-              {activeCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              onChange={setCategoryId}
+              options={activeCategories.map((category) => ({
+                value: category.id,
+                label: category.name,
+              }))}
+            />
           </FormField>
 
           <FormField id="itemName" label="Name">

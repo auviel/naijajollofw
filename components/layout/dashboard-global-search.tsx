@@ -109,7 +109,7 @@ export function DashboardGlobalSearch() {
   const customers = hits.filter((hit) => hit.kind === "customer");
 
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1">
+    <div ref={rootRef} className="relative w-full min-w-0 max-w-md flex-1">
       <label className="sr-only" htmlFor="dashboard-global-search">
         Search orders and customers
       </label>

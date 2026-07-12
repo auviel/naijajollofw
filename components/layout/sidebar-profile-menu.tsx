@@ -38,11 +38,41 @@ export function SidebarProfileMenu() {
 
   return (
     <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        onClick={() => setOpen((value) => !value)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-fast",
+          isActive || open
+            ? "bg-surface-elevated text-foreground shadow-[inset_3px_0_0_0_var(--foreground)]"
+            : "text-text-secondary hover:bg-surface-elevated hover:text-foreground",
+        )}
+      >
+        <span
+          className="flex h-5 w-5 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          <User className="h-5 w-5" />
+        </span>
+        <span className="flex-1 text-left">Profile</span>
+        <ArrowDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-text-tertiary transition-transform duration-fast",
+            // Closed: point up (menu opens above). Open: point down.
+            !open && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+
       {open ? (
         <ul
           id={menuId}
           role="menu"
-          className="absolute bottom-full left-0 right-0 z-30 mb-2 overflow-hidden rounded-md border border-border bg-surface-elevated shadow-lg"
+          className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-md border border-border bg-surface-elevated shadow-lg"
         >
           <li role="none">
             <Link
@@ -67,35 +97,6 @@ export function SidebarProfileMenu() {
           </li>
         </ul>
       ) : null}
-
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-controls={menuId}
-        onClick={() => setOpen((value) => !value)}
-        className={cn(
-          "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-fast",
-          isActive || open
-            ? "bg-surface-elevated text-foreground shadow-[inset_3px_0_0_0_var(--foreground)]"
-            : "text-text-secondary hover:bg-surface-elevated hover:text-foreground",
-        )}
-      >
-        <span
-          className="flex h-5 w-5 shrink-0 items-center justify-center"
-          aria-hidden
-        >
-          <User className="h-5 w-5" />
-        </span>
-        <span className="flex-1 text-left">Profile</span>
-        <ArrowDown
-          className={cn(
-            "h-4 w-4 shrink-0 text-text-tertiary transition-transform duration-fast",
-            open && "rotate-180",
-          )}
-          aria-hidden
-        />
-      </button>
     </div>
   );
 }

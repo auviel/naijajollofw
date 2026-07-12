@@ -6,13 +6,13 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { OrderStatusBadge } from "@/components/features/orders/order-status-badge";
 import { Search } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import type {
   StaffOrderChannel,
   StaffOrderListFilter,
 } from "@/lib/domain/order/transitions";
 import { formatCadFromCents } from "@/lib/utils/currency";
-import { cn } from "@/lib/utils/cn";
 
 const FILTERS: Array<{ id: StaffOrderListFilter; label: string }> = [
   { id: "active", label: "Active" },
@@ -30,11 +30,8 @@ const CHANNELS: Array<{ id: StaffOrderChannel; label: string }> = [
   { id: "courier", label: "Courier" },
 ];
 
-const selectClassName = cn(
-  "h-12 shrink-0 rounded-md border border-border bg-surface-elevated px-3 text-sm font-medium text-foreground",
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
-  "disabled:pointer-events-none disabled:opacity-50",
-);
+const filterTriggerClassName =
+  "h-12 border-border bg-surface-elevated px-3 text-sm";
 
 type OrderListFiltersProps = {
   filter: StaffOrderListFilter;
@@ -123,40 +120,38 @@ export function OrderListFilters({
       <label className="sr-only" htmlFor="order-channel">
         Channel
       </label>
-      <select
+      <Select
         id="order-channel"
         value={channel}
         disabled={pending}
-        onChange={(event) =>
-          pushParams({ channel: event.target.value as StaffOrderChannel })
-        }
-        className={cn(selectClassName, "sm:w-36")}
-      >
-        {CHANNELS.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.label}
-          </option>
-        ))}
-      </select>
+        onChange={(next) => pushParams({ channel: next as StaffOrderChannel })}
+        options={CHANNELS.map((item) => ({
+          value: item.id,
+          label: item.label,
+        }))}
+        className="sm:w-36"
+        triggerClassName={filterTriggerClassName}
+        aria-label="Channel"
+      />
 
       <label className="sr-only" htmlFor="order-status">
         Status
       </label>
-      <select
+      <Select
         id="order-status"
         value={filter}
         disabled={pending}
-        onChange={(event) =>
-          pushParams({ filter: event.target.value as StaffOrderListFilter })
+        onChange={(next) =>
+          pushParams({ filter: next as StaffOrderListFilter })
         }
-        className={cn(selectClassName, "sm:w-40")}
-      >
-        {FILTERS.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.label}
-          </option>
-        ))}
-      </select>
+        options={FILTERS.map((item) => ({
+          value: item.id,
+          label: item.label,
+        }))}
+        className="sm:w-40"
+        triggerClassName={filterTriggerClassName}
+        aria-label="Status"
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import type { DeliveryProviderId } from "@/lib/domain/delivery/types";
 import { getDeliveryProviderLabel } from "@/lib/domain/delivery/types";
@@ -126,20 +127,17 @@ export function CancelDeliveryButton({
                 <label htmlFor="cancelReason" className="text-sm font-medium text-text-secondary">
                   Reason
                 </label>
-                <select
+                <Select
                   id="cancelReason"
                   value={reason}
-                  onChange={(event) =>
-                    setReason(event.target.value as CancelDeliverySchema["reason"])
+                  onChange={(next) =>
+                    setReason(next as CancelDeliverySchema["reason"])
                   }
-                  className="flex h-12 w-full rounded-md border border-border-strong bg-background px-4 text-base text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-                >
-                  {CANCEL_REASONS.map((option) => (
-                    <option key={option} value={option}>
-                      {getCancelReasonLabel(option)}
-                    </option>
-                  ))}
-                </select>
+                  options={CANCEL_REASONS.map((option) => ({
+                    value: option,
+                    label: getCancelReasonLabel(option),
+                  }))}
+                />
               </div>
 
               {reason === "OTHER" ? (

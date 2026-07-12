@@ -16,7 +16,7 @@ export async function Sidebar() {
   const storeName = session?.user?.storeName ?? "Kitchen";
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start overflow-hidden border-r border-border bg-surface md:flex">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start overflow-x-hidden border-r border-border bg-surface md:flex">
       <div className="border-b border-border px-4 py-5">
         <Link
           href="/dashboard"
