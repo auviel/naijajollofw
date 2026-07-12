@@ -1,6 +1,7 @@
 import { MenuCatalogBrowse } from "@/components/features/storefront/menu-catalog-browse";
 import { StorefrontFaq } from "@/components/features/storefront/storefront-faq";
 import { StorefrontHero } from "@/components/features/storefront/storefront-hero";
+import { StorefrontMarketplaceLinks } from "@/components/features/storefront/storefront-marketplace-links";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UtensilsCrossed } from "@/components/ui/icons";
 import type { MenuCatalog } from "@/lib/domain/menu/types";
@@ -65,6 +66,7 @@ export function StorefrontMenu({
           prepMinutes={prepMinutes}
           todayLabel={openStatus.todayLabel}
         />
+        <StorefrontMarketplaceLinks />
       </div>
     );
   }
@@ -102,6 +104,7 @@ export function StorefrontMenu({
         prepMinutes={prepMinutes}
         todayLabel={openStatus.todayLabel}
       />
+      <StorefrontMarketplaceLinks />
     </div>
   );
 }

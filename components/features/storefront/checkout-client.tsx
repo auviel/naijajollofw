@@ -318,11 +318,6 @@ export function CheckoutClient({
           {initialCart.itemCount} item{initialCart.itemCount === 1 ? "" : "s"} ·{" "}
           {formatCadFromCents(initialCart.subtotalCents)} before tax
         </p>
-        {environment === "sandbox" && configured ? (
-          <p className="text-xs text-text-tertiary">
-            Square sandbox mode — use test cards from the Square docs.
-          </p>
-        ) : null}
       </div>
 
       <section className="space-y-3">
@@ -670,6 +665,9 @@ export function CheckoutClient({
             ? "Choose a time to continue"
             : `Pay ${formatCadFromCents(totals.totalCents)}`}
       </button>
+      <p className="text-center text-xs text-text-tertiary">
+        Payments secured by Square
+      </p>
 
       <ScheduleOrderPicker
         open={schedulePickerOpen}

@@ -1,12 +1,12 @@
 import type { ComponentType } from "react";
 import {
-  AddonsFill,
-  CalendarFill,
-  PackageFill,
-  RiceBowlFill,
-  SoftDrinkFill,
-  SoupFill,
-  StarFill,
+  Addons,
+  Calendar,
+  Drink,
+  Package,
+  RiceBowl,
+  Soup,
+  Star,
 } from "@/components/ui/icons";
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
@@ -23,22 +23,22 @@ function normalizeCategoryName(name: string) {
   return displayCategoryName(name).toLowerCase();
 }
 
-/** Map a category label to a filled Hugeicon (Featured has no icon). */
+/** Map a category label to a stroke Hugeicon (Featured has no icon). */
 export function categoryIconFor(name: string): IconComponent | null {
   const n = normalizeCategoryName(name);
 
   if (n.startsWith("featured")) return null;
-  if (n.includes("popular")) return StarFill;
-  if (n.includes("rice")) return RiceBowlFill;
-  if (n.includes("soup") || n.includes("stew")) return SoupFill;
+  if (n.includes("popular")) return Star;
+  if (n.includes("rice")) return RiceBowl;
+  if (n.includes("soup") || n.includes("stew")) return Soup;
   if (n.includes("side") || n.includes("add-on") || n.includes("addon")) {
-    return AddonsFill;
+    return Addons;
   }
   if (n.includes("family") || n.includes("tray") || n.includes("bulk")) {
-    return PackageFill;
+    return Package;
   }
-  if (n.includes("drink")) return SoftDrinkFill;
-  if (n.includes("special")) return CalendarFill;
+  if (n.includes("drink")) return Drink;
+  if (n.includes("special")) return Calendar;
 
   return null;
 }

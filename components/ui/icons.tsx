@@ -9,6 +9,7 @@ import {
   ClipboardListIcon,
   Clock01Icon,
   Delete02Icon,
+  DrinkIcon,
   Facebook01Icon,
   Home01Icon,
   IceCubesIcon,
@@ -22,7 +23,6 @@ import {
   Search01Icon,
   SearchRemoveIcon,
   ShoppingCart01Icon,
-  SoftDrink01Icon,
   SpoonAndForkIcon,
   StarIcon,
   Store01Icon,
@@ -67,28 +67,6 @@ function createIcon(icon: IconSvgElement, displayName: string) {
   return Icon;
 }
 
-/** Filled (solid) look — free pack is stroke-only; fill the closed paths. */
-function createFilledIcon(icon: IconSvgElement, displayName: string) {
-  function Icon({ className, size, strokeWidth = 0, ...props }: IconProps) {
-    const resolvedSize = size ?? inferSizeFromClassName(className) ?? 24;
-
-    return (
-      <HugeiconsIcon
-        icon={icon}
-        size={resolvedSize}
-        strokeWidth={strokeWidth}
-        color="currentColor"
-        fill="currentColor"
-        className={className}
-        {...props}
-      />
-    );
-  }
-
-  Icon.displayName = displayName;
-  return Icon;
-}
-
 /** Stroke Rounded icons via Hugeicons — Lucide-compatible names for app usage. */
 export const Plus = createIcon(Add01Icon, "Plus");
 export const ArrowDown = createIcon(ArrowDown01Icon, "ArrowDown");
@@ -119,11 +97,9 @@ export const Facebook = createIcon(Facebook01Icon, "Facebook");
 export const Instagram = createIcon(InstagramIcon, "Instagram");
 export const YouTube = createIcon(YoutubeIcon, "YouTube");
 
-/** Menu category icons (filled) */
-export const StarFill = createFilledIcon(StarIcon, "StarFill");
-export const RiceBowlFill = createFilledIcon(RiceBowl01Icon, "RiceBowlFill");
-export const SoupFill = createFilledIcon(NoodlesIcon, "SoupFill");
-export const AddonsFill = createFilledIcon(IceCubesIcon, "AddonsFill");
-export const PackageFill = createFilledIcon(Package01Icon, "PackageFill");
-export const SoftDrinkFill = createFilledIcon(SoftDrink01Icon, "SoftDrinkFill");
-export const CalendarFill = createFilledIcon(Calendar01Icon, "CalendarFill");
+/** Menu category icons (stroke) */
+export const Star = createIcon(StarIcon, "Star");
+export const RiceBowl = createIcon(RiceBowl01Icon, "RiceBowl");
+export const Soup = createIcon(NoodlesIcon, "Soup");
+export const Addons = createIcon(IceCubesIcon, "Addons");
+export const Drink = createIcon(DrinkIcon, "Drink");

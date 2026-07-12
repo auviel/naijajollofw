@@ -156,6 +156,7 @@ export async function StorefrontFooter() {
                 </a>
               ) : null}
               <FooterLink href="/#faq">FAQ</FooterLink>
+              <FooterLink href="/#also-order">Uber Eats &amp; DoorDash</FooterLink>
               <FooterLink href="/hours">Hours &amp; ordering</FooterLink>
             </FooterColumn>
           </div>
