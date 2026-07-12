@@ -40,7 +40,7 @@ export function StorefrontMobileNav({ cartItemCount }: StorefrontMobileNavProps)
     ? role === "STORE_MANAGER"
       ? "/dashboard"
       : "/account"
-    : "/signin";
+    : "/signup";
 
   const menuActive = pathname === "/";
   const cartActive = pathname === "/cart" || pathname.startsWith("/cart/");
@@ -60,9 +60,9 @@ export function StorefrontMobileNav({ cartItemCount }: StorefrontMobileNavProps)
   return (
     <nav
       aria-label="Storefront"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md safe-bottom md:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:hidden"
     >
-      <div className="grid h-14 grid-cols-4">
+      <div className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-4 rounded-xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
         <NavLink
           href="/"
           label="Menu"

@@ -88,7 +88,7 @@ export function CartClient({ initialCart }: CartClientProps) {
   const hasUnavailable = cart.items.some((item) => !item.available);
 
   return (
-    <div className="space-y-6 pb-28">
+    <div className="space-y-6 pb-40 md:pb-28">
       <div>
         <Link
           href="/"
@@ -172,7 +172,7 @@ export function CartClient({ initialCart }: CartClientProps) {
         </span>
       </div>
 
-      <div className="fixed inset-x-0 bottom-14 z-30 border-t border-border bg-background/95 p-4 backdrop-blur md:bottom-0 md:safe-bottom">
+      <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] z-30 border-t border-border bg-background/95 p-4 backdrop-blur md:bottom-0 md:safe-bottom">
         <div className="mx-auto max-w-3xl">
           <Link
             href="/checkout"
