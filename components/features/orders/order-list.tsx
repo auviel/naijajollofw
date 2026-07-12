@@ -13,6 +13,7 @@ import type {
   StaffOrderListFilter,
 } from "@/lib/domain/order/transitions";
 import { formatCadFromCents } from "@/lib/utils/currency";
+import { formatDateTime } from "@/lib/utils/date";
 
 const FILTERS: Array<{ id: StaffOrderListFilter; label: string }> = [
   { id: "active", label: "Active" },
@@ -174,6 +175,9 @@ export function OrderList({ items }: OrderListProps) {
               <p className="truncate text-sm text-text-secondary">
                 {order.itemSummary} ·{" "}
                 {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
+              </p>
+              <p className="text-xs text-text-tertiary">
+                {formatDateTime(order.placedAt ?? order.createdAt)}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 text-sm">
