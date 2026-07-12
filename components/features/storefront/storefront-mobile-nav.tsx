@@ -106,7 +106,7 @@ export function StorefrontMobileNav({
         ) : mobileSearchOpen ? null : (
           <motion.div
             key="tab-nav"
-            className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-4 rounded-xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md"
+            className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-4 rounded-2xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md"
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
             animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}

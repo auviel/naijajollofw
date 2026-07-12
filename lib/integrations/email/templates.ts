@@ -320,6 +320,100 @@ export function buildOrderStatusEmail(input: {
   return { subject: copy.subject, html, text: textLines.join("\n") };
 }
 
+export function buildStaffNewOrderEmail(input: {
+  storeName: string;
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  fulfillmentType: "pickup" | "delivery";
+  totalLabel: string;
+  itemSummary: string;
+  dashboardUrl: string;
+  scheduledLabel?: string | null;
+}): { subject: string; html: string; text: string } {
+  const subject = `New order · ${input.storeName}`;
+  const reason = `You’re receiving this because you’re a staff contact for ${input.storeName}.`;
+  const mode = input.fulfillmentType === "delivery" ? "Delivery" : "Pickup";
+  const scheduleLine = input.scheduledLabel
+    ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Scheduled for <strong>${escapeHtml(input.scheduledLabel)}</strong>.</p>`
+    : "";
+  const scheduleText = input.scheduledLabel
+    ? `\nScheduled for ${input.scheduledLabel}.`
+    : "";
+
+  const html = layout({
+    title: subject,
+    reason,
+    bodyHtml: `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">New order needs acceptance</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;"><strong>${escapeHtml(input.customerName)}</strong> · ${escapeHtml(input.customerPhone)}</p>
+     <p style="margin:0 0 8px;font-size:15px;line-height:1.55;color:#444;">${escapeHtml(mode)} · ${escapeHtml(input.totalLabel)}</p>
+     <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;">${escapeHtml(input.itemSummary)}</p>
+     ${scheduleLine}
+     <p style="margin:24px 0 0;">
+       <a href="${escapeHtml(input.dashboardUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Open order</a>
+     </p>`,
+  });
+
+  const text = [
+    "New order needs acceptance",
+    "",
+    `${input.customerName} · ${input.customerPhone}`,
+    `${mode} · ${input.totalLabel}`,
+    input.itemSummary,
+    scheduleText.trim() || null,
+    "",
+    `Open order: ${input.dashboardUrl}`,
+    "",
+    footerText(reason),
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
+
+  return { subject, html, text };
+}
+
+export function buildStaffOrderCancelledEmail(input: {
+  storeName: string;
+  orderId: string;
+  customerName: string;
+  totalLabel: string;
+  dashboardUrl: string;
+  note?: string | null;
+}): { subject: string; html: string; text: string } {
+  const subject = `Order cancelled · ${input.storeName}`;
+  const reason = `You’re receiving this because you’re a staff contact for ${input.storeName}.`;
+  const noteLine = input.note?.trim()
+    ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;">Note: ${escapeHtml(input.note.trim())}</p>`
+    : "";
+  const noteText = input.note?.trim() ? `Note: ${input.note.trim()}` : null;
+
+  const html = layout({
+    title: subject,
+    reason,
+    bodyHtml: `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">Order cancelled</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;"><strong>${escapeHtml(input.customerName)}</strong> · ${escapeHtml(input.totalLabel)}</p>
+     ${noteLine}
+     <p style="margin:24px 0 0;">
+       <a href="${escapeHtml(input.dashboardUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">View order</a>
+     </p>`,
+  });
+
+  const text = [
+    "Order cancelled",
+    "",
+    `${input.customerName} · ${input.totalLabel}`,
+    noteText,
+    "",
+    `View order: ${input.dashboardUrl}`,
+    "",
+    footerText(reason),
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
+
+  return { subject, html, text };
+}
+
 /** Mailto used for List-Unsubscribe / marketing opt-out. */
 export function getEmailUnsubscribeMailto(): string {
   return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Unsubscribe from emails")}`;

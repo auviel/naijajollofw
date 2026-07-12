@@ -138,7 +138,7 @@ export function StaffNotifications() {
           id={panelId}
           role="dialog"
           aria-labelledby={buttonId}
-          className="absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),20rem)] overflow-hidden rounded-lg border border-border bg-background shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),20rem)] overflow-hidden rounded-2xl border border-border bg-background shadow-lg"
         >
           <div className="border-b border-border px-3 py-2.5">
             <p className="text-sm font-semibold text-foreground">

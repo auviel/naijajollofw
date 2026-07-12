@@ -27,7 +27,7 @@ export function StorefrontHero({
     <section className="pb-2 sm:pb-4">
       <div
         className={cn(
-          "storefront-hero-banner relative overflow-hidden rounded-2xl sm:rounded-3xl",
+          "storefront-hero-banner relative overflow-hidden rounded-2xl sm:rounded-2xl",
           "bg-[linear-gradient(135deg,var(--accent-subtle)_0%,color-mix(in_oklab,var(--accent)_18%,white)_42%,color-mix(in_oklab,var(--success)_14%,white)_100%)]",
         )}
       >

@@ -15,7 +15,7 @@ export function CartLineThumbnail({
   return (
     <div
       className={cn(
-        "relative shrink-0 overflow-hidden rounded-lg bg-surface",
+        "relative shrink-0 overflow-hidden rounded-2xl bg-surface",
         size === "sm" ? "h-14 w-14" : "h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem]",
         className,
       )}

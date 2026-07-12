@@ -32,6 +32,8 @@ model Store {
   id           String   @id @default(cuid())
   name         String
   phone        String
+  /// Store contact / staff notification inbox.
+  email        String   @default("hello@naijajollofw.ca")
   addressLine1 String
   addressLine2 String?
   city         String

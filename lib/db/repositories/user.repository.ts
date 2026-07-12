@@ -106,6 +106,16 @@ export const userRepository = {
     });
     return user?.sessionVersion ?? null;
   },
+
+  async listStoreManagerEmails(storeId: string): Promise<string[]> {
+    const users = await prisma.user.findMany({
+      where: { storeId, role: "STORE_MANAGER" },
+      select: { email: true },
+    });
+    return users
+      .map((user) => user.email.trim().toLowerCase())
+      .filter(Boolean);
+  },
 };
 
 export function mapPrismaRole(role: UserRole): UserRole {

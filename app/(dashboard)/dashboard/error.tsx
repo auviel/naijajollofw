@@ -18,7 +18,7 @@ export default function DashboardError({ error, reset }: DashboardErrorProps) {
   return (
     <DashboardPage>
       <DashboardPageBody centered>
-        <div className="w-full max-w-lg rounded-lg border border-border bg-surface-elevated p-6 sm:p-8">
+        <div className="w-full max-w-lg rounded-2xl border border-border bg-surface-elevated p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
           <p className="mt-2 text-sm text-text-secondary">
             We could not load this page. Try again or return to the kitchen board.

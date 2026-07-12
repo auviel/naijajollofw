@@ -222,7 +222,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
                       href={`#category-${category.id}`}
                       onClick={() => selectCategory(category.id)}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-3.5 text-sm no-underline transition-colors",
+                        "flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm no-underline transition-colors",
                         isActive
                           ? "bg-surface font-semibold text-foreground"
                           : "font-medium text-text-secondary",

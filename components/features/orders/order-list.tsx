@@ -162,7 +162,7 @@ type OrderListProps = {
 
 export function OrderList({ items }: OrderListProps) {
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border bg-surface-elevated">
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface-elevated">
       {items.map((order) => (
         <li key={order.id}>
           <Link

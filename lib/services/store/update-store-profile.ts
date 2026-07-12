@@ -56,6 +56,7 @@ export async function updateStoreProfile(
   const updated = await storeRepository.update(input.storeId, {
     name: parsed.name.trim(),
     phone,
+    email: parsed.email,
     addressLine1: geocoded.address.line1,
     addressLine2: parsed.addressLine2?.trim() || null,
     city: geocoded.address.city,

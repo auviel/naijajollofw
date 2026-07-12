@@ -381,10 +381,10 @@ export function CheckoutClient({
               key={line.id}
               type="button"
               onClick={() => setOrderDetailsOpen(true)}
-              className="relative shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="relative shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               aria-label={`${line.quantity > 1 ? `${line.quantity}× ` : ""}${line.name}`}
             >
-              <CartLineThumbnail line={line} size="md" className="rounded-xl" />
+              <CartLineThumbnail line={line} size="md" className="rounded-2xl" />
               {line.quantity > 1 ? (
                 <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[11px] font-semibold text-background">
                   {line.quantity}
@@ -395,7 +395,7 @@ export function CheckoutClient({
           <button
             type="button"
             onClick={() => setOrderDetailsOpen(true)}
-            className="inline-flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border-strong bg-surface text-center text-xs font-medium text-text-secondary transition-colors hover:border-foreground hover:text-foreground sm:h-[4.5rem] sm:w-[4.5rem]"
+            className="inline-flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-dashed border-border-strong bg-surface text-center text-xs font-medium text-text-secondary transition-colors hover:border-foreground hover:text-foreground sm:h-[4.5rem] sm:w-[4.5rem]"
           >
             View
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -435,7 +435,7 @@ export function CheckoutClient({
               {initialCart.items.map((line) => (
                 <li
                   key={line.id}
-                  className="flex gap-3 rounded-lg border border-border bg-surface-elevated p-3"
+                  className="flex gap-3 rounded-2xl border border-border bg-surface-elevated p-3"
                 >
                   <CartLineThumbnail line={line} size="sm" />
                   <div className="min-w-0 flex-1">
@@ -472,13 +472,13 @@ export function CheckoutClient({
       ) : null}
 
       {!configured && !simulatePayments ? (
-        <div className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+        <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
           Square payments is not set up.
         </div>
       ) : null}
 
       {simulatePayments ? (
-        <div className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+        <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
           Test checkout — orders are created without charging a card.
         </div>
       ) : null}
@@ -520,7 +520,7 @@ export function CheckoutClient({
             type="button"
             onClick={() => setSchedulePickerOpen(true)}
             className={cn(
-              "flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-colors",
+              "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left transition-colors",
               scheduledFor
                 ? "border-border bg-surface-elevated hover:border-border-strong"
                 : "border-foreground bg-background",
@@ -550,7 +550,7 @@ export function CheckoutClient({
               type="button"
               onClick={() => setScheduledFor(null)}
               className={cn(
-                "flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left",
+                "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left",
                 !scheduledFor
                   ? "border-foreground bg-background"
                   : "border-border bg-surface-elevated",
@@ -573,7 +573,7 @@ export function CheckoutClient({
               type="button"
               onClick={() => setSchedulePickerOpen(true)}
               className={cn(
-                "flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left",
+                "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left",
                 scheduledFor
                   ? "border-foreground bg-background"
                   : "border-border bg-surface-elevated",
@@ -712,7 +712,7 @@ export function CheckoutClient({
         ) : null}
       </section>
 
-      <section className="space-y-2 rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm">
+      <section className="space-y-2 rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm">
         <div className="flex justify-between text-text-secondary">
           <span>Subtotal</span>
           <span>{formatCadFromCents(totals.subtotalCents)}</span>

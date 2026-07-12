@@ -106,7 +106,7 @@ export function Select({
           id={listId}
           role="listbox"
           aria-labelledby={id}
-          className="absolute top-full right-0 left-0 z-40 mt-2 max-h-60 overflow-y-auto rounded-md border border-border bg-surface-elevated py-1 shadow-lg"
+          className="absolute top-full right-0 left-0 z-40 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-border bg-surface-elevated py-1 shadow-lg"
         >
           {options.map((option) => {
             const isSelected = option.value === value;

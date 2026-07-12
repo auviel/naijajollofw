@@ -9,9 +9,9 @@ export default function NewDeliveryLoading() {
       </div>
       <DashboardPageBody>
         <div className="mx-auto w-full max-w-4xl space-y-4">
-          <Skeleton className="h-48 w-full rounded-lg" />
-          <Skeleton className="h-32 w-full rounded-lg" />
-          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
         </div>
       </DashboardPageBody>
     </DashboardPage>

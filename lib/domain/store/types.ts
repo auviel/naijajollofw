@@ -2,6 +2,7 @@ export type StoreProfile = {
   id: string;
   name: string;
   phone: string;
+  email: string;
   addressLine1: string;
   addressLine2?: string;
   city: string;

@@ -4,6 +4,10 @@ import {
   verifySquareWebhookSignature,
 } from "@/lib/integrations/payments/square/webhook";
 import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
+import {
+  notifyStaffOrder,
+  summarizeOrderLineItems,
+} from "@/lib/services/order/notify-staff-order";
 import { logger } from "@/lib/utils/logger";
 
 export async function handleSquareWebhook(
@@ -46,6 +50,18 @@ export async function handleSquareWebhook(
         fulfillmentType: updated.fulfillmentType,
         note: `Square payment ${status.toLowerCase()}`,
       });
+      void notifyStaffOrder({
+        storeId: updated.storeId,
+        storeName: updated.store?.name ?? "Restaurant",
+        orderId: updated.id,
+        kind: "cancelled",
+        customerName: updated.customerName,
+        customerPhone: updated.customerPhone,
+        fulfillmentType: updated.fulfillmentType,
+        totalCents: updated.totalCents,
+        itemSummary: summarizeOrderLineItems(updated.lineItems),
+        note: `Square payment ${status.toLowerCase()}`,
+      });
     }
     return;
   }
@@ -57,11 +73,24 @@ export async function handleSquareWebhook(
       return;
     }
     if (existing.status === "pending_payment") {
-      await orderRepository.updateStatusBySquarePaymentId(
+      const updated = await orderRepository.updateStatusBySquarePaymentId(
         paymentId,
         "pending_acceptance",
         "Square payment confirmed",
       );
+      if (updated && updated.status === "pending_acceptance") {
+        void notifyStaffOrder({
+          storeId: updated.storeId,
+          storeName: updated.store?.name ?? "Restaurant",
+          orderId: updated.id,
+          kind: "new_order",
+          customerName: updated.customerName,
+          customerPhone: updated.customerPhone,
+          fulfillmentType: updated.fulfillmentType,
+          totalCents: updated.totalCents,
+          itemSummary: summarizeOrderLineItems(updated.lineItems),
+        });
+      }
     }
   }
 }

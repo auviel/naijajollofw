@@ -150,7 +150,7 @@ export function CartPanel({
         {cart.items.map((line) => (
           <div
             key={line.id}
-            className="rounded-lg border border-border bg-surface-elevated p-4"
+            className="rounded-2xl border border-border bg-surface-elevated p-4"
           >
             <div className="flex gap-3">
               <CartLineThumbnail line={line} />

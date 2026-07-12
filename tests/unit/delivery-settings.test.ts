@@ -9,6 +9,7 @@ const store: StoreProfile = {
   id: "seed-store-waterloo",
   name: "Demo Market",
   phone: "+15195550199",
+  email: "hello@naijajollofw.ca",
   addressLine1: "280 Lester St",
   city: "Waterloo",
   province: "ON",

@@ -220,7 +220,7 @@ export function ItemCustomizePanel({
                   </span>
                 ) : null}
               </div>
-              <div className="divide-y divide-border rounded-lg border border-border">
+              <div className="divide-y divide-border rounded-2xl border border-border">
                 {group.modifiers.map((modifier) => {
                   const checked = (selectedByGroup.get(group.id) ?? []).includes(
                     modifier.id,

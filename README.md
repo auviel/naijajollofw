@@ -45,6 +45,8 @@ Edit `.env` and add your Uber sandbox credentials, optional DoorDash credentials
 
 Get a Mapbox access token from [mapbox.com](https://account.mapbox.com/access-tokens/) (used for Canadian address geocoding).
 
+**Transactional email (Resend):** set `RESEND_API_KEY` and `EMAIL_FROM`. Staff alerts go to the **store email** on Store profile (seeded as `hello@naijajollofw.ca`), plus store manager accounts; add extras with `STAFF_NOTIFY_EMAILS` (comma-separated).
+
 Generate an auth secret:
 
 ```bash

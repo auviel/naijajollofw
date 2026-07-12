@@ -53,7 +53,7 @@ export function CollapsibleSettingCard({
           <button
             type="button"
             onClick={onExpand}
-            className="flex w-full items-center gap-4 rounded-lg px-5 py-4 text-left transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-foreground"
+            className="flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-foreground"
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-foreground">{title}</p>

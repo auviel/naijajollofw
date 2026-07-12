@@ -20,7 +20,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-surface-elevated p-6">
+        <div className="rounded-2xl border border-border bg-surface-elevated p-6">
           <Suspense
             fallback={
               <p className="text-sm text-text-secondary">Loading…</p>

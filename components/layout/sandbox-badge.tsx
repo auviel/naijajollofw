@@ -55,7 +55,7 @@ export function SandboxBadge() {
           id={panelId}
           role="dialog"
           aria-labelledby={buttonId}
-          className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-amber-200 bg-sandbox-banner p-3 text-left text-xs leading-relaxed text-sandbox-text shadow-md sm:w-72 sm:text-sm"
+          className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-amber-200 bg-sandbox-banner p-3 text-left text-xs leading-relaxed text-sandbox-text shadow-md sm:w-72 sm:text-sm"
         >
           {SANDBOX_MODE_MESSAGE}
         </div>

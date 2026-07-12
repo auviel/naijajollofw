@@ -25,7 +25,7 @@ type OrderFulfillPanelProps = {
 export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
   if (order.status === "ready" && order.fulfillmentType === "pickup") {
     return (
-      <section className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+      <section className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
         Use <span className="font-medium text-foreground">Ready for pickup</span>{" "}
         above when the bag is ready, then <span className="font-medium text-foreground">Complete</span>{" "}
         when the customer collects it.
@@ -43,7 +43,7 @@ export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
 
   if (order.linkedDelivery) {
     return (
-      <section className="space-y-2 rounded-md border border-border bg-surface-elevated p-4">
+      <section className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
         <h2 className="text-sm font-semibold text-foreground">deliverGO dispatch</h2>
         <p className="text-sm text-text-secondary">
           Carrier status: {order.linkedDelivery.status.replaceAll("_", " ")}
@@ -72,7 +72,7 @@ export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
 
   if (order.fulfillmentMethod === "manual") {
     return (
-      <section className="space-y-1 rounded-md border border-border bg-surface-elevated p-4">
+      <section className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
         <h2 className="text-sm font-semibold text-foreground">Manual delivery</h2>
         <p className="text-sm text-text-secondary">
           {order.manualDeliveryNote || "Dispatched outside deliverGO."}

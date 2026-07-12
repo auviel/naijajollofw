@@ -48,7 +48,7 @@ export function StorefrontMarketplaceLinks() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${link.eyebrow} ${link.brand}`}
-                className={`group flex flex-col items-center justify-center gap-0.5 rounded-xl border px-4 py-2.5 text-center transition-[filter] ${link.className}`}
+                className={`group flex flex-col items-center justify-center gap-0.5 rounded-2xl border px-4 py-2.5 text-center transition-[filter] ${link.className}`}
               >
                 <span
                   className={`text-[10px] font-semibold tracking-[0.08em] uppercase ${link.eyebrowClassName}`}

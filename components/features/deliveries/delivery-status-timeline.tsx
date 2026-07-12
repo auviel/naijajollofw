@@ -51,7 +51,7 @@ export function DeliveryStatusTimeline({
 
   if (terminal) {
     return (
-      <div className="rounded-lg border border-border bg-surface-elevated p-5">
+      <div className="rounded-2xl border border-border bg-surface-elevated p-5">
         <h2 className="text-lg font-semibold text-foreground">Status</h2>
         <div
           className={cn(
@@ -84,7 +84,7 @@ export function DeliveryStatusTimeline({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface-elevated p-5">
+    <div className="rounded-2xl border border-border bg-surface-elevated p-5">
       <h2 className="text-lg font-semibold text-foreground">Status timeline</h2>
       <ol className="mt-6 space-y-0">
         {steps.map((step, index) => (

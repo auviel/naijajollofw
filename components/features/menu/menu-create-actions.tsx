@@ -132,7 +132,7 @@ export function MenuCreateActions() {
           <ul
             id={menuId}
             role="menu"
-            className="absolute top-full right-0 z-30 mt-2 w-full min-w-[12rem] overflow-hidden rounded-md border border-border bg-surface-elevated shadow-lg sm:w-48"
+            className="absolute top-full right-0 z-30 mt-2 w-full min-w-[12rem] overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-lg sm:w-48"
           >
             <li role="none">
               <Link
@@ -172,7 +172,7 @@ export function MenuCreateActions() {
             role="dialog"
             aria-modal="true"
             aria-labelledby={dialogTitleId}
-            className="w-full max-w-md rounded-lg border border-border bg-surface-elevated p-5 shadow-lg sm:p-6"
+            className="w-full max-w-md rounded-2xl border border-border bg-surface-elevated p-5 shadow-lg sm:p-6"
           >
             <h2
               id={dialogTitleId}

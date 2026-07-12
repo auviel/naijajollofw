@@ -8,6 +8,10 @@ import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { canTransition } from "@/lib/domain/order/transitions";
 import { orderTransitionSchema } from "@/lib/domain/order/validation-staff";
 import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
+import {
+  notifyStaffOrder,
+  summarizeOrderLineItems,
+} from "@/lib/services/order/notify-staff-order";
 import { AppError } from "@/lib/utils/errors";
 
 export async function transitionStaffOrder(
@@ -61,6 +65,21 @@ export async function transitionStaffOrder(
     courierTrackingUrl: updated.delivery?.trackingUrl,
     note: parsed.note?.trim() || null,
   });
+
+  if (updated.status === "cancelled") {
+    void notifyStaffOrder({
+      storeId: updated.storeId,
+      storeName: updated.store?.name ?? "Restaurant",
+      orderId: updated.id,
+      kind: "cancelled",
+      customerName: updated.customerName,
+      customerPhone: updated.customerPhone,
+      fulfillmentType: updated.fulfillmentType,
+      totalCents: updated.totalCents,
+      itemSummary: summarizeOrderLineItems(updated.lineItems),
+      note: parsed.note?.trim() || defaultTransitionNote("cancelled"),
+    });
+  }
 
   return mapOrderToStaffDetail(updated);
 }

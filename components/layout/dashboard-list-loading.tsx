@@ -22,7 +22,7 @@ export function DashboardListLoading({
         {board ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, column) => (
-              <div key={column} className="space-y-2 rounded-lg border border-border p-3">
+              <div key={column} className="space-y-2 rounded-2xl border border-border p-3">
                 <Skeleton className="h-5 w-24" />
                 <Skeleton className="h-28 w-full rounded-md" />
                 <Skeleton className="h-28 w-full rounded-md" />
@@ -32,7 +32,7 @@ export function DashboardListLoading({
         ) : (
           <div className="space-y-3">
             {Array.from({ length: rows }).map((_, index) => (
-              <Skeleton key={index} className="h-20 w-full rounded-lg" />
+              <Skeleton key={index} className="h-20 w-full rounded-2xl" />
             ))}
           </div>
         )}

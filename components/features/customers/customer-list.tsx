@@ -50,7 +50,7 @@ function CustomerListRow({ customer }: { customer: CustomerListItem }) {
   return (
     <Link
       href={`/dashboard/customers/${customer.id}`}
-      className="group block rounded-lg border border-border bg-surface-elevated p-4 transition-colors duration-fast hover:bg-surface"
+      className="group block rounded-2xl border border-border bg-surface-elevated p-4 transition-colors duration-fast hover:bg-surface"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">

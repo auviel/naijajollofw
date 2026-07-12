@@ -81,7 +81,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               exit={variants.exit}
               transition={{ duration: motionDuration.chrome, ease: easeOut }}
               className={cn(
-                "pointer-events-auto flex items-start gap-3 rounded-lg border bg-surface-elevated p-4 shadow-sm",
+                "pointer-events-auto flex items-start gap-3 rounded-2xl border bg-surface-elevated p-4 shadow-sm",
                 item.variant === "success" &&
                   "border-l-4 border-l-success border-border",
                 item.variant === "error" &&

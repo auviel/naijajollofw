@@ -58,7 +58,7 @@ export function AccountNav({ userName }: { userName: string }) {
         <p className="text-sm text-text-secondary">Hi, {userName}</p>
         <button
           type="button"
-          className="mt-2 flex h-12 w-full items-center justify-between rounded-xl border border-border bg-background px-4 text-left text-sm font-semibold text-foreground"
+          className="mt-2 flex h-12 w-full items-center justify-between rounded-2xl border border-border bg-background px-4 text-left text-sm font-semibold text-foreground"
           aria-expanded={open}
           aria-controls={listId}
           onClick={() =>
@@ -77,7 +77,7 @@ export function AccountNav({ userName }: { userName: string }) {
         {open ? (
           <ul
             id={listId}
-            className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-border bg-background shadow-lg"
+            className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-border bg-background shadow-lg"
           >
             {NAV.map((item) => (
               <li key={item.href}>
@@ -113,7 +113,7 @@ export function AccountNav({ userName }: { userName: string }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-lg px-3 py-2.5 text-sm no-underline transition-colors",
+                "rounded-2xl px-3 py-2.5 text-sm no-underline transition-colors",
                 item.match(pathname)
                   ? "bg-accent-subtle font-semibold text-accent"
                   : "font-medium text-text-secondary hover:bg-surface hover:text-foreground",

@@ -179,7 +179,7 @@ function FeaturedItemCard({
 
   const body = (
     <>
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-surface">
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface">
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -257,7 +257,7 @@ function MenuItemCard({
   const router = useRouter();
 
   const media = (
-    <div className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-xl bg-surface sm:h-[112px] sm:w-[112px]">
+    <div className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-2xl bg-surface sm:h-[112px] sm:w-[112px]">
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -305,7 +305,7 @@ function MenuItemCard({
 
   if (!item.available) {
     return (
-      <div className="flex gap-3 rounded-xl border border-border bg-surface-elevated/60 p-3 opacity-70">
+      <div className="flex gap-3 rounded-2xl border border-border bg-surface-elevated/60 p-3 opacity-70">
         {text}
         {media}
       </div>
@@ -332,7 +332,7 @@ function MenuItemCard({
         }
       }}
       className={cn(
-        "flex gap-3 rounded-xl border border-border bg-background p-3 no-underline transition-colors",
+        "flex gap-3 rounded-2xl border border-border bg-background p-3 no-underline transition-colors",
         "hover:border-border-strong hover:bg-surface/40",
       )}
     >

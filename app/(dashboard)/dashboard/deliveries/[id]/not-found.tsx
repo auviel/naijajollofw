@@ -5,7 +5,7 @@ export default function DeliveryNotFound() {
   return (
     <DashboardPage>
       <DashboardPageBody centered>
-        <div className="w-full max-w-lg rounded-lg border border-border bg-surface-elevated p-8 text-center">
+        <div className="w-full max-w-lg rounded-2xl border border-border bg-surface-elevated p-8 text-center">
           <h1 className="text-xl font-semibold text-foreground">Delivery not found</h1>
           <p className="mt-2 text-sm text-text-secondary">
             This delivery does not exist or you do not have access to it.

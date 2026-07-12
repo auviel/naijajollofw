@@ -176,7 +176,7 @@ export function CustomerNameAutocomplete({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-lg"
+          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-2xl border border-border bg-background py-1 shadow-lg"
         >
           {suggestions.map((customer, index) => (
             <li key={customer.id} role="option" aria-selected={index === activeIndex}>

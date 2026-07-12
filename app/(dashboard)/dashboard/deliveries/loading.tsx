@@ -9,7 +9,7 @@ export default function DeliveriesLoading() {
         <Skeleton className="h-8 w-48" />
       </div>
       <DashboardPageBody>
-        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
       </DashboardPageBody>
     </DashboardPage>
   );

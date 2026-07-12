@@ -154,14 +154,14 @@ export function AccountPaymentClient({
 
       <ul className="space-y-3">
         {cards.length === 0 ? (
-          <li className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-text-secondary">
+          <li className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-text-secondary">
             No saved cards yet.
           </li>
         ) : (
           cards.map((card) => (
             <li
               key={card.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-elevated px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated px-4 py-3"
             >
               <div className="min-w-0 text-sm text-foreground">
                 <p className="font-medium">
@@ -187,7 +187,7 @@ export function AccountPaymentClient({
         )}
       </ul>
 
-      <div className="space-y-3 rounded-xl border border-border p-4">
+      <div className="space-y-3 rounded-2xl border border-border p-4">
         <h2 className="text-sm font-semibold text-foreground">Add a card</h2>
         <SquareCardSlot
           containerId={cardForm.containerId}

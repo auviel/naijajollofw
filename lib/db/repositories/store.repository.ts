@@ -7,6 +7,7 @@ export function mapStoreToProfile(store: Store): StoreProfile {
     id: store.id,
     name: store.name,
     phone: store.phone,
+    email: store.email,
     addressLine1: store.addressLine1,
     addressLine2: store.addressLine2 ?? undefined,
     city: store.city,
@@ -28,6 +29,7 @@ export function formatStoreAddress(store: Store): string {
 export type UpdateStoreData = {
   name: string;
   phone: string;
+  email: string;
   addressLine1: string;
   addressLine2?: string | null;
   city: string;

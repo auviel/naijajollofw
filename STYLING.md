@@ -157,12 +157,15 @@ Uber Base uses `scale100` = 4px, `scale200` = 8px, etc. We use an 8px base grid.
 
 ### Borders & radius
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--radius-sm` | 4px | Badges, small chips |
-| `--radius-md` | 8px | Inputs, buttons |
-| `--radius-lg` | 12px | Cards |
-| `--radius-full` | 9999px | Avatars, pills |
+| Token | Value | Tailwind | Usage |
+|-------|-------|----------|-------|
+| `--radius-sm` | 4px | `rounded-sm` | Tight chips / dense UI |
+| `--radius-md` | 8px | `rounded-md` | Inputs, buttons, selects (controls) |
+| `--radius-lg` | 12px | `rounded-lg` | Rare intermediate |
+| `--radius-2xl` | 16px | `rounded-2xl` | **Surfaces** — cards, lists, dialogs, panels, menus |
+| `--radius-full` | 9999px | `rounded-full` | Avatars, status pills |
+
+Wired in `app/globals.css` (`:root` + `@theme`). Prefer **`rounded-md`** for controls and **`rounded-2xl`** for surfaces app-wide (staff + storefront). Mobile bottom sheets keep **`rounded-t-2xl`**. Do not use bare `rounded`.
 
 Border style matches Base Web `border200`: `1px solid rgba(0,0,0,0.08)`.
 
@@ -230,7 +233,7 @@ Respect `prefers-reduced-motion: reduce` — disable transitions.
 
 - Background: `--surface-elevated`
 - Border: `--border`
-- Radius: `--radius-lg`
+- Radius: `--radius-2xl` (`rounded-2xl`)
 - Padding: `--space-4` (16px) or `--space-5` (24px) for quote cards
 
 ### Status badges

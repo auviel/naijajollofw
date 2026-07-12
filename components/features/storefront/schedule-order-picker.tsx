@@ -209,7 +209,7 @@ function ScheduleOrderPickerBody({
                       setSelectedSlot(nextSlots[0]?.startAt ?? null);
                     }}
                     className={cn(
-                      "min-w-0 flex-1 rounded-xl border px-3 py-3 text-left transition-colors",
+                      "min-w-0 flex-1 rounded-2xl border px-3 py-3 text-left transition-colors",
                       active
                         ? "border-foreground bg-background"
                         : "border-border bg-surface text-text-secondary hover:border-border-strong",
@@ -234,7 +234,7 @@ function ScheduleOrderPickerBody({
             ) : null}
           </div>
 
-          <div className="mt-4 divide-y divide-border rounded-xl border border-border">
+          <div className="mt-4 divide-y divide-border rounded-2xl border border-border">
             {slots.length === 0 ? (
               <p className="px-4 py-6 text-sm text-text-secondary">
                 No times available for this day.

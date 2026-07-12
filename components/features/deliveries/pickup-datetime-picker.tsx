@@ -188,7 +188,7 @@ export function PickupDatetimePicker({
             id={datePanelId}
             role="dialog"
             aria-label="Choose pickup date"
-            className="absolute left-0 top-full z-30 mt-2 w-[min(100vw-2rem,18rem)] rounded-lg border border-border bg-surface-elevated p-4 shadow-lg sm:w-72"
+            className="absolute left-0 top-full z-30 mt-2 w-[min(100vw-2rem,18rem)] rounded-2xl border border-border bg-surface-elevated p-4 shadow-lg sm:w-72"
           >
             <div className="mb-3 flex items-center justify-between gap-2">
               <button
@@ -283,7 +283,7 @@ export function PickupDatetimePicker({
             id={timePanelId}
             role="listbox"
             aria-label="Choose pickup time"
-            className="absolute left-0 top-full z-30 mt-2 max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-surface-elevated py-1 shadow-lg"
+            className="absolute left-0 top-full z-30 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl border border-border bg-surface-elevated py-1 shadow-lg"
           >
             {timeSlots.length === 0 ? (
               <p className="px-4 py-3 text-sm text-text-secondary">

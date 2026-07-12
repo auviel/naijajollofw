@@ -24,11 +24,13 @@ describe("updateStoreProfileSchema", () => {
     const parsed = updateStoreProfileSchema.parse({
       name: "Demo Market — Lester St",
       phone: "5195550199",
+      email: "hello@naijajollofw.ca",
       addressLine2: "#102",
       addressQuery: "280 Lester St, Waterloo, ON N2L 0G2",
     });
 
     expect(parsed.name).toBe("Demo Market — Lester St");
+    expect(parsed.email).toBe("hello@naijajollofw.ca");
     expect(parsed.addressLine2).toBe("#102");
   });
 
@@ -37,6 +39,18 @@ describe("updateStoreProfileSchema", () => {
       updateStoreProfileSchema.parse({
         name: "Demo Market",
         phone: "123",
+        email: "hello@naijajollofw.ca",
+        addressQuery: "280 Lester St, Waterloo, ON N2L 0G2",
+      }),
+    ).toThrow();
+  });
+
+  it("rejects invalid emails", () => {
+    expect(() =>
+      updateStoreProfileSchema.parse({
+        name: "Demo Market",
+        phone: "5195550199",
+        email: "not-an-email",
         addressQuery: "280 Lester St, Waterloo, ON N2L 0G2",
       }),
     ).toThrow();
@@ -48,6 +62,7 @@ describe("validateStoreProfileFields", () => {
     const errors = validateStoreProfileFields({
       name: "Demo Market",
       phone: "5195550199",
+      email: "hello@naijajollofw.ca",
       geocoded: geocodedAddress,
       geocodeError: null,
     });
@@ -59,6 +74,7 @@ describe("validateStoreProfileFields", () => {
     const errors = validateStoreProfileFields({
       name: "Demo Market",
       phone: "5195550199",
+      email: "hello@naijajollofw.ca",
       geocoded: null,
       geocodeError: "No matching address found.",
     });

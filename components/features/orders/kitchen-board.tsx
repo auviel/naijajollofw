@@ -187,7 +187,7 @@ export function KitchenBoard({
           return (
             <section
               key={column.id}
-              className="flex min-h-[12rem] flex-col gap-3 rounded-lg border border-border bg-surface-elevated/50 p-3"
+              className="flex min-h-[12rem] flex-col gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-3"
               aria-label={column.title}
             >
               <header className="flex items-center justify-between gap-2">
@@ -242,7 +242,7 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
       transition={{ duration: motionDuration.chrome, ease: easeOut }}
       className={cn(
-        "space-y-2 rounded-md border border-border bg-background p-3 shadow-sm",
+        "space-y-2 rounded-2xl border border-border bg-background p-3 shadow-sm",
         order.status === "pending_acceptance" && "border-amber-300",
       )}
     >

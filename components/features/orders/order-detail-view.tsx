@@ -38,7 +38,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1 rounded-md border border-border bg-surface-elevated p-4">
+        <div className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
           <h2 className="text-sm font-semibold text-foreground">Customer</h2>
           <p className="text-sm text-foreground">{order.customerName}</p>
           <p className="text-sm text-text-secondary">{order.customerPhone}</p>
@@ -49,7 +49,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
             <p className="pt-2 text-sm text-text-secondary">Note: {order.notes}</p>
           ) : null}
         </div>
-        <div className="space-y-1 rounded-md border border-border bg-surface-elevated p-4">
+        <div className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
           <h2 className="text-sm font-semibold text-foreground">Guest tracking</h2>
           <p className="text-sm text-text-secondary">
             Share this link so the diner can follow status.

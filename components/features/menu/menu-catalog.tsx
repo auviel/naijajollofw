@@ -203,7 +203,7 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
   }
 
   return (
-    <div className="flex items-stretch gap-2 rounded-lg border border-border bg-surface-elevated">
+    <div className="flex items-stretch gap-2 rounded-2xl border border-border bg-surface-elevated">
       <Link
         href={`/dashboard/menu/${item.id}`}
         className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface"

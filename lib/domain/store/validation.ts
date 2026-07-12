@@ -8,9 +8,16 @@ const canadianPhoneSchema = z
     message: "Enter a valid Canadian phone number",
   });
 
+const storeEmailSchema = z
+  .string()
+  .trim()
+  .email("Enter a valid email address")
+  .transform((value) => value.toLowerCase());
+
 export const updateStoreProfileSchema = z.object({
   name: z.string().trim().min(1, "Store name is required"),
   phone: canadianPhoneSchema,
+  email: storeEmailSchema,
   addressLine2: z.string().trim().optional(),
   addressQuery: z.string().trim().min(5, "Enter a complete Canadian store address"),
   enabledUberDirect: z.boolean().optional(),

@@ -270,7 +270,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
               type="checkbox"
               checked={available}
               onChange={(event) => setAvailable(event.target.checked)}
-              className="h-4 w-4 rounded border-border-strong"
+              className="h-4 w-4 rounded-md border-border-strong"
             />
             Available for ordering
           </label>
@@ -312,7 +312,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
             groups.map((group) => (
               <div
                 key={group.key}
-                className="space-y-3 rounded-lg border border-border bg-surface p-4"
+                className="space-y-3 rounded-2xl border border-border bg-surface p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1">
@@ -347,7 +347,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                       onChange={(event) =>
                         updateGroup(group.key, { required: event.target.checked })
                       }
-                      className="h-4 w-4 rounded border-border-strong"
+                      className="h-4 w-4 rounded-md border-border-strong"
                     />
                     Required
                   </label>
@@ -407,7 +407,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                               available: event.target.checked,
                             })
                           }
-                          className="h-4 w-4 rounded border-border-strong"
+                          className="h-4 w-4 rounded-md border-border-strong"
                         />
                         On
                       </label>

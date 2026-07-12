@@ -32,6 +32,10 @@ import {
   isValidScheduleSlot,
 } from "@/lib/domain/store/schedule-slots";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
+import {
+  notifyStaffOrder,
+  summarizeOrderLineItems,
+} from "@/lib/services/order/notify-staff-order";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
@@ -45,6 +49,28 @@ function resolveReceiptEmail(
   if (fromForm) return fromForm;
   const fromDiner = dinerEmail?.trim().toLowerCase() || "";
   return fromDiner || null;
+}
+
+function notifyStaffNewOrder(
+  order: PublicOrderView,
+  storeId: string,
+  timeZone: string,
+): void {
+  const scheduledLabel = order.scheduledFor
+    ? formatScheduledForLabel(order.scheduledFor, timeZone)
+    : null;
+  void notifyStaffOrder({
+    storeId,
+    storeName: order.storeName,
+    orderId: order.id,
+    kind: "new_order",
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    fulfillmentType: order.fulfillmentType,
+    totalCents: order.totalCents,
+    itemSummary: summarizeOrderLineItems(order.lineItems),
+    scheduledLabel,
+  });
 }
 
 function sendOrderConfirmationEmail(
@@ -208,6 +234,9 @@ export async function checkoutWithSquare(
         orderId: existingView.id,
       });
     }
+    if (existingView.status === "pending_acceptance") {
+      notifyStaffNewOrder(existingView, storeId, hours.timezone);
+    }
     return { order: existingView };
   }
 
@@ -268,6 +297,7 @@ export async function checkoutWithSquare(
         orderId: orderView.id,
       });
     }
+    notifyStaffNewOrder(orderView, storeId, hours.timezone);
 
     return { order: orderView };
   } catch (error) {

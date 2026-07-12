@@ -53,6 +53,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
 
   const [name, setName] = useState(store.name);
   const [phone, setPhone] = useState(store.phone);
+  const [email, setEmail] = useState(store.email);
   const [addressLine2, setAddressLine2] = useState(store.addressLine2 ?? "");
   const [addressQuery, setAddressQuery] = useState(initialAddressQuery);
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(() =>
@@ -124,6 +125,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
     const errors = validateStoreProfileFields({
       name,
       phone,
+      email,
       geocoded,
       geocodeError,
     });
@@ -143,6 +145,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
         body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim(),
+          email: email.trim(),
           addressLine2: addressLine2.trim() || undefined,
           addressQuery: addressQuery.trim(),
           enabledUberDirect,
@@ -219,6 +222,27 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
           </FormField>
 
           <FormField
+            id="storeEmail"
+            label="Store email"
+            error={fieldErrors.email}
+            hint="New order and cancellation alerts are sent here."
+          >
+            <Input
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (fieldErrors.email) {
+                  setFieldErrors((current) => ({ ...current, email: undefined }));
+                }
+              }}
+              placeholder="hello@naijajollofw.ca"
+              autoComplete="email"
+            />
+          </FormField>
+
+          <FormField
             id="addressLine2"
             label="Suite or unit"
             error={fieldErrors.addressLine2}
@@ -270,7 +294,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-border-strong"
+                  className="mt-1 h-4 w-4 rounded-md border-border-strong"
                   checked={enabledUberDirect}
                   onChange={(event) => setEnabledUberDirect(event.target.checked)}
                 />
@@ -289,7 +313,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-border-strong"
+                  className="mt-1 h-4 w-4 rounded-md border-border-strong"
                   checked={enabledDoorDashDrive}
                   onChange={(event) => setEnabledDoorDashDrive(event.target.checked)}
                 />
@@ -303,7 +327,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
                 </span>
               </label>
             ) : (
-              <div className="flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3">
+              <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
                 <span className="mt-0.5 rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-text-secondary">
                   Coming soon
                 </span>

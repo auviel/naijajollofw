@@ -166,14 +166,14 @@ export function AccountAddressesClient({
     <div className="space-y-8">
       <ul className="space-y-3">
         {addresses.length === 0 ? (
-          <li className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-text-secondary">
+          <li className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-text-secondary">
             No saved addresses yet.
           </li>
         ) : (
           addresses.map((address) => (
             <li
               key={address.id}
-              className="flex items-start justify-between gap-3 rounded-xl border border-border bg-surface-elevated px-4 py-3"
+              className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-surface-elevated px-4 py-3"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -212,7 +212,7 @@ export function AccountAddressesClient({
         )}
       </ul>
 
-      <div className="space-y-3 rounded-xl border border-border p-4">
+      <div className="space-y-3 rounded-2xl border border-border p-4">
         <h2 className="text-sm font-semibold text-foreground">Add address</h2>
         <AddressAutocomplete
           value={query}

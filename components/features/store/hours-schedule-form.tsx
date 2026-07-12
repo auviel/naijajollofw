@@ -92,7 +92,7 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
                       closeTime: closed ? null : (day.closeTime ?? "22:00"),
                     });
                   }}
-                  className="rounded border-border"
+                  className="rounded-md border-border"
                 />
                 Closed
               </label>

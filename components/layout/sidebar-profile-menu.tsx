@@ -72,7 +72,7 @@ export function SidebarProfileMenu() {
         <ul
           id={menuId}
           role="menu"
-          className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-md border border-border bg-surface-elevated shadow-lg"
+          className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-lg"
         >
           <li role="none">
             <Link

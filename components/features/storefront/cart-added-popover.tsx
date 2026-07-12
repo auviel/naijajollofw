@@ -45,7 +45,7 @@ export function CartAddedPopover({
       ref={panelRef}
       role="status"
       aria-live="polite"
-      className="absolute top-full right-0 z-50 mt-2 w-[min(calc(100vw-2rem),28rem)] rounded-xl border border-border bg-background p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
+      className="absolute top-full right-0 z-50 mt-2 w-[min(calc(100vw-2rem),28rem)] rounded-2xl border border-border bg-background p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
       initial={variants.initial}
       animate={variants.animate}
       exit={variants.exit}

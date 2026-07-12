@@ -125,7 +125,7 @@ function OverviewStat({
   return (
     <Link
       href={href}
-      className="rounded-xl border border-border bg-surface-elevated px-4 py-3 no-underline transition-colors hover:border-border-strong"
+      className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 no-underline transition-colors hover:border-border-strong"
     >
       <p className="text-xs font-medium tracking-wide text-text-tertiary uppercase">
         {label}

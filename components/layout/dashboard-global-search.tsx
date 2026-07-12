@@ -149,7 +149,7 @@ export function DashboardGlobalSearch() {
         <div
           id={listId}
           role="listbox"
-          className="absolute top-full right-0 left-0 z-40 mt-2 max-h-[min(24rem,70dvh)] overflow-y-auto rounded-lg border border-border bg-surface-elevated shadow-lg"
+          className="absolute top-full right-0 left-0 z-40 mt-2 max-h-[min(24rem,70dvh)] overflow-y-auto rounded-2xl border border-border bg-surface-elevated shadow-lg"
         >
           {loading && hits.length === 0 ? (
             <p className="px-4 py-3 text-sm text-text-secondary">Searching…</p>
