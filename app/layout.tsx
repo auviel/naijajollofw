@@ -9,8 +9,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "deliverGO",
-  description: "Store delivery dispatch powered by Uber Direct",
+  title: {
+    default: "Naija Jollof Waterloo",
+    template: "%s · Naija Jollof Waterloo",
+  },
+  description:
+    "Order smoky jollof, rich stews, and party trays from Naija Jollof Waterloo. Pickup or delivery.",
+  applicationName: "Naija Jollof Waterloo",
+  appleWebApp: {
+    title: "Naija Jollof",
+  },
 };
 
 export default function RootLayout({

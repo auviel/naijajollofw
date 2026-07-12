@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
 import { Search, ShoppingBag, User, X } from "@/components/ui/icons";
-import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
 
 type StorefrontHeaderBarProps = {
@@ -22,7 +21,6 @@ export function StorefrontHeaderBar({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { success } = useToast();
   const [, startTransition] = useTransition();
   const [scrolled, setScrolled] = useState(false);
   const urlQuery = searchParams.get("q") ?? "";
@@ -33,6 +31,10 @@ export function StorefrontHeaderBar({
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const isLoggedIn = status === "authenticated" && Boolean(session?.user);
+  const role = session?.user?.role;
+  const accountHref = role === "STORE_MANAGER" ? "/dashboard" : "/account";
+  const accountLabel =
+    role === "STORE_MANAGER" ? "Dashboard" : "Account";
 
   useEffect(() => {
     if (!mobileSearchOpen) {
@@ -87,15 +89,11 @@ export function StorefrontHeaderBar({
     return () => window.clearTimeout(timeout);
   }, [query, pathname, router, searchParams]);
 
-  function comingSoon() {
-    success("Guest accounts coming soon — you can order as a guest.");
-  }
-
   const accountControl = (
     <Link
-      href="/dashboard"
+      href={accountHref}
       className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-surface"
-      aria-label="Account"
+      aria-label={accountLabel}
     >
       <User className="h-5 w-5" aria-hidden />
     </Link>
@@ -110,7 +108,7 @@ export function StorefrontHeaderBar({
           : "border-transparent",
       )}
     >
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
+      <div className="flex h-14 w-full items-center gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6 lg:px-8 xl:px-10">
         {/* Mobile expanded search */}
         <div
           className={cn(
@@ -146,7 +144,7 @@ export function StorefrontHeaderBar({
         {/* Default header row (hidden on mobile while search is open) */}
         <div
           className={cn(
-            "min-w-0 flex-1 items-center gap-3 sm:gap-6 lg:gap-8",
+            "min-w-0 flex-1 items-center justify-between gap-3 sm:gap-6 lg:gap-8",
             mobileSearchOpen ? "hidden sm:flex" : "flex",
           )}
         >
@@ -158,22 +156,24 @@ export function StorefrontHeaderBar({
             <StoreBrandLogo alt={storeName} variant="header" priority />
           </Link>
 
-          <label className="relative hidden min-w-0 flex-1 sm:block sm:max-w-2xl lg:max-w-3xl">
-            <span className="sr-only">Search menu</span>
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search in ${storeName}`}
-              className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-10 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
-            />
-          </label>
+          <div className="hidden min-w-0 flex-1 justify-center px-2 sm:flex lg:px-6">
+            <label className="relative w-full max-w-2xl lg:max-w-3xl">
+              <span className="sr-only">Search menu</span>
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search in ${storeName}`}
+                className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-10 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
+              />
+            </label>
+          </div>
 
-          <nav className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={() => setMobileSearchOpen(true)}
@@ -191,20 +191,18 @@ export function StorefrontHeaderBar({
               accountControl
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={comingSoon}
-                  className="hidden px-2 text-sm font-medium text-foreground transition-opacity hover:opacity-70 sm:inline"
+                <Link
+                  href="/signin"
+                  className="hidden px-2 text-sm font-medium text-foreground no-underline transition-opacity hover:opacity-70 sm:inline"
                 >
                   Log in
-                </button>
-                <button
-                  type="button"
-                  onClick={comingSoon}
-                  className="inline-flex h-9 items-center rounded-full bg-surface px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-border sm:px-4"
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex h-9 items-center rounded-full bg-surface px-3.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-border sm:px-4"
                 >
                   Sign up
-                </button>
+                </Link>
               </>
             )}
           </nav>

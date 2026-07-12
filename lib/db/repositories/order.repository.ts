@@ -225,6 +225,7 @@ const listInclude = {
 
 export type CreateOrderInput = {
   storeId: string;
+  userId?: string | null;
   fulfillmentType: "pickup" | "delivery";
   customerName: string;
   customerPhone: string;
@@ -262,6 +263,18 @@ export const orderRepository = {
     return prisma.order.findFirst({
       where: { id, storeId },
       include: orderInclude,
+    });
+  },
+
+  async findManyForUser(userId: string, limit = 20) {
+    return prisma.order.findMany({
+      where: {
+        userId,
+        NOT: { status: "pending_payment" },
+      },
+      include: orderInclude,
+      orderBy: [{ placedAt: "desc" }, { createdAt: "desc" }],
+      take: limit,
     });
   },
 
@@ -315,6 +328,7 @@ export const orderRepository = {
     return prisma.order.create({
       data: {
         storeId: input.storeId,
+        userId: input.userId ?? null,
         status: "pending_acceptance",
         fulfillmentType: input.fulfillmentType,
         fulfillmentMethod: "unassigned",

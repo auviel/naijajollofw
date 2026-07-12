@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
 import { ArrowDown } from "@/components/ui/icons";
 import type { StoreProfile } from "@/lib/domain/store/types";
 
 type FaqItem = {
   question: string;
-  answer: string;
+  answer: ReactNode;
 };
 
 type StorefrontFaqProps = {
@@ -41,7 +43,19 @@ function buildFaqItems({
     },
     {
       question: "What are your hours?",
-      answer: `${hoursLine} You can still browse the menu and add items when we’re closed — pick a pickup or delivery time at checkout.`,
+      answer: (
+        <>
+          {hoursLine} You can still browse the menu and add items when we’re
+          closed — pick a pickup or delivery time at checkout. See{" "}
+          <Link
+            href="/hours"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Hours &amp; ordering
+          </Link>{" "}
+          for the full week.
+        </>
+      ),
     },
     {
       question: "How long until my order is ready?",
@@ -82,7 +96,7 @@ export function StorefrontFaq({
       aria-labelledby="faq-heading"
       className="mt-12 scroll-mt-24 border-t border-border pt-16 sm:mt-16 sm:pt-20"
     >
-      <div className="max-w-3xl text-left">
+      <div className="w-full text-left">
         <h2
           id="faq-heading"
           className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
@@ -103,9 +117,9 @@ export function StorefrontFaq({
                   aria-hidden
                 />
               </summary>
-              <p className="pb-5 pr-8 text-sm leading-relaxed text-text-secondary sm:text-[15px]">
+              <div className="pb-5 pr-8 text-sm leading-relaxed text-text-secondary sm:text-[15px]">
                 {item.answer}
-              </p>
+              </div>
             </details>
           ))}
         </div>

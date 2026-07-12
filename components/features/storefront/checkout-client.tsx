@@ -48,6 +48,9 @@ type CheckoutClientProps = {
   storeName: string;
   scheduleDays: StoreHoursDay[];
   scheduleTimeZone: string;
+  initialCustomerName?: string;
+  initialCustomerPhone?: string;
+  initialCustomerEmail?: string;
 };
 
 export function CheckoutClient({
@@ -61,12 +64,16 @@ export function CheckoutClient({
   storeName,
   scheduleDays,
   scheduleTimeZone,
+  initialCustomerName = "",
+  initialCustomerPhone = "",
+  initialCustomerEmail = "",
 }: CheckoutClientProps) {
   const router = useRouter();
   const { error: toastError } = useToast();
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState(initialCustomerName);
+  const [customerPhone, setCustomerPhone] = useState(initialCustomerPhone);
+  const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(
     "pickup",
   );
@@ -253,6 +260,7 @@ export function CheckoutClient({
           idempotencyKey: crypto.randomUUID(),
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail.trim() || undefined,
           fulfillmentType,
           tipCents,
           notes: notes.trim() || undefined,
@@ -482,6 +490,21 @@ export function CheckoutClient({
             autoComplete="tel"
             inputMode="tel"
             placeholder="(519) 555-0100"
+            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium" htmlFor="checkout-email">
+            Email for receipt{" "}
+            <span className="font-normal text-text-tertiary">(optional)</span>
+          </label>
+          <input
+            id="checkout-email"
+            type="email"
+            value={customerEmail}
+            onChange={(e) => setCustomerEmail(e.target.value)}
+            autoComplete="email"
+            placeholder="you@example.com"
             className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
           />
         </div>

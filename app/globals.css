@@ -108,12 +108,16 @@
   }
 }
 
+.storefront-hero-banner {
+  animation: storefront-fade-up 480ms var(--ease-out) both;
+}
+
 .storefront-hero-copy {
-  animation: storefront-fade-up 520ms var(--ease-out) both;
+  animation: storefront-fade-up 560ms var(--ease-out) 80ms both;
 }
 
 .storefront-hero-cover {
-  animation: storefront-fade-scale 700ms var(--ease-out) both;
+  animation: storefront-fade-scale 720ms var(--ease-out) both;
 }
 
 .storefront-hero-logo {
@@ -129,6 +133,7 @@
     transition-duration: 0.01ms !important;
   }
 
+  .storefront-hero-banner,
   .storefront-hero-copy,
   .storefront-hero-cover,
   .storefront-hero-logo {

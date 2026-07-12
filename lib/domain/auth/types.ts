@@ -1,1 +1,1 @@
-export type UserRole = "STORE_MANAGER";
+export type UserRole = "STORE_MANAGER" | "DINER";

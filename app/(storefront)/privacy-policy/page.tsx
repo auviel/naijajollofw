@@ -7,7 +7,7 @@ import {
 } from "@/components/features/storefront/legal-page-shell";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Naija Jollof Waterloo",
+  title: "Privacy Policy",
   description:
     "How Naija Jollof Waterloo collects, uses, and protects your personal information.",
 };

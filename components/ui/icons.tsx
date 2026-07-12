@@ -8,10 +8,13 @@ import {
   Cancel01Icon,
   ClipboardListIcon,
   Clock01Icon,
-  CookingPotIcon,
+  Facebook01Icon,
+  IceCubesIcon,
+  InstagramIcon,
   LeftToRightListDashIcon,
   LinkSquare01Icon,
   Location01Icon,
+  NoodlesIcon,
   Package01Icon,
   RiceBowl01Icon,
   Search01Icon,
@@ -24,6 +27,8 @@ import {
   Tick02Icon,
   UserIcon,
   UserMultipleIcon,
+  WhatsappIcon,
+  YoutubeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import type { ComponentPropsWithoutRef } from "react";
@@ -105,12 +110,16 @@ export const User = createIcon(UserIcon, "User");
 export const Users = createIcon(UserMultipleIcon, "Users");
 export const UtensilsCrossed = createIcon(SpoonAndForkIcon, "UtensilsCrossed");
 export const X = createIcon(Cancel01Icon, "X");
+export const WhatsApp = createIcon(WhatsappIcon, "WhatsApp");
+export const Facebook = createIcon(Facebook01Icon, "Facebook");
+export const Instagram = createIcon(InstagramIcon, "Instagram");
+export const YouTube = createIcon(YoutubeIcon, "YouTube");
 
 /** Menu category icons (filled) */
 export const StarFill = createFilledIcon(StarIcon, "StarFill");
 export const RiceBowlFill = createFilledIcon(RiceBowl01Icon, "RiceBowlFill");
-export const CookingPotFill = createFilledIcon(CookingPotIcon, "CookingPotFill");
-export const SpoonAndForkFill = createFilledIcon(SpoonAndForkIcon, "SpoonAndForkFill");
+export const SoupFill = createFilledIcon(NoodlesIcon, "SoupFill");
+export const AddonsFill = createFilledIcon(IceCubesIcon, "AddonsFill");
 export const PackageFill = createFilledIcon(Package01Icon, "PackageFill");
 export const SoftDrinkFill = createFilledIcon(SoftDrink01Icon, "SoftDrinkFill");
 export const CalendarFill = createFilledIcon(Calendar01Icon, "CalendarFill");

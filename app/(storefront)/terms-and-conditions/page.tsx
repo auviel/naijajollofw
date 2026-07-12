@@ -7,7 +7,7 @@ import {
 } from "@/components/features/storefront/legal-page-shell";
 
 export const metadata: Metadata = {
-  title: "Terms and Conditions · Naija Jollof Waterloo",
+  title: "Terms and Conditions",
   description:
     "Terms and conditions for ordering from Naija Jollof Waterloo online.",
 };

@@ -5,9 +5,11 @@ export type AppErrorCode =
   | "INVALID_ADDRESS"
   | "PROVIDER_ERROR"
   | "UNAUTHORIZED"
+  | "FORBIDDEN"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "CONFLICT";
 
 export class AppError extends Error {
   constructor(

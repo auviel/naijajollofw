@@ -12,6 +12,7 @@ export type SessionUser = {
   storeId: string;
   storeName: string;
   role: UserRole;
+  phoneE164?: string | null;
 };
 
 export type SessionContext = {
@@ -31,6 +32,7 @@ function mapSessionUser(session: Session | null | undefined): SessionUser | null
     storeId: session.user.storeId,
     storeName: session.user.storeName,
     role: session.user.role,
+    phoneE164: session.user.phoneE164 ?? null,
   };
 }
 
@@ -39,10 +41,27 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return mapSessionUser(session);
 }
 
+/** Alias for clarity at call sites that treat auth as optional. */
+export const getOptionalSessionUser = getSessionUser;
+
 export async function requireStoreManager(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) {
     throw new AppError("UNAUTHORIZED", "Authentication required", 401);
+  }
+  if (user.role !== "STORE_MANAGER") {
+    throw new AppError("FORBIDDEN", "Store manager access required", 403);
+  }
+  return user;
+}
+
+export async function requireDiner(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) {
+    throw new AppError("UNAUTHORIZED", "Authentication required", 401);
+  }
+  if (user.role !== "DINER") {
+    throw new AppError("FORBIDDEN", "Diner account required", 403);
   }
   return user;
 }
@@ -60,7 +79,7 @@ export async function requireSessionContext(): Promise<SessionContext> {
 
 export async function getSessionContext(): Promise<SessionContext | null> {
   const user = await getSessionUser();
-  if (!user) {
+  if (!user || user.role !== "STORE_MANAGER") {
     return null;
   }
 

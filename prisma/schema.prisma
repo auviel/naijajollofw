@@ -12,6 +12,7 @@ datasource db {
 
 enum UserRole {
   STORE_MANAGER
+  DINER
 }
 
 enum DeliveryStatus {
@@ -85,13 +86,30 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
+  phoneE164    String?
   role         UserRole @default(STORE_MANAGER)
   storeId      String
   store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  orders       Order[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([storeId])
+  @@index([storeId, role])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tokenHash])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model Customer {
@@ -365,6 +383,8 @@ model Order {
   id                   String            @id @default(cuid())
   storeId              String
   store                Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId               String?
+  user                 User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   publicToken          String            @unique @default(cuid())
   status               OrderStatus       @default(pending_payment)
   fulfillmentType      FulfillmentType
@@ -396,6 +416,7 @@ model Order {
   @@index([storeId, createdAt(sort: Desc)])
   @@index([storeId, status])
   @@index([publicToken])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model OrderLineItem {

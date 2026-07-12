@@ -1,4 +1,6 @@
 import { CheckoutClient } from "@/components/features/storefront/checkout-client";
+import { getOptionalSessionUser } from "@/lib/auth/session";
+import { phoneE164ToFormValue } from "@/lib/domain/customer/format";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
 import {
   getSquareApplicationId,
@@ -17,16 +19,22 @@ import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-s
 
 export default async function CheckoutPage() {
   const storeId = await resolvePublicStoreId();
-  const [cart, openStatus, hours, store] = await Promise.all([
+  const [cart, openStatus, hours, store, sessionUser] = await Promise.all([
     getCart(),
     getPublicStoreOpenStatus(storeId),
     getPublicStoreHoursSchedule(storeId),
     storeRepository.getProfileById(storeId),
+    getOptionalSessionUser(),
   ]);
   const configured = isSquareConfigured();
   const taxRateBps = getTaxRateBps();
 
   computeOrderTotals(cart.subtotalCents, 0, taxRateBps);
+
+  const diner =
+    sessionUser?.role === "DINER" && sessionUser.storeId === storeId
+      ? sessionUser
+      : null;
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -41,6 +49,11 @@ export default async function CheckoutPage() {
         storeName={store?.name ?? "Restaurant"}
         scheduleDays={hours.days}
         scheduleTimeZone={hours.timezone}
+        initialCustomerName={diner?.name ?? ""}
+        initialCustomerPhone={
+          diner?.phoneE164 ? phoneE164ToFormValue(diner.phoneE164) : ""
+        }
+        initialCustomerEmail={diner?.email ?? ""}
       />
     </div>
   );

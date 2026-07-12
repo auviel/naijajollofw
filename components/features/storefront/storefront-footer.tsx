@@ -1,11 +1,43 @@
 import Link from "next/link";
 import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
-import { Call, Location } from "@/components/ui/icons";
+import {
+  Call,
+  Facebook,
+  Instagram,
+  Location,
+  WhatsApp,
+  YouTube,
+} from "@/components/ui/icons";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 
 const YEAR = new Date().getFullYear();
+
+const SOCIAL_PROFILES = [
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/Naijajolloftoronto",
+    Icon: Facebook,
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/naijajolloftoronto/",
+    Icon: Instagram,
+  },
+  {
+    label: "YouTube",
+    href: "https://www.youtube.com/@naijajolloftoronto500",
+    Icon: YouTube,
+  },
+] as const;
+
+function whatsappHref(phone: string | null): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  return `https://wa.me/${digits}`;
+}
 
 function formatFooterAddress(store: StoreProfile): string {
   const line2 = store.addressLine2 ? `, ${store.addressLine2}` : "";
@@ -31,6 +63,13 @@ export async function StorefrontFooter() {
   const address = store ? formatFooterAddress(store) : null;
   const phone = store?.phone ?? null;
   const phoneLabel = phone ? formatFooterPhone(phone) : null;
+  const whatsapp = whatsappHref(phone);
+  const socialLinks = [
+    ...(whatsapp
+      ? [{ label: "WhatsApp", href: whatsapp, Icon: WhatsApp }]
+      : []),
+    ...SOCIAL_PROFILES,
+  ];
 
   return (
     <footer className="mt-auto border-t border-border bg-background">
@@ -49,15 +88,33 @@ export async function StorefrontFooter() {
               />
             </Link>
             <p className="mt-5 max-w-[16rem] text-sm leading-relaxed text-text-secondary">
-              Pickup and delivery from Waterloo.
+              Smoky jollof and Nigerian favorites, made for Waterloo.
             </p>
+            <nav
+              aria-label="Social media"
+              className="mt-5 flex items-center gap-1"
+            >
+              {socialLinks.map(({ label, href, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-text-secondary no-underline transition-colors hover:bg-surface hover:text-foreground"
+                  aria-label={label}
+                >
+                  <Icon className="h-5 w-5" aria-hidden />
+                </a>
+              ))}
+            </nav>
           </div>
 
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 sm:grid-cols-3 sm:gap-x-14 lg:min-w-0 lg:flex-1 lg:justify-items-start lg:gap-x-16 xl:max-w-3xl">
-            <FooterColumn title="Order">
+            <FooterColumn title="Quicklinks">
               <FooterLink href="/#menu">Menu</FooterLink>
               <FooterLink href="/cart">Cart</FooterLink>
               <FooterLink href="/checkout">Checkout</FooterLink>
+              <FooterLink href="/blog">Blog</FooterLink>
             </FooterColumn>
 
             <FooterColumn title="Restaurant">
@@ -99,8 +156,7 @@ export async function StorefrontFooter() {
                 </a>
               ) : null}
               <FooterLink href="/#faq">FAQ</FooterLink>
-              <FooterLink href="/cart">View your cart</FooterLink>
-              <FooterLink href="/#menu">Hours &amp; ordering</FooterLink>
+              <FooterLink href="/hours">Hours &amp; ordering</FooterLink>
             </FooterColumn>
           </div>
         </div>

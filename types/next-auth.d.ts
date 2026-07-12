@@ -8,6 +8,7 @@ declare module "next-auth" {
       storeId: string;
       storeName: string;
       role: UserRole;
+      phoneE164?: string | null;
     } & DefaultSession["user"];
   }
 
@@ -15,6 +16,7 @@ declare module "next-auth" {
     storeId: string;
     storeName: string;
     role: UserRole;
+    phoneE164?: string | null;
   }
 }
 
@@ -23,6 +25,7 @@ declare module "next-auth/jwt" {
     storeId?: string;
     storeName?: string;
     role?: UserRole;
+    phoneE164?: string | null;
   }
 }
 

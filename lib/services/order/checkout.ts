@@ -6,23 +6,67 @@ import {
   mapOrderToPublicView,
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
+import { getOptionalSessionUser } from "@/lib/auth/session";
 import type { PublicOrderView } from "@/lib/domain/order/types";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
 import {
   checkoutRequestSchema,
   type CheckoutRequest,
 } from "@/lib/domain/order/validation";
+import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
+import { sendEmailInBackground } from "@/lib/integrations/email/send";
+import { buildOrderConfirmationEmail } from "@/lib/integrations/email/templates";
 import { createSquarePayment } from "@/lib/integrations/payments/square/client";
 import { readCartSessionId } from "@/lib/services/cart/session";
 import {
   getPublicStoreHoursSchedule,
   getPublicStoreOpenStatus,
 } from "@/lib/services/store/store-hours";
-import { isValidScheduleSlot } from "@/lib/domain/store/schedule-slots";
+import {
+  formatScheduledForLabel,
+  isValidScheduleSlot,
+} from "@/lib/domain/store/schedule-slots";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
+import { formatCadFromCents } from "@/lib/utils/currency";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 import { logger } from "@/lib/utils/logger";
+
+function resolveReceiptEmail(
+  parsedEmail: string | undefined,
+  dinerEmail: string | undefined,
+): string | null {
+  const fromForm = parsedEmail?.trim().toLowerCase() || "";
+  if (fromForm) return fromForm;
+  const fromDiner = dinerEmail?.trim().toLowerCase() || "";
+  return fromDiner || null;
+}
+
+function sendOrderConfirmationEmail(
+  order: PublicOrderView,
+  to: string,
+  timeZone: string,
+): void {
+  const trackUrl = `${getAppBaseUrl()}/orders/${order.id}?token=${order.publicToken}`;
+  const scheduledLabel = order.scheduledFor
+    ? formatScheduledForLabel(order.scheduledFor, timeZone)
+    : null;
+  const email = buildOrderConfirmationEmail({
+    customerName: order.customerName,
+    storeName: order.storeName,
+    fulfillmentType: order.fulfillmentType,
+    totalLabel: formatCadFromCents(order.totalCents),
+    trackUrl,
+    scheduledLabel,
+  });
+  sendEmailInBackground({
+    to,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    idempotencyKey: `order-confirm/${order.id}`,
+  });
+}
 
 export type CheckoutResult = {
   order: PublicOrderView;
@@ -33,6 +77,12 @@ export async function checkoutWithSquare(
 ): Promise<CheckoutResult> {
   const parsed: CheckoutRequest = checkoutRequestSchema.parse(input);
   const storeId = await resolvePublicStoreId();
+  const sessionUser = await getOptionalSessionUser();
+  const diner =
+    sessionUser?.role === "DINER" && sessionUser.storeId === storeId
+      ? sessionUser
+      : null;
+
   const [openStatus, hours] = await Promise.all([
     getPublicStoreOpenStatus(storeId),
     getPublicStoreHoursSchedule(storeId),
@@ -87,7 +137,14 @@ export async function checkoutWithSquare(
     );
   }
 
-  const phone = normalizeCanadianPhone(parsed.customerPhone);
+  const customerName =
+    parsed.customerName.trim() || diner?.name?.trim() || "";
+  if (!customerName) {
+    throw new AppError("VALIDATION_ERROR", "Enter your name.", 400);
+  }
+
+  const phoneRaw = parsed.customerPhone.trim() || diner?.phoneE164 || "";
+  const phone = normalizeCanadianPhone(phoneRaw);
   if (!phone) {
     throw new AppError("VALIDATION_ERROR", "Enter a valid Canadian phone number.", 400);
   }
@@ -110,17 +167,31 @@ export async function checkoutWithSquare(
     referenceId: sessionId.slice(0, 40),
   });
 
+  const receiptEmail = resolveReceiptEmail(
+    parsed.customerEmail || undefined,
+    diner?.email,
+  );
+
   const existing = await orderRepository.findBySquarePaymentId(payment.paymentId);
   if (existing) {
     await cartRepository.clearCart(cart.id);
-    return { order: mapOrderToPublicView(existing) };
+    const existingView = mapOrderToPublicView(existing);
+    if (receiptEmail) {
+      sendOrderConfirmationEmail(existingView, receiptEmail, hours.timezone);
+    } else {
+      logger.info("email.order_confirm_skipped_no_address", {
+        orderId: existingView.id,
+      });
+    }
+    return { order: existingView };
   }
 
   try {
     const order = await orderRepository.createPaidOrder({
       storeId,
+      userId: diner?.id ?? null,
       fulfillmentType: parsed.fulfillmentType,
-      customerName: parsed.customerName.trim(),
+      customerName,
       customerPhone: phone,
       dropoffAddress:
         parsed.fulfillmentType === "delivery"
@@ -151,7 +222,16 @@ export async function checkoutWithSquare(
 
     await cartRepository.clearCart(cart.id);
 
-    return { order: mapOrderToPublicView(order) };
+    const orderView = mapOrderToPublicView(order);
+    if (receiptEmail) {
+      sendOrderConfirmationEmail(orderView, receiptEmail, hours.timezone);
+    } else {
+      logger.info("email.order_confirm_skipped_no_address", {
+        orderId: orderView.id,
+      });
+    }
+
+    return { order: orderView };
   } catch (error) {
     logger.error("checkout.order_create_failed", {
       paymentId: payment.paymentId,

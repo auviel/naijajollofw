@@ -1,11 +1,11 @@
 import type { ComponentType } from "react";
 import {
+  AddonsFill,
   CalendarFill,
-  CookingPotFill,
   PackageFill,
   RiceBowlFill,
   SoftDrinkFill,
-  SpoonAndForkFill,
+  SoupFill,
   StarFill,
 } from "@/components/ui/icons";
 
@@ -30,9 +30,9 @@ export function categoryIconFor(name: string): IconComponent | null {
   if (n.startsWith("featured")) return null;
   if (n.includes("popular")) return StarFill;
   if (n.includes("rice")) return RiceBowlFill;
-  if (n.includes("soup") || n.includes("stew")) return CookingPotFill;
+  if (n.includes("soup") || n.includes("stew")) return SoupFill;
   if (n.includes("side") || n.includes("add-on") || n.includes("addon")) {
-    return SpoonAndForkFill;
+    return AddonsFill;
   }
   if (n.includes("family") || n.includes("tray") || n.includes("bulk")) {
     return PackageFill;

@@ -48,26 +48,29 @@ export function MenuCatalogBrowse({
                 id={`category-${category.id}`}
                 className="scroll-mt-32 space-y-3"
               >
-                <h2 className="font-display text-lg font-semibold text-foreground lg:text-xl">
-                  {displayCategoryName(category.name)}
-                </h2>
                 {featured ? (
                   <FeaturedCarousel
+                    title={displayCategoryName(category.name)}
                     items={category.items}
                     orderingEnabled={orderingEnabled}
                     onOpenDesktop={setOpenItemId}
                   />
                 ) : (
-                  <div className="grid gap-2 lg:grid-cols-2 lg:gap-3">
-                    {category.items.map((item) => (
-                      <MenuItemCard
-                        key={item.id}
-                        item={item}
-                        orderingEnabled={orderingEnabled}
-                        onOpenDesktop={() => setOpenItemId(item.id)}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <h2 className="font-display text-lg font-semibold text-foreground lg:text-xl">
+                      {displayCategoryName(category.name)}
+                    </h2>
+                    <div className="grid gap-2 lg:grid-cols-2 lg:gap-3">
+                      {category.items.map((item) => (
+                        <MenuItemCard
+                          key={item.id}
+                          item={item}
+                          orderingEnabled={orderingEnabled}
+                          onOpenDesktop={() => setOpenItemId(item.id)}
+                        />
+                      ))}
+                    </div>
+                  </>
                 )}
               </section>
             );
@@ -87,10 +90,12 @@ export function MenuCatalogBrowse({
 }
 
 function FeaturedCarousel({
+  title,
   items,
   orderingEnabled,
   onOpenDesktop,
 }: {
+  title: string;
   items: MenuItemListItem[];
   orderingEnabled: boolean;
   onOpenDesktop: (id: string) => void;
@@ -108,23 +113,28 @@ function FeaturedCarousel({
 
   return (
     <div className="relative">
-      <div className="mb-2 hidden justify-end gap-2 sm:flex">
-        <button
-          type="button"
-          onClick={() => scrollByCard(-1)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-surface"
-          aria-label="Previous featured items"
-        >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
-        </button>
-        <button
-          type="button"
-          onClick={() => scrollByCard(1)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-surface"
-          aria-label="Next featured items"
-        >
-          <ChevronRight className="h-4 w-4" aria-hidden />
-        </button>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold text-foreground lg:text-xl">
+          {title}
+        </h2>
+        <div className="hidden shrink-0 gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={() => scrollByCard(-1)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-surface"
+            aria-label="Previous featured items"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollByCard(1)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-surface"
+            aria-label="Next featured items"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       </div>
       <div
         ref={scrollerRef}
