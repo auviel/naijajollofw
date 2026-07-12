@@ -75,9 +75,9 @@ function layout(input: {
               <img
                 src="${logoSrc}"
                 alt="Naija Jollof Waterloo"
-                width="220"
-                height="59"
-                style="display:block;border:0;outline:none;text-decoration:none;width:220px;max-width:100%;height:auto;"
+                width="140"
+                height="38"
+                style="display:block;border:0;outline:none;text-decoration:none;width:140px;max-width:100%;height:auto;"
               />
             </td>
           </tr>

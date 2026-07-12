@@ -8,6 +8,7 @@ export const dinerRegisterSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password is too long"),
+  turnstileToken: z.string().trim().max(2048).optional(),
 });
 
 export type DinerRegisterInput = z.infer<typeof dinerRegisterSchema>;

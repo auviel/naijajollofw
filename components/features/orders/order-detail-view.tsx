@@ -97,10 +97,6 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
             <span>Tax</span>
             <span>{formatCadFromCents(order.taxCents)}</span>
           </div>
-          <div className="flex justify-between text-text-secondary">
-            <span>Tip</span>
-            <span>{formatCadFromCents(order.tipCents)}</span>
-          </div>
           <div className="flex justify-between font-semibold text-foreground">
             <span>Total</span>
             <span>{formatCadFromCents(order.totalCents)}</span>

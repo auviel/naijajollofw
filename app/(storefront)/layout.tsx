@@ -1,6 +1,7 @@
 import { StorefrontFooter } from "@/components/features/storefront/storefront-footer";
 import { StorefrontFooterGate } from "@/components/features/storefront/storefront-footer-gate";
 import { StorefrontHeader } from "@/components/features/storefront/storefront-header";
+import { MotionPageShell } from "@/components/motion/motion-page-shell";
 import { StorefrontProviders } from "@/components/providers/storefront-providers";
 import { Outfit } from "next/font/google";
 
@@ -19,14 +20,14 @@ export default function StorefrontLayout({
     <StorefrontProviders>
       <div
         id="storefront-scroll"
-        className={`${outfit.variable} flex min-h-full flex-1 flex-col overflow-y-auto bg-background`}
+        className={`${outfit.variable} flex min-h-dvh flex-1 flex-col bg-background`}
       >
         <StorefrontHeader />
         <main
           id="main-content"
           className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 md:pb-8 lg:px-8"
         >
-          {children}
+          <MotionPageShell>{children}</MotionPageShell>
         </main>
         <StorefrontFooterGate>
           <StorefrontFooter />

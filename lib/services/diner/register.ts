@@ -4,6 +4,7 @@ import { dinerRegisterSchema } from "@/lib/domain/diner/validation";
 import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
 import { sendEmailInBackground } from "@/lib/integrations/email/send";
 import { buildWelcomeEmail } from "@/lib/integrations/email/templates";
+import { verifyTurnstileToken } from "@/lib/integrations/turnstile/verify";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
@@ -15,8 +16,17 @@ export type RegisteredDiner = {
   phoneE164: string;
 };
 
-export async function registerDiner(input: unknown): Promise<RegisteredDiner> {
+export type RegisterDinerOptions = {
+  remoteIp?: string | null;
+};
+
+export async function registerDiner(
+  input: unknown,
+  options: RegisterDinerOptions = {},
+): Promise<RegisteredDiner> {
   const parsed = dinerRegisterSchema.parse(input);
+  await verifyTurnstileToken(parsed.turnstileToken, options.remoteIp);
+
   const phoneE164 = normalizeCanadianPhone(parsed.phone);
   if (!phoneE164) {
     throw new AppError(

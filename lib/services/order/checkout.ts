@@ -1,3 +1,4 @@
+import { withAddressLine2 } from "@/lib/domain/address/format";
 import {
   cartRepository,
   mapCartToView,
@@ -219,7 +220,10 @@ export async function checkoutWithSquare(
       customerEmail: receiptEmail,
       dropoffAddress:
         parsed.fulfillmentType === "delivery"
-          ? parsed.dropoffAddress?.trim() ?? null
+          ? withAddressLine2(
+              parsed.dropoffAddress ?? "",
+              parsed.dropoffUnit,
+            ) || null
           : null,
       dropoffLat:
         parsed.fulfillmentType === "delivery" ? (parsed.dropoffLat ?? null) : null,

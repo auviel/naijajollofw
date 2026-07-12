@@ -11,6 +11,8 @@ export const checkoutRequestSchema = z
     tipCents: z.number().int().min(0).max(50_000).default(0),
     notes: z.string().trim().max(500).optional(),
     dropoffAddress: z.string().trim().min(5).max(300).optional(),
+    /** Apt / unit / suite — optional; folded into dropoffAddress on save. */
+    dropoffUnit: z.string().trim().max(40).optional(),
     dropoffLat: z.number().min(-90).max(90).optional(),
     dropoffLng: z.number().min(-180).max(180).optional(),
     /** Guest-picked ready time (required when store is closed). */

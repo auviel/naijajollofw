@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, X } from "@/components/ui/icons";
 import type { StoreHoursDay } from "@/lib/domain/store/hours";
@@ -9,6 +10,7 @@ import {
   buildScheduleSlotsForDay,
   type ScheduleDayOption,
 } from "@/lib/domain/store/schedule-slots";
+import { easeOut, motionDuration, softSpring } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils/cn";
 
 type ScheduleOrderPickerProps = {
@@ -22,15 +24,15 @@ type ScheduleOrderPickerProps = {
 };
 
 export function ScheduleOrderPicker(props: ScheduleOrderPickerProps) {
-  if (!props.open) {
-    return null;
-  }
-
   return (
-    <ScheduleOrderPickerBody
-      key={props.initialScheduledFor ?? "fresh"}
-      {...props}
-    />
+    <AnimatePresence>
+      {props.open ? (
+        <ScheduleOrderPickerBody
+          key={props.initialScheduledFor ?? "fresh"}
+          {...props}
+        />
+      ) : null}
+    </AnimatePresence>
   );
 }
 
@@ -83,6 +85,7 @@ function ScheduleOrderPickerBody({
   timeZone,
   initialScheduledFor = null,
 }: ScheduleOrderPickerProps) {
+  const reduce = useReducedMotion();
   const dayOptions = useMemo(
     () => buildScheduleDays(days, timeZone),
     [days, timeZone],
@@ -137,14 +140,34 @@ function ScheduleOrderPickerBody({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="schedule-picker-title"
-      onClick={onClose}
     >
-      <div
-        className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
+      <motion.button
+        type="button"
+        aria-label="Close"
+        className="absolute inset-0 bg-black/50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{
+          duration: reduce ? motionDuration.fast : motionDuration.panel,
+          ease: easeOut,
+        }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+        animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+        exit={reduce ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
+        transition={
+          reduce
+            ? { duration: motionDuration.fast, ease: easeOut }
+            : softSpring
+        }
         onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b border-border px-5 pt-4 pb-4">
@@ -271,7 +294,7 @@ function ScheduleOrderPickerBody({
             Cancel
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

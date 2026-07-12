@@ -72,6 +72,7 @@ export function CheckoutClient({
   );
   const [notes, setNotes] = useState("");
   const [address, setAddress] = useState("");
+  const [addressUnit, setAddressUnit] = useState("");
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(null);
   const [verifiedAddress, setVerifiedAddress] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -272,6 +273,10 @@ export function CheckoutClient({
           scheduledFor: scheduledFor ?? undefined,
           dropoffAddress:
             fulfillmentType === "delivery" ? address.trim() : undefined,
+          dropoffUnit:
+            fulfillmentType === "delivery"
+              ? addressUnit.trim() || undefined
+              : undefined,
           dropoffLat:
             fulfillmentType === "delivery"
               ? geocoded?.address.latitude
@@ -619,17 +624,35 @@ export function CheckoutClient({
           />
         </div>
         {fulfillmentType === "delivery" ? (
-          <div className="space-y-1.5">
-            <span className="text-sm font-medium">Delivery address</span>
-            <AddressAutocomplete
-              value={address}
-              onChange={setAddress}
-              placeholder="Start typing your address"
-              verified={addressVerified && fulfillmentType === "delivery"}
-              isVerifying={isGeocoding}
-              verifyError={geocodeError}
-            />
-          </div>
+          <>
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium">Delivery address</span>
+              <AddressAutocomplete
+                value={address}
+                onChange={setAddress}
+                placeholder="Start typing your address"
+                verified={addressVerified && fulfillmentType === "delivery"}
+                isVerifying={isGeocoding}
+                verifyError={geocodeError}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="checkout-unit">
+                Apt/Unit number{" "}
+                <span className="font-normal text-text-tertiary">(optional)</span>
+              </label>
+              <input
+                id="checkout-unit"
+                type="text"
+                value={addressUnit}
+                onChange={(e) => setAddressUnit(e.target.value)}
+                autoComplete="address-line2"
+                maxLength={40}
+                placeholder="e.g. Apt 4, Unit 12"
+                className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+              />
+            </div>
+          </>
         ) : null}
         <div className="space-y-1.5">
           <label className="text-sm font-medium" htmlFor="checkout-notes">

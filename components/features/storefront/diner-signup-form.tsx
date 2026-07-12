@@ -4,35 +4,54 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { TurnstileField } from "@/components/features/storefront/turnstile-field";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 
-export function DinerSignupForm() {
+type DinerSignupFormProps = {
+  turnstileSiteKey: string | null;
+};
+
+export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (turnstileSiteKey && !turnstileToken) {
+      setError("Complete the security check and try again.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const response = await fetch("/api/diner/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          password,
+          turnstileToken: turnstileToken ?? undefined,
+        }),
       });
       const body = (await response.json().catch(() => ({}))) as {
         error?: string;
       };
       if (!response.ok) {
         setError(body.error ?? "Could not create your account.");
+        setTurnstileToken(null);
         setIsLoading(false);
         return;
       }
@@ -104,13 +123,24 @@ export function DinerSignupForm() {
         />
       </FormField>
 
+      {turnstileSiteKey ? (
+        <TurnstileField
+          siteKey={turnstileSiteKey}
+          onToken={setTurnstileToken}
+        />
+      ) : null}
+
       {error ? (
         <p className="text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isLoading || (Boolean(turnstileSiteKey) && !turnstileToken)}
+      >
         {isLoading ? "Creating account…" : "Create account"}
       </Button>
 

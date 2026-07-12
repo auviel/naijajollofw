@@ -44,7 +44,7 @@ export function ItemDetailClient({
   );
 }
 
-function restoreMenuScroll(attempt = 0) {
+function restoreMenuScroll() {
   const raw = sessionStorage.getItem(MENU_SCROLL_KEY);
   if (raw == null) {
     return;
@@ -55,16 +55,6 @@ function restoreMenuScroll(attempt = 0) {
     return;
   }
 
-  const root = document.getElementById("storefront-scroll");
-  if (!root && attempt < 12) {
-    window.requestAnimationFrame(() => restoreMenuScroll(attempt + 1));
-    return;
-  }
-
   sessionStorage.removeItem(MENU_SCROLL_KEY);
-  if (root) {
-    root.scrollTop = top;
-  } else {
-    window.scrollTo(0, top);
-  }
+  window.scrollTo(0, top);
 }

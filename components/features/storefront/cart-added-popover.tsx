@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { CartLineThumbnail } from "@/components/features/storefront/cart-line-thumbnail";
 import {
   useStorefrontUi,
   type AddedToCartItem,
 } from "@/components/providers/storefront-ui-context";
+import { easeOut, motionDuration, popoverScale, softSpring } from "@/lib/motion/tokens";
 
 type CartAddedPopoverProps = {
   item: AddedToCartItem;
@@ -20,6 +22,10 @@ export function CartAddedPopover({
   onDismiss,
 }: CartAddedPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const variants = reduce
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+    : popoverScale;
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -35,11 +41,19 @@ export function CartAddedPopover({
   }, [onDismiss]);
 
   return (
-    <div
+    <motion.div
       ref={panelRef}
       role="status"
       aria-live="polite"
       className="absolute top-full right-0 z-50 mt-2 w-[min(calc(100vw-2rem),28rem)] rounded-xl border border-border bg-background p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
+      initial={variants.initial}
+      animate={variants.animate}
+      exit={variants.exit}
+      transition={
+        reduce
+          ? { duration: motionDuration.fast, ease: easeOut }
+          : softSpring
+      }
     >
       <span
         aria-hidden
@@ -73,7 +87,7 @@ export function CartAddedPopover({
           Go to checkout
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -84,14 +98,16 @@ export function CartAddedPopoverHost({
   onViewCart: () => void;
 }) {
   const { addedToCart, dismissAddedToCart } = useStorefrontUi();
-  if (!addedToCart) {
-    return null;
-  }
   return (
-    <CartAddedPopover
-      item={addedToCart}
-      onViewCart={onViewCart}
-      onDismiss={dismissAddedToCart}
-    />
+    <AnimatePresence>
+      {addedToCart ? (
+        <CartAddedPopover
+          key={`${addedToCart.name}-${addedToCart.imageUrl ?? ""}`}
+          item={addedToCart}
+          onViewCart={onViewCart}
+          onDismiss={dismissAddedToCart}
+        />
+      ) : null}
+    </AnimatePresence>
   );
 }

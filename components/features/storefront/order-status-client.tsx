@@ -80,7 +80,6 @@ export function OrderStatusClient({
   return (
     <div className="space-y-8">
       <div className="space-y-3">
-        <p className="text-sm font-medium text-text-secondary">{order.storeName}</p>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           {ORDER_STATUS_LABELS[order.status]}
         </h1>
@@ -203,10 +202,6 @@ export function OrderStatusClient({
           <div className="flex justify-between text-text-secondary">
             <span>Tax</span>
             <span>{formatCadFromCents(order.taxCents)}</span>
-          </div>
-          <div className="flex justify-between text-text-secondary">
-            <span>Tip</span>
-            <span>{formatCadFromCents(order.tipCents)}</span>
           </div>
           <div className="flex justify-between font-semibold text-foreground">
             <span>Total</span>

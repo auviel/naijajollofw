@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CartPanel } from "@/components/features/storefront/cart-panel";
+import { MotionSheet } from "@/components/motion/primitives";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { X } from "@/components/ui/icons";
 import type { CartView } from "@/lib/domain/cart/types";
@@ -84,55 +85,35 @@ export function CartDrawer() {
     };
   }, [cartOpen, closeCart]);
 
-  if (!cartOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50" role="presentation">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/40"
-        aria-label="Close cart"
-        onClick={closeCart}
-      />
-
-      {/* Mobile bottom sheet */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cart-drawer-title"
-        className="absolute inset-x-0 bottom-0 flex max-h-[min(88dvh,40rem)] flex-col rounded-t-2xl border border-border bg-background shadow-lg md:hidden"
-      >
-        <div className="flex justify-center pt-3 md:hidden">
-          <span className="h-1 w-10 rounded-full bg-border" aria-hidden />
-        </div>
-        <CartDrawerChrome
-          loading={loading}
-          error={error}
-          cart={cart}
-          setCart={setCart}
-          onClose={closeCart}
-        />
-      </div>
-
-      {/* Desktop right sidebar */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cart-drawer-title-desktop"
-        className="absolute inset-y-0 right-0 hidden w-full max-w-md flex-col border-l border-border bg-background shadow-xl md:flex"
-      >
-        <CartDrawerChrome
-          loading={loading}
-          error={error}
-          cart={cart}
-          setCart={setCart}
-          onClose={closeCart}
-          titleId="cart-drawer-title-desktop"
-        />
-      </div>
-    </div>
+    <MotionSheet
+      open={cartOpen}
+      onClose={closeCart}
+      labelledBy="cart-drawer-title"
+      desktopLabelledBy="cart-drawer-title-desktop"
+    >
+      {(slot) => (
+        <>
+          {slot === "mobile" ? (
+            <div className="flex justify-center pt-3">
+              <span className="h-1 w-10 rounded-full bg-border" aria-hidden />
+            </div>
+          ) : null}
+          <CartDrawerChrome
+            loading={loading}
+            error={error}
+            cart={cart}
+            setCart={setCart}
+            onClose={closeCart}
+            titleId={
+              slot === "desktop"
+                ? "cart-drawer-title-desktop"
+                : "cart-drawer-title"
+            }
+          />
+        </>
+      )}
+    </MotionSheet>
   );
 }
 

@@ -3,7 +3,7 @@ import { ExternalLink } from "@/components/ui/icons";
 const MARKETPLACE_LINKS = [
   {
     name: "Uber Eats",
-    href: "https://www.ubereats.com/ca/store/naija-jollof-waterloo/",
+    href: "https://www.ubereats.com/ca/store/naija-jollof-waterloo/_nCn96BISA64sHGnFZXPPg",
     eyebrow: "Order with",
     brand: "Uber Eats",
     className:

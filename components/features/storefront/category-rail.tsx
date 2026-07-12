@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import {
   categoryIconFor,
@@ -8,6 +9,7 @@ import {
 } from "@/components/features/storefront/category-icon";
 import { List, X } from "@/components/ui/icons";
 import type { MenuCategoryView } from "@/lib/domain/menu/types";
+import { easeOut, motionDuration, softSpring } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils/cn";
 
 type CategoryRailProps = {
@@ -20,7 +22,8 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
   const [activeId, setActiveId] = useState(categories[0]?.id ?? "");
   const [sheetOpen, setSheetOpen] = useState(false);
   const railRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const tabRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const sections = categories
@@ -51,7 +54,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
   }, [categories]);
 
   useEffect(() => {
-    const tab = tabRefs.current[activeId];
+    const tab = tabRefs.current.get(activeId);
     const rail = railRef.current;
     if (!tab || !rail) {
       return;
@@ -113,7 +116,11 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
                 <Link
                   key={category.id}
                   ref={(node) => {
-                    tabRefs.current[category.id] = node;
+                    if (node) {
+                      tabRefs.current.set(category.id, node);
+                    } else {
+                      tabRefs.current.delete(category.id);
+                    }
                   }}
                   href={`#category-${category.id}`}
                   onClick={() => selectCategory(category.id)}
@@ -151,62 +158,88 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
         </div>
       </div>
 
-      {sheetOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="category-sheet-title"
-          onClick={() => setSheetOpen(false)}
-        >
+      <AnimatePresence>
+        {sheetOpen ? (
           <div
-            className="max-h-[75dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-background pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg"
-            onClick={(event) => event.stopPropagation()}
+            key="category-sheet"
+            className="fixed inset-0 z-50 flex items-end justify-center lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-sheet-title"
           >
-            <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-4 py-3">
-              <p
-                id="category-sheet-title"
-                className="font-display text-base font-semibold text-foreground"
+            <motion.button
+              type="button"
+              aria-label="Close"
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: reduce ? motionDuration.fast : motionDuration.panel,
+                ease: easeOut,
+              }}
+              onClick={() => setSheetOpen(false)}
+            />
+            <motion.div
+              className="relative max-h-[75dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-background pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg"
+              initial={reduce ? { opacity: 0 } : { y: "100%" }}
+              animate={reduce ? { opacity: 1 } : { y: 0 }}
+              exit={reduce ? { opacity: 0 } : { y: "100%" }}
+              transition={
+                reduce
+                  ? { duration: motionDuration.fast, ease: easeOut }
+                  : softSpring
+              }
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-4 py-3">
+                <p
+                  id="category-sheet-title"
+                  className="font-display text-base font-semibold text-foreground"
+                >
+                  Menu
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSheetOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-surface"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
+              <nav
+                className="flex flex-col px-2 py-2"
+                aria-label="All categories"
               >
-                Menu
-              </p>
-              <button
-                type="button"
-                onClick={() => setSheetOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-surface"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
-            <nav className="flex flex-col px-2 py-2" aria-label="All categories">
-              {categories.map((category) => {
-                const isActive = activeId === category.id;
-                const label = displayCategoryName(category.name);
-                const Icon = categoryIconFor(category.name);
-                return (
-                  <Link
-                    key={category.id}
-                    href={`#category-${category.id}`}
-                    onClick={() => selectCategory(category.id)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-3.5 text-sm no-underline transition-colors",
-                      isActive
-                        ? "bg-surface font-semibold text-foreground"
-                        : "font-medium text-text-secondary",
-                    )}
-                  >
-                    {Icon ? (
-                      <Icon className="h-5 w-5 shrink-0" aria-hidden />
-                    ) : null}
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
+                {categories.map((category) => {
+                  const isActive = activeId === category.id;
+                  const label = displayCategoryName(category.name);
+                  const Icon = categoryIconFor(category.name);
+                  return (
+                    <Link
+                      key={category.id}
+                      href={`#category-${category.id}`}
+                      onClick={() => selectCategory(category.id)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-3.5 text-sm no-underline transition-colors",
+                        isActive
+                          ? "bg-surface font-semibold text-foreground"
+                          : "font-medium text-text-secondary",
+                      )}
+                    >
+                      {Icon ? (
+                        <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                      ) : null}
+                      {label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </motion.div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </AnimatePresence>
 
       {/* Desktop: sticky vertical sidebar */}
       <aside

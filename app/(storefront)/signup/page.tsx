@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DinerSignupForm } from "@/components/features/storefront/diner-signup-form";
+import { getTurnstileSiteKey } from "@/lib/integrations/turnstile/config";
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -17,7 +18,7 @@ export default function SignupPage() {
         without an account.
       </p>
       <div className="mt-8 rounded-2xl border border-border bg-background p-5 sm:p-6">
-        <DinerSignupForm />
+        <DinerSignupForm turnstileSiteKey={getTurnstileSiteKey()} />
       </div>
     </section>
   );

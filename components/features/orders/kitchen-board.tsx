@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClipboardList } from "@/components/ui/icons";
 import { OrderStatusBadge } from "@/components/features/orders/order-status-badge";
@@ -18,6 +19,7 @@ import {
   getTransitionActions,
   KITCHEN_BOARD_COLUMNS,
 } from "@/lib/domain/order/transitions";
+import { easeOut, listItem, motionDuration } from "@/lib/motion/tokens";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
@@ -209,9 +211,11 @@ export function KitchenBoard({
                     None
                   </p>
                 ) : (
-                  columnOrders.map((order) => (
-                    <KitchenOrderCard key={order.id} order={order} />
-                  ))
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {columnOrders.map((order) => (
+                      <KitchenOrderCard key={order.id} order={order} />
+                    ))}
+                  </AnimatePresence>
                 )}
               </div>
             </section>
@@ -223,13 +227,19 @@ export function KitchenBoard({
 }
 
 function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
+  const reduce = useReducedMotion();
   const actions = getTransitionActions(order.status, {
     fulfillmentType: order.fulfillmentType,
     fulfillmentMethod: order.fulfillmentMethod,
   }).filter((a) => a.to !== "cancelled");
 
   return (
-    <article
+    <motion.article
+      layout
+      initial={reduce ? { opacity: 0 } : listItem.initial}
+      animate={reduce ? { opacity: 1 } : listItem.animate}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+      transition={{ duration: motionDuration.chrome, ease: easeOut }}
       className={cn(
         "space-y-2 rounded-md border border-border bg-background p-3 shadow-sm",
         order.status === "pending_acceptance" && "border-amber-300",
@@ -287,6 +297,6 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
           compact
         />
       )}
-    </article>
+    </motion.article>
   );
 }

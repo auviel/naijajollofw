@@ -78,13 +78,12 @@ export function MenuCatalogBrowse({
         </div>
       </div>
 
-      {openItemId ? (
-        <ItemDetailModal
-          itemId={openItemId}
-          scheduleLabel={scheduleLabel}
-          onClose={() => setOpenItemId(null)}
-        />
-      ) : null}
+      <ItemDetailModal
+        open={openItemId !== null}
+        itemId={openItemId}
+        scheduleLabel={scheduleLabel}
+        onClose={() => setOpenItemId(null)}
+      />
     </>
   );
 }
@@ -219,10 +218,9 @@ function FeaturedItemCard({
           onOpenDesktop();
           return;
         }
-        const root = document.getElementById("storefront-scroll");
         sessionStorage.setItem(
           "storefront-menu-scroll",
-          String(root?.scrollTop ?? window.scrollY),
+          String(window.scrollY),
         );
       }}
       onMouseEnter={() => {
@@ -313,10 +311,9 @@ function MenuItemCard({
           onOpenDesktop();
           return;
         }
-        const root = document.getElementById("storefront-scroll");
         sessionStorage.setItem(
           "storefront-menu-scroll",
-          String(root?.scrollTop ?? window.scrollY),
+          String(window.scrollY),
         );
       }}
       onMouseEnter={() => {

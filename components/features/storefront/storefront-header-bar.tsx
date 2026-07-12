@@ -51,19 +51,12 @@ export function StorefrontHeaderBar({
   }, [mobileSearchOpen]);
 
   useEffect(() => {
-    const scroller =
-      document.getElementById("storefront-scroll") ?? window;
-    const readTop = () =>
-      scroller instanceof Window
-        ? scroller.scrollY
-        : (scroller as HTMLElement).scrollTop;
-
     const onScroll = () => {
-      setScrolled(readTop() > 8);
+      setScrolled(window.scrollY > 8);
     };
     onScroll();
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    return () => scroller.removeEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {

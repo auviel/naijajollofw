@@ -27,10 +27,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-CA" className={`${inter.variable} h-full min-h-dvh`}>
+    <html lang="en-CA" className={`${inter.variable} min-h-dvh`}>
       <body>
         <AuthSessionProvider>
-          <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+          <div className="flex min-h-dvh flex-1 flex-col">{children}</div>
         </AuthSessionProvider>
       </body>
     </html>

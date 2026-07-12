@@ -22,7 +22,10 @@
   --info: #04542e;
   --sandbox-banner: #fff8e6;
   --sandbox-text: #7a5b00;
-  --duration-fast: 150ms;
+  --duration-fast: 160ms;
+  --duration-chrome: 180ms;
+  --duration-page: 220ms;
+  --duration-panel: 280ms;
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -57,11 +60,11 @@
 
 @layer base {
   html {
-    @apply h-full;
+    @apply min-h-dvh;
   }
 
   body {
-    @apply flex min-h-dvh h-dvh flex-col bg-background text-foreground font-sans antialiased;
+    @apply flex min-h-dvh flex-col bg-background text-foreground font-sans antialiased;
   }
 
   .safe-bottom {

@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { SkipLink } from "@/components/layout/skip-link";
 import { TopBar } from "@/components/layout/top-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { MotionPageShell } from "@/components/motion/motion-page-shell";
 import { DashboardProviders } from "@/components/providers/dashboard-providers";
 
 export default function DashboardLayout({
@@ -23,7 +24,7 @@ export default function DashboardLayout({
               className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] focus:outline-none md:pb-0"
             >
               <div className="mx-auto w-full max-w-6xl p-4 sm:p-5 md:p-6 lg:p-8">
-                {children}
+                <MotionPageShell>{children}</MotionPageShell>
               </div>
             </main>
           </div>
