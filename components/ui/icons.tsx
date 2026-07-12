@@ -18,6 +18,7 @@ import {
   LinkSquare01Icon,
   Location01Icon,
   Logout01Icon,
+  Notification01Icon,
   NoodlesIcon,
   Package01Icon,
   RiceBowl01Icon,
@@ -84,6 +85,7 @@ export const Home = createIcon(Home01Icon, "Home");
 export const List = createIcon(LeftToRightListDashIcon, "List");
 export const Location = createIcon(Location01Icon, "Location");
 export const LogOut = createIcon(Logout01Icon, "LogOut");
+export const Bell = createIcon(Notification01Icon, "Bell");
 export const Package = createIcon(Package01Icon, "Package");
 export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");
