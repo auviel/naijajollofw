@@ -316,7 +316,7 @@ export function ItemCustomizePanel({
             {pending
               ? "Adding…"
               : scheduleLabel
-                ? `Add ${quantity} · pick time at checkout · ${formatCadFromCents(unitPriceCents * quantity)}`
+                ? `Add ${quantity} · ${formatCadFromCents(unitPriceCents * quantity)}`
                 : `Add ${quantity} to order · ${formatCadFromCents(unitPriceCents * quantity)}`}
           </Button>
         </div>

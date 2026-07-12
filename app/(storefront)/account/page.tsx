@@ -21,20 +21,7 @@ export default async function AccountPage() {
 
   return (
     <section className="mx-auto w-full max-w-2xl py-8 sm:py-12">
-      <p className="text-sm text-text-tertiary">
-        <Link
-          href="/"
-          className="text-text-secondary no-underline transition-colors hover:text-foreground"
-        >
-          Home
-        </Link>
-        <span aria-hidden className="mx-2">
-          /
-        </span>
-        <span>Account</span>
-      </p>
-
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
             Account

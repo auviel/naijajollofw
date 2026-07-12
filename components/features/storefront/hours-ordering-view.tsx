@@ -33,20 +33,7 @@ export function HoursOrderingView({
 
   return (
     <article className="mx-auto w-full max-w-3xl pb-8">
-      <p className="text-sm text-text-tertiary">
-        <Link
-          href="/"
-          className="text-text-secondary no-underline transition-colors hover:text-foreground"
-        >
-          Home
-        </Link>
-        <span aria-hidden className="mx-2">
-          /
-        </span>
-        <span>Hours &amp; ordering</span>
-      </p>
-
-      <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
         Hours &amp; ordering
       </h1>
       <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { DinerSigninForm } from "@/components/features/storefront/diner-signin-form";
 
@@ -11,19 +10,7 @@ export const metadata: Metadata = {
 export default function SigninPage() {
   return (
     <section className="mx-auto w-full max-w-md py-8 sm:py-12">
-      <p className="text-sm text-text-tertiary">
-        <Link
-          href="/"
-          className="text-text-secondary no-underline transition-colors hover:text-foreground"
-        >
-          Home
-        </Link>
-        <span aria-hidden className="mx-2">
-          /
-        </span>
-        <span>Sign in</span>
-      </p>
-      <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-foreground">
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
         Sign in
       </h1>
       <p className="mt-2 text-sm text-text-secondary">

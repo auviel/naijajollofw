@@ -10,20 +10,7 @@ export const metadata: Metadata = {
 export default function BlogIndexPage() {
   return (
     <section className="mx-auto max-w-2xl py-10 sm:py-14">
-      <p className="text-sm text-text-tertiary">
-        <Link
-          href="/"
-          className="text-text-secondary no-underline transition-colors hover:text-foreground"
-        >
-          Home
-        </Link>
-        <span aria-hidden className="mx-2">
-          /
-        </span>
-        <span>Blog</span>
-      </p>
-
-      <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
         Blog
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-text-secondary">

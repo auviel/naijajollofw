@@ -4,6 +4,7 @@ import {
   getResendClient,
   isResendConfigured,
 } from "@/lib/integrations/email/resend-client";
+import { getEmailUnsubscribeMailto } from "@/lib/integrations/email/templates";
 import { logger } from "@/lib/utils/logger";
 
 export type SendEmailInput = {
@@ -43,6 +44,9 @@ export async function sendEmail(
       subject: input.subject,
       html: input.html,
       text: input.text,
+      headers: {
+        "List-Unsubscribe": `<${getEmailUnsubscribeMailto()}>`,
+      },
       ...(replyTo ? { replyTo } : {}),
     },
     { idempotencyKey: input.idempotencyKey },
