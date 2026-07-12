@@ -64,13 +64,16 @@ export function Select({
   }, [open]);
 
   return (
-    <div ref={rootRef} className={cn("relative", className)}>
+    <div
+      ref={rootRef}
+      className={cn("relative", className)}
+      data-invalid={ariaInvalid ? "true" : undefined}
+    >
       <button
         id={id}
         type="button"
         disabled={disabled}
         aria-label={ariaLabel}
-        aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
         aria-haspopup="listbox"
         aria-expanded={open}

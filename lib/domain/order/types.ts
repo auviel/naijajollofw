@@ -125,6 +125,15 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: "Cancelled",
 };
 
+const ORDER_STATUS_LABEL_BY_STATUS = new Map<OrderStatus, string>(
+  Object.entries(ORDER_STATUS_LABELS) as [OrderStatus, string][],
+);
+
+/** Safe label lookup — avoids bracket access on user-influenced status keys. */
+export function getOrderStatusLabel(status: OrderStatus): string {
+  return ORDER_STATUS_LABEL_BY_STATUS.get(status) ?? "Unknown";
+}
+
 /** Staff-facing short labels for board columns / badges. */
 export const STAFF_ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   ...ORDER_STATUS_LABELS,

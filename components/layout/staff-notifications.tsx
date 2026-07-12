@@ -39,13 +39,11 @@ export function StaffNotifications() {
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<StaffOrderListItem[]>([]);
-  const [lastSeenAt, setLastSeenAt] = useState<number | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setLastSeenAt(readStaffNotifLastSeenAt());
-    setHydrated(true);
-  }, []);
+  const [lastSeenAt, setLastSeenAt] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    return readStaffNotifLastSeenAt();
+  });
+  const [hydrated] = useState(() => typeof window !== "undefined");
 
   const refresh = useCallback(async () => {
     try {
@@ -61,14 +59,11 @@ export function StaffNotifications() {
     }
   }, []);
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
   useLiveRefresh({
     enabled: true,
     intervalMs: ACTIVE_DELIVERY_POLL_MS,
     onRefresh: refresh,
+    refreshOnMount: true,
   });
 
   useEffect(() => {

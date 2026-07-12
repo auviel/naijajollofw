@@ -7,7 +7,7 @@ import { ClipboardList, Search, Users } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import type { CustomerSearchResult } from "@/lib/domain/customer/types";
 import {
-  ORDER_STATUS_LABELS,
+  getOrderStatusLabel,
   type StaffOrderListItem,
 } from "@/lib/domain/order/types";
 import { cn } from "@/lib/utils/cn";
@@ -24,12 +24,12 @@ export function DashboardGlobalSearch() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hits, setHits] = useState<SearchHit[]>([]);
+  const trimmedQuery = query.trim();
+  const canSearch = trimmedQuery.length >= 2;
+  const visibleHits = canSearch ? hits : [];
 
   useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      setHits([]);
-      setLoading(false);
+    if (!canSearch) {
       return;
     }
 
@@ -39,11 +39,11 @@ export function DashboardGlobalSearch() {
       try {
         const [ordersRes, customersRes] = await Promise.all([
           fetch(
-            `/api/orders?q=${encodeURIComponent(trimmed)}&filter=all&limit=5`,
+            `/api/orders?q=${encodeURIComponent(trimmedQuery)}&filter=all&limit=5`,
             { signal: controller.signal },
           ),
           fetch(
-            `/api/customers/search?q=${encodeURIComponent(trimmed)}&limit=5`,
+            `/api/customers/search?q=${encodeURIComponent(trimmedQuery)}&limit=5`,
             { signal: controller.signal },
           ),
         ]);
@@ -82,7 +82,7 @@ export function DashboardGlobalSearch() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [query]);
+  }, [canSearch, trimmedQuery]);
 
   useEffect(() => {
     function onPointer(event: MouseEvent) {
@@ -103,10 +103,9 @@ export function DashboardGlobalSearch() {
     };
   }, []);
 
-  const trimmed = query.trim();
-  const showPanel = open && trimmed.length >= 2;
-  const orders = hits.filter((hit) => hit.kind === "order");
-  const customers = hits.filter((hit) => hit.kind === "customer");
+  const showPanel = open && canSearch;
+  const orders = visibleHits.filter((hit) => hit.kind === "order");
+  const customers = visibleHits.filter((hit) => hit.kind === "customer");
 
   return (
     <div ref={rootRef} className="relative w-full min-w-0 max-w-md flex-1">
@@ -125,14 +124,14 @@ export function DashboardGlobalSearch() {
           setOpen(true);
         }}
         onFocus={() => {
-          if (trimmed.length >= 2) setOpen(true);
+          if (canSearch) setOpen(true);
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && trimmed) {
+          if (event.key === "Enter" && trimmedQuery) {
             event.preventDefault();
             setOpen(false);
             router.push(
-              `/dashboard/orders?q=${encodeURIComponent(trimmed)}&filter=all`,
+              `/dashboard/orders?q=${encodeURIComponent(trimmedQuery)}&filter=all`,
             );
           }
         }}
@@ -151,11 +150,11 @@ export function DashboardGlobalSearch() {
           role="listbox"
           className="absolute top-full right-0 left-0 z-40 mt-2 max-h-[min(24rem,70dvh)] overflow-y-auto rounded-2xl border border-border bg-surface-elevated shadow-lg"
         >
-          {loading && hits.length === 0 ? (
+          {loading && visibleHits.length === 0 ? (
             <p className="px-4 py-3 text-sm text-text-secondary">Searching…</p>
-          ) : hits.length === 0 ? (
+          ) : visibleHits.length === 0 ? (
             <p className="px-4 py-3 text-sm text-text-secondary">
-              No matches for “{trimmed}”
+              No matches for “{trimmedQuery}”
             </p>
           ) : (
             <div className="py-1">
@@ -185,7 +184,7 @@ export function DashboardGlobalSearch() {
                               {item.customerName}
                             </span>
                             <span className="block truncate text-xs text-text-secondary">
-                              {ORDER_STATUS_LABELS[item.status]} ·{" "}
+                              {getOrderStatusLabel(item.status)} ·{" "}
                               {item.itemSummary}
                             </span>
                           </span>
@@ -237,7 +236,7 @@ export function DashboardGlobalSearch() {
 
               <div className="border-t border-border">
                 <Link
-                  href={`/dashboard/orders?q=${encodeURIComponent(trimmed)}&filter=all`}
+                  href={`/dashboard/orders?q=${encodeURIComponent(trimmedQuery)}&filter=all`}
                   className="block px-4 py-2.5 text-sm font-medium text-accent no-underline hover:bg-surface"
                   onClick={() => {
                     setOpen(false);

@@ -45,6 +45,12 @@ export function MenuSearchSuggest({
   const trimmed = query.trim();
   const suggestions = buildSearchSuggestions(searchIndex, trimmed);
   const rows: Row[] = [];
+  const resetKey = `${open}:${trimmed}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
+    setActiveIndex(0);
+  }
 
   if (trimmed) {
     for (const item of suggestions.items) {
@@ -55,10 +61,6 @@ export function MenuSearchSuggest({
     }
     rows.push({ kind: "search", query: trimmed });
   }
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [trimmed, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -104,7 +106,7 @@ export function MenuSearchSuggest({
           setActiveIndex((i) => Math.max(i - 1, 0));
         } else if (event.key === "Enter") {
           event.preventDefault();
-          const row = rows[activeIndex];
+          const row = rows.at(activeIndex);
           if (row) activate(row);
         } else if (event.key === "Escape") {
           event.preventDefault();

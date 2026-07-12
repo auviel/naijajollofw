@@ -15,7 +15,6 @@ type NavItem = {
   href: string;
   label: string;
   icon: typeof ClipboardList;
-  /** kitchen home + non-courier orders */
   kind: "orders" | "menu" | "courier" | "customers" | "store";
 };
 
@@ -102,8 +101,11 @@ export function MobileNav() {
   const channel = searchParams.get("channel");
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background safe-bottom md:hidden">
-      <div className="grid grid-cols-5">
+    <nav
+      aria-label="Staff"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:hidden"
+    >
+      <div className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-5 rounded-2xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
         {items.map(({ href, label, icon: Icon, kind }) => {
           const active = isNavActive(kind, pathname, channel);
 
@@ -112,7 +114,7 @@ export function MobileNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors duration-fast",
+                "relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium no-underline transition-colors",
                 active ? "text-foreground" : "text-text-tertiary",
               )}
               aria-current={active ? "page" : undefined}

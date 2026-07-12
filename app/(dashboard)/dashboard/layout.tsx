@@ -24,7 +24,7 @@ export default function DashboardLayout({
             <main
               id="main-content"
               tabIndex={-1}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] focus:outline-none md:pb-0"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] focus:outline-none md:pb-0"
             >
               <div className="mx-auto w-full max-w-6xl p-4 sm:p-5 md:p-6 lg:p-8">
                 <MotionPageShell>{children}</MotionPageShell>
