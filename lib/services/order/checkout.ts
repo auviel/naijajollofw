@@ -14,7 +14,11 @@ import {
 } from "@/lib/domain/order/validation";
 import { createSquarePayment } from "@/lib/integrations/payments/square/client";
 import { readCartSessionId } from "@/lib/services/cart/session";
-import { getPublicStoreOpenStatus } from "@/lib/services/store/store-hours";
+import {
+  getPublicStoreHoursSchedule,
+  getPublicStoreOpenStatus,
+} from "@/lib/services/store/store-hours";
+import { isValidScheduleSlot } from "@/lib/domain/store/schedule-slots";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
@@ -29,18 +33,36 @@ export async function checkoutWithSquare(
 ): Promise<CheckoutResult> {
   const parsed: CheckoutRequest = checkoutRequestSchema.parse(input);
   const storeId = await resolvePublicStoreId();
-  const openStatus = await getPublicStoreOpenStatus(storeId);
+  const [openStatus, hours] = await Promise.all([
+    getPublicStoreOpenStatus(storeId),
+    getPublicStoreHoursSchedule(storeId),
+  ]);
 
-  let scheduledFor: Date | null = null;
+  const scheduledFor: Date | null = parsed.scheduledFor ?? null;
+
   if (!openStatus.isOpen) {
-    if (!openStatus.nextOpenAt) {
+    if (!scheduledFor) {
       throw new AppError(
         "VALIDATION_ERROR",
-        openStatus.message || "The restaurant is currently closed.",
+        "Choose a pickup or delivery time — the restaurant is closed right now.",
         400,
       );
     }
-    scheduledFor = new Date(openStatus.nextOpenAt);
+  }
+
+  if (scheduledFor) {
+    const valid = isValidScheduleSlot({
+      scheduledFor,
+      days: hours.days,
+      timeZone: hours.timezone,
+    });
+    if (!valid) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "That time is not available. Pick another slot.",
+        400,
+      );
+    }
   }
 
   const sessionId = await readCartSessionId();

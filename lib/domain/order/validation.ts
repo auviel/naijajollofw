@@ -13,6 +13,8 @@ export const checkoutRequestSchema = z
     dropoffAddress: z.string().trim().min(5).max(300).optional(),
     dropoffLat: z.number().min(-90).max(90).optional(),
     dropoffLng: z.number().min(-180).max(180).optional(),
+    /** Guest-picked ready time (required when store is closed). */
+    scheduledFor: z.coerce.date().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.fulfillmentType === "delivery") {

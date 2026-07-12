@@ -249,7 +249,7 @@ type CalendarParts = {
   day: number;
 };
 
-function getCalendarPartsInZone(date: Date, timeZone: string): CalendarParts {
+export function getCalendarPartsInZone(date: Date, timeZone: string): CalendarParts {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",

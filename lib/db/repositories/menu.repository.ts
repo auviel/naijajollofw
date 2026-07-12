@@ -74,6 +74,7 @@ export function mapMenuItemToListItem(
     name: item.name,
     description: item.description,
     priceCents: item.priceCents,
+    imageUrl: item.imageUrl,
     available: item.available,
     sortOrder: item.sortOrder,
     modifierGroupCount: item.modifierGroups.length,

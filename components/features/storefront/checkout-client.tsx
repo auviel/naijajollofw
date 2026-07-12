@@ -8,6 +8,7 @@ import { AddressAutocomplete } from "@/components/features/deliveries/address-au
 import {
   canRequestQuote,
 } from "@/components/features/deliveries/address-preview";
+import { ScheduleOrderPicker } from "@/components/features/storefront/schedule-order-picker";
 import {
   SquareCardSlot,
   useSquareCardForm,
@@ -16,7 +17,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
 import type { CartView } from "@/lib/domain/cart/types";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
-import type { StoreOpenStatus } from "@/lib/domain/store/hours";
+import type { StoreHoursDay, StoreOpenStatus } from "@/lib/domain/store/hours";
+import { formatScheduledForLabel } from "@/lib/domain/store/schedule-slots";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
@@ -43,6 +45,9 @@ type CheckoutClientProps = {
   taxRateBps: number;
   configured: boolean;
   openStatus: StoreOpenStatus;
+  storeName: string;
+  scheduleDays: StoreHoursDay[];
+  scheduleTimeZone: string;
 };
 
 export function CheckoutClient({
@@ -53,6 +58,9 @@ export function CheckoutClient({
   taxRateBps,
   configured,
   openStatus,
+  storeName,
+  scheduleDays,
+  scheduleTimeZone,
 }: CheckoutClientProps) {
   const router = useRouter();
   const { error: toastError } = useToast();
@@ -71,6 +79,13 @@ export function CheckoutClient({
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
+
+  const mustSchedule = !openStatus.isOpen;
+  const scheduleLabel = scheduledFor
+    ? formatScheduledForLabel(scheduledFor, scheduleTimeZone)
+    : null;
 
   const totals = useMemo(
     () => computeOrderTotals(initialCart.subtotalCents, tipCents, taxRateBps),
@@ -89,7 +104,7 @@ export function CheckoutClient({
       !configured ||
       !scriptLoaded ||
       initialCart.items.length === 0 ||
-      (!openStatus.isOpen && !openStatus.nextOpenAt),
+      (mustSchedule && !scheduledFor),
   });
 
   useEffect(() => {
@@ -182,6 +197,12 @@ export function CheckoutClient({
   async function handlePay() {
     setFormError(null);
 
+    if (mustSchedule && !scheduledFor) {
+      setFormError("Choose a time for your order.");
+      setSchedulePickerOpen(true);
+      return;
+    }
+
     if (!customerName.trim()) {
       setFormError("Enter your name.");
       return;
@@ -235,6 +256,7 @@ export function CheckoutClient({
           fulfillmentType,
           tipCents,
           notes: notes.trim() || undefined,
+          scheduledFor: scheduledFor ?? undefined,
           dropoffAddress:
             fulfillmentType === "delivery" ? address.trim() : undefined,
           dropoffLat:
@@ -297,15 +319,6 @@ export function CheckoutClient({
           {initialCart.itemCount} item{initialCart.itemCount === 1 ? "" : "s"} ·{" "}
           {formatCadFromCents(initialCart.subtotalCents)} before tax & tip
         </p>
-        {!openStatus.isOpen && openStatus.nextOpenLabel ? (
-          <p className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
-            Restaurant is closed — this order will be scheduled for{" "}
-            <span className="font-medium text-foreground">
-              {openStatus.nextOpenLabel}
-            </span>
-            .
-          </p>
-        ) : null}
         {environment === "sandbox" && configured ? (
           <p className="text-xs text-text-tertiary">
             Square sandbox mode — use test cards from the Square docs.
@@ -349,6 +362,97 @@ export function CheckoutClient({
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          When
+        </h2>
+        {mustSchedule ? (
+          <button
+            type="button"
+            onClick={() => setSchedulePickerOpen(true)}
+            className={cn(
+              "flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-colors",
+              scheduledFor
+                ? "border-border bg-surface-elevated hover:border-border-strong"
+                : "border-foreground bg-background",
+            )}
+          >
+            <span>
+              <span className="block text-sm font-semibold text-foreground">
+                {scheduleLabel
+                  ? `Scheduled · ${scheduleLabel}`
+                  : fulfillmentType === "delivery"
+                    ? "Schedule delivery"
+                    : "Schedule pickup"}
+              </span>
+              <span className="mt-0.5 block text-sm text-text-secondary">
+                {scheduleLabel
+                  ? "Tap to change"
+                  : "Restaurant is closed — pick a time"}
+              </span>
+            </span>
+            <span className="text-sm font-medium text-foreground">
+              {scheduleLabel ? "Edit" : "Choose"}
+            </span>
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setScheduledFor(null)}
+              className={cn(
+                "flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left",
+                !scheduledFor
+                  ? "border-foreground bg-background"
+                  : "border-border bg-surface-elevated",
+              )}
+            >
+              <span className="text-sm font-semibold text-foreground">
+                Standard · ASAP
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  "flex h-5 w-5 rounded-full border-2",
+                  !scheduledFor
+                    ? "border-foreground bg-foreground"
+                    : "border-border-strong",
+                )}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSchedulePickerOpen(true)}
+              className={cn(
+                "flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left",
+                scheduledFor
+                  ? "border-foreground bg-background"
+                  : "border-border bg-surface-elevated",
+              )}
+            >
+              <span>
+                <span className="block text-sm font-semibold text-foreground">
+                  {scheduleLabel
+                    ? `Scheduled · ${scheduleLabel}`
+                    : fulfillmentType === "delivery"
+                      ? "Schedule delivery"
+                      : "Schedule pickup"}
+                </span>
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  "flex h-5 w-5 rounded-full border-2",
+                  scheduledFor
+                    ? "border-foreground bg-foreground"
+                    : "border-border-strong",
+                )}
+              />
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="space-y-4">
@@ -466,13 +570,35 @@ export function CheckoutClient({
       <button
         type="button"
         onClick={() => void handlePay()}
-        disabled={isSubmitting || !configured}
+        disabled={isSubmitting || !configured || (mustSchedule && !scheduledFor)}
         className="flex h-12 w-full items-center justify-center rounded-md bg-accent text-sm font-semibold text-text-inverse transition-opacity disabled:opacity-50"
       >
         {isSubmitting
           ? "Processing…"
-          : `Pay ${formatCadFromCents(totals.totalCents)}`}
+          : mustSchedule && !scheduledFor
+            ? "Choose a time to continue"
+            : `Pay ${formatCadFromCents(totals.totalCents)}`}
       </button>
+
+      <ScheduleOrderPicker
+        open={schedulePickerOpen}
+        onClose={() => setSchedulePickerOpen(false)}
+        onConfirm={(iso) => {
+          setScheduledFor(iso);
+          setSchedulePickerOpen(false);
+          setFormError(null);
+        }}
+        storeName={storeName}
+        fulfillmentType={fulfillmentType}
+        days={scheduleDays}
+        timeZone={scheduleTimeZone}
+        opensHint={
+          openStatus.nextOpenLabel
+            ? `opens ${openStatus.nextOpenLabel}`
+            : null
+        }
+        initialScheduledFor={scheduledFor}
+      />
     </div>
   );
 }

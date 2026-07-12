@@ -25,15 +25,14 @@ export function StorefrontHeaderBar({
   const { success } = useToast();
   const [, startTransition] = useTransition();
   const [scrolled, setScrolled] = useState(false);
-  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const urlQuery = searchParams.get("q") ?? "";
+  const [draftQuery, setDraftQuery] = useState<string | null>(null);
+  const query = draftQuery ?? urlQuery;
+  const setQuery = (value: string) => setDraftQuery(value);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const isLoggedIn = status === "authenticated" && Boolean(session?.user);
-
-  useEffect(() => {
-    setQuery(searchParams.get("q") ?? "");
-  }, [searchParams]);
 
   useEffect(() => {
     if (!mobileSearchOpen) {

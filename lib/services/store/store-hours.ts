@@ -68,6 +68,28 @@ export async function updateStaffStoreHours(
   };
 }
 
+export async function getPublicStoreHoursSchedule(
+  storeId?: string,
+): Promise<StoreHoursSchedule> {
+  const id = storeId ?? (await resolvePublicStoreId());
+  const rows = await storeHoursRepository.findByStoreId(id);
+  const timezone = getStoreTimeZone();
+
+  if (rows.length === 0) {
+    return {
+      timezone,
+      configured: false,
+      days: defaultWeeklySchedule(),
+    };
+  }
+
+  return {
+    timezone,
+    configured: true,
+    days: mapRowsToScheduleDays(rows),
+  };
+}
+
 export async function getPublicStoreOpenStatus(
   storeId?: string,
 ): Promise<StoreOpenStatus> {

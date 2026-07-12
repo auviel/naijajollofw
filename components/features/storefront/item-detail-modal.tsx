@@ -13,7 +13,12 @@ type ItemDetailModalProps = {
   onClose: () => void;
 };
 
-export function ItemDetailModal({
+/** Outer shell remounts inner fetch state when `itemId` changes. */
+export function ItemDetailModal(props: ItemDetailModalProps) {
+  return <ItemDetailModalBody key={props.itemId} {...props} />;
+}
+
+function ItemDetailModalBody({
   itemId,
   scheduleLabel = null,
   onClose,
@@ -25,9 +30,6 @@ export function ItemDetailModal({
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setItem(null);
 
     void (async () => {
       try {
@@ -110,7 +112,9 @@ export function ItemDetailModal({
           </div>
         ) : error || !item ? (
           <div className="flex min-h-[20rem] w-full flex-col items-center justify-center gap-3 p-10 text-center">
-            <p className="text-sm text-text-secondary">{error ?? "Item not found."}</p>
+            <p className="text-sm text-text-secondary">
+              {error ?? "Item not found."}
+            </p>
             <button
               type="button"
               onClick={onClose}
@@ -129,6 +133,7 @@ export function ItemDetailModal({
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 0px, 50vw"
+                  unoptimized={item.imageUrl.startsWith("http")}
                 />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-surface to-border/40" />

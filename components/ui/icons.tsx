@@ -1,4 +1,5 @@
 import {
+  Add01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Calendar01Icon,
@@ -55,6 +56,7 @@ function createIcon(icon: IconSvgElement, displayName: string) {
 }
 
 /** Stroke Rounded icons via Hugeicons — Lucide-compatible names for app usage. */
+export const Plus = createIcon(Add01Icon, "Plus");
 export const ArrowLeft = createIcon(ArrowLeft01Icon, "ArrowLeft");
 export const Calendar = createIcon(Calendar01Icon, "Calendar");
 export const Call = createIcon(CallIcon, "Call");

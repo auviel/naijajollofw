@@ -23,6 +23,7 @@ export type MenuItemListItem = {
   name: string;
   description: string | null;
   priceCents: number;
+  imageUrl: string | null;
   available: boolean;
   sortOrder: number;
   modifierGroupCount: number;

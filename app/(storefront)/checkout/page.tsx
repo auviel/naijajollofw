@@ -8,17 +8,24 @@ import {
   isSquareConfigured,
 } from "@/lib/integrations/payments/square/config";
 import { getCart } from "@/lib/services/cart/cart-actions";
-import { getPublicStoreOpenStatus } from "@/lib/services/store/store-hours";
+import { storeRepository } from "@/lib/db/repositories/store.repository";
+import {
+  getPublicStoreHoursSchedule,
+  getPublicStoreOpenStatus,
+} from "@/lib/services/store/store-hours";
+import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 
 export default async function CheckoutPage() {
-  const [cart, openStatus] = await Promise.all([
+  const storeId = await resolvePublicStoreId();
+  const [cart, openStatus, hours, store] = await Promise.all([
     getCart(),
-    getPublicStoreOpenStatus(),
+    getPublicStoreOpenStatus(storeId),
+    getPublicStoreHoursSchedule(storeId),
+    storeRepository.getProfileById(storeId),
   ]);
   const configured = isSquareConfigured();
   const taxRateBps = getTaxRateBps();
 
-  // Touch totals so SSR and client stay aligned when env tax rate is set.
   computeOrderTotals(cart.subtotalCents, 0, taxRateBps);
 
   return (
@@ -31,6 +38,9 @@ export default async function CheckoutPage() {
         environment={getSquareEnvironment()}
         taxRateBps={taxRateBps}
         openStatus={openStatus}
+        storeName={store?.name ?? "Restaurant"}
+        scheduleDays={hours.days}
+        scheduleTimeZone={hours.timezone}
       />
     </div>
   );

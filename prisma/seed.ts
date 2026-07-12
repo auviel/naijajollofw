@@ -87,7 +87,7 @@ async function main() {
     },
   });
 
-  // Reset and seed a small demo menu for storefront work.
+  // Reset and seed menu matching Naija Jollof Waterloo (Uber Eats layout).
   await prisma.cartItem.deleteMany({
     where: { cart: { storeId: store.id } },
   });
@@ -110,114 +110,315 @@ async function main() {
     }),
   });
 
-  const mains = await prisma.menuCategory.create({
-    data: {
-      storeId: store.id,
-      name: "Mains",
+  const HERO = "/brand/naija-jollof-hero.png";
+
+  const categoryDefs = [
+    { key: "featured", name: "Featured items", sortOrder: 0 },
+    { key: "popular", name: "⭐ Popular Picks", sortOrder: 1 },
+    { key: "rice", name: "🍛 Rice & Combos", sortOrder: 2 },
+    { key: "soups", name: "🍲 Soups & Stews", sortOrder: 3 },
+    { key: "sides", name: "Add-Ons & Sides", sortOrder: 4 },
+    { key: "family", name: "Family Trays & Bulk Orders", sortOrder: 5 },
+    { key: "drinks", name: "Drinks", sortOrder: 6 },
+    { key: "special", name: "Special Orders (Pre order only)", sortOrder: 7 },
+  ] as const;
+
+  const categories = new Map<string, string>();
+  for (const def of categoryDefs) {
+    const row = await prisma.menuCategory.create({
+      data: {
+        storeId: store.id,
+        name: def.name,
+        sortOrder: def.sortOrder,
+        active: true,
+      },
+    });
+    categories.set(def.key, row.id);
+  }
+
+  type SeedItem = {
+    category: (typeof categoryDefs)[number]["key"];
+    name: string;
+    description: string;
+    priceCents: number;
+    sortOrder: number;
+    available?: boolean;
+  };
+
+  const items: SeedItem[] = [
+    // Featured
+    {
+      category: "featured",
+      name: "Jollof Rice, Plantain and Chicken",
+      description:
+        "Smoky party jollof with fried plantain and seasoned chicken.",
+      priceCents: 2399,
       sortOrder: 0,
     },
-  });
-  const sides = await prisma.menuCategory.create({
-    data: {
-      storeId: store.id,
-      name: "Sides",
+    {
+      category: "featured",
+      name: "Eferiro Soup",
+      description: "Rich Nigerian spinach stew with assorted proteins.",
+      priceCents: 1699,
       sortOrder: 1,
     },
-  });
-  const drinks = await prisma.menuCategory.create({
-    data: {
-      storeId: store.id,
-      name: "Drinks",
+    {
+      category: "featured",
+      name: "Jollof Rice and Turkey",
+      description: "Classic jollof rice served with roasted turkey.",
+      priceCents: 2099,
       sortOrder: 2,
     },
-  });
-
-  const burger = await prisma.menuItem.create({
-    data: {
-      storeId: store.id,
-      categoryId: mains.id,
-      name: "Lester Smash Burger",
-      description: "Double smash, American cheese, pickles, house sauce.",
-      priceCents: 1450,
+    {
+      category: "featured",
+      name: "Okra Soup",
+      description: "Draw soup with okra, stockfish, and assorted meats.",
+      priceCents: 1699,
+      sortOrder: 3,
+    },
+    // Popular
+    {
+      category: "popular",
+      name: "Half Tray Party Rice",
+      description:
+        "Perfect for small gatherings. Rich, well-seasoned Nigerian rice made to share. A customer favorite for group meals.",
+      priceCents: 6499,
+      sortOrder: 0,
+    },
+    {
+      category: "popular",
+      name: "Full Tray Party Rice - Family Pack",
+      description:
+        "Full tray of party jollof for larger gatherings and celebrations.",
+      priceCents: 13499,
+      sortOrder: 1,
+    },
+    {
+      category: "popular",
+      name: "2.6L Chicken Stew",
+      description: "Family-size chicken stew — best value for sharing.",
+      priceCents: 10999,
+      sortOrder: 2,
+    },
+    // Rice & Combos
+    {
+      category: "rice",
+      name: "Jollof Rice and Assorted Beef",
+      description: "Party jollof with tender assorted beef.",
+      priceCents: 2399,
+      sortOrder: 0,
+    },
+    {
+      category: "rice",
+      name: "Jollof Rice, Plantain and Chicken",
+      description: "Jollof rice, sweet plantain, and chicken.",
+      priceCents: 2399,
+      sortOrder: 1,
+    },
+    {
+      category: "rice",
+      name: "Fried Rice & Chicken",
+      description: "Nigerian fried rice with seasoned chicken.",
+      priceCents: 1999,
+      sortOrder: 2,
+    },
+    {
+      category: "rice",
+      name: "Ayamashe Stew with White Rice",
+      description:
+        "Rich, spicy green pepper stew served with white rice and assorted beef.",
+      priceCents: 2399,
+      sortOrder: 3,
+    },
+    // Soups
+    {
+      category: "soups",
+      name: "Eferiro Soup",
+      description: "Spinach stew with your choice of protein.",
+      priceCents: 1699,
+      sortOrder: 0,
+    },
+    {
+      category: "soups",
+      name: "Okra Soup",
+      description: "Traditional okra soup with assorted meats.",
+      priceCents: 1699,
+      sortOrder: 1,
+    },
+    {
+      category: "soups",
+      name: "Egusi Soup",
+      description: "Ground melon seed soup — thick and hearty.",
+      priceCents: 1799,
+      sortOrder: 2,
+    },
+    // Sides
+    {
+      category: "sides",
+      name: "Fried Plantain",
+      description: "Sweet golden fried plantain.",
+      priceCents: 599,
+      sortOrder: 0,
+    },
+    {
+      category: "sides",
+      name: "Puff Puff (6 pcs)",
+      description: "Soft fried dough snacks.",
+      priceCents: 699,
+      sortOrder: 1,
+    },
+    {
+      category: "sides",
+      name: "Extra Protein - Assorted",
+      description: "Add assorted beef or chicken to any meal.",
+      priceCents: 999,
+      sortOrder: 2,
+    },
+    // Family
+    {
+      category: "family",
+      name: "Half Tray Party Rice",
+      description: "Half tray of party rice for small groups.",
+      priceCents: 6499,
+      sortOrder: 0,
+    },
+    {
+      category: "family",
+      name: "Full Tray Party Rice - Family Pack",
+      description: "Full tray for parties and family events.",
+      priceCents: 13499,
+      sortOrder: 1,
+    },
+    {
+      category: "family",
+      name: "2.6L Chicken Stew",
+      description: "Bulk chicken stew for catering and gatherings.",
+      priceCents: 10999,
+      sortOrder: 2,
+    },
+    // Drinks
+    {
+      category: "drinks",
+      name: "Zobo Drink",
+      description: "Hibiscus drink, lightly sweetened.",
+      priceCents: 449,
+      sortOrder: 0,
+    },
+    {
+      category: "drinks",
+      name: "Chapman",
+      description: "Classic Nigerian mocktail.",
+      priceCents: 549,
+      sortOrder: 1,
+    },
+    {
+      category: "drinks",
+      name: "Bottled Soft Drink",
+      description: "Coke, Sprite, or Fanta.",
+      priceCents: 299,
+      sortOrder: 2,
+    },
+    // Special
+    {
+      category: "special",
+      name: "Custom Party Order",
+      description:
+        "Pre-order only. Contact the restaurant to customize trays and timing. Starting price.",
+      priceCents: 5000,
       sortOrder: 0,
       available: true,
     },
-  });
+  ];
 
-  const toppings = await prisma.menuModifierGroup.create({
-    data: {
-      itemId: burger.id,
-      name: "Add-ons",
-      required: false,
-      minSelect: 0,
-      maxSelect: 3,
-      sortOrder: 0,
-    },
-  });
+  const createdItems = new Map<string, string>();
+  for (const item of items) {
+    const categoryId = categories.get(item.category);
+    if (!categoryId) {
+      continue;
+    }
+    const row = await prisma.menuItem.create({
+      data: {
+        storeId: store.id,
+        categoryId,
+        name: item.name,
+        description: item.description,
+        priceCents: item.priceCents,
+        imageUrl: HERO,
+        sortOrder: item.sortOrder,
+        available: item.available ?? true,
+      },
+    });
+    createdItems.set(`${item.category}:${item.name}`, row.id);
+  }
 
-  await prisma.menuModifier.createMany({
-    data: [
-      {
-        groupId: toppings.id,
-        name: "Bacon",
-        priceDeltaCents: 200,
+  const halfTrayId = createdItems.get("popular:Half Tray Party Rice");
+  if (halfTrayId) {
+    const riceGroup = await prisma.menuModifierGroup.create({
+      data: {
+        itemId: halfTrayId,
+        name: "Choose Rice Type - Half Tray",
+        required: true,
+        minSelect: 1,
+        maxSelect: 1,
         sortOrder: 0,
       },
-      {
-        groupId: toppings.id,
-        name: "Fried egg",
-        priceDeltaCents: 150,
-        sortOrder: 1,
-      },
-      {
-        groupId: toppings.id,
-        name: "Extra patty",
-        priceDeltaCents: 350,
-        sortOrder: 2,
-      },
-    ],
-  });
+    });
+    await prisma.menuModifier.createMany({
+      data: [
+        {
+          groupId: riceGroup.id,
+          name: "Jollof Rice Only",
+          priceDeltaCents: 0,
+          sortOrder: 0,
+        },
+        {
+          groupId: riceGroup.id,
+          name: "Fried Rice Only",
+          priceDeltaCents: 0,
+          sortOrder: 1,
+        },
+        {
+          groupId: riceGroup.id,
+          name: "Mix of Jollof and Fried Rice",
+          priceDeltaCents: 0,
+          sortOrder: 2,
+        },
+      ],
+    });
 
-  await prisma.menuItem.createMany({
-    data: [
-      {
-        storeId: store.id,
-        categoryId: mains.id,
-        name: "Crispy Chicken Sandwich",
-        description: "Buttermilk fried chicken, slaw, hot honey.",
-        priceCents: 1399,
+    const chickenGroup = await prisma.menuModifierGroup.create({
+      data: {
+        itemId: halfTrayId,
+        name: "Choose Chicken Quantity - Half Tray",
+        required: true,
+        minSelect: 1,
+        maxSelect: 1,
         sortOrder: 1,
-        available: true,
       },
-      {
-        storeId: store.id,
-        categoryId: sides.id,
-        name: "Seasoned Fries",
-        description: "Crispy fries with house seasoning.",
-        priceCents: 499,
-        sortOrder: 0,
-        available: true,
-      },
-      {
-        storeId: store.id,
-        categoryId: sides.id,
-        name: "Mac & Cheese",
-        description: "Creamy cheddar bake.",
-        priceCents: 650,
-        sortOrder: 1,
-        available: false,
-      },
-      {
-        storeId: store.id,
-        categoryId: drinks.id,
-        name: "Fountain Drink",
-        description: "Coca-Cola, Sprite, or iced tea.",
-        priceCents: 299,
-        sortOrder: 0,
-        available: true,
-      },
-    ],
-  });
+    });
+    await prisma.menuModifier.createMany({
+      data: [
+        {
+          groupId: chickenGroup.id,
+          name: "No chicken, Jollof Rice Only",
+          priceDeltaCents: 0,
+          sortOrder: 0,
+        },
+        {
+          groupId: chickenGroup.id,
+          name: "Regular Combo (5 Chicken)",
+          priceDeltaCents: 1500,
+          sortOrder: 1,
+        },
+        {
+          groupId: chickenGroup.id,
+          name: "Extra Chicken (8 pieces)",
+          priceDeltaCents: 2800,
+          sortOrder: 2,
+        },
+      ],
+    });
+  }
 
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);
@@ -225,7 +426,9 @@ async function main() {
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
   console.log(`  User:  ${SEED_USER.email}`);
   console.log(`  Login password: ${SEED_USER.password} (dev only)`);
-  console.log("  Menu: Mains / Sides / Drinks seeded");
+  console.log(
+    `  Menu: ${categoryDefs.length} categories · ${items.length} items`,
+  );
   console.log("  Hours: Sun closed · Mon–Sat 11:00–22:00");
 }
 

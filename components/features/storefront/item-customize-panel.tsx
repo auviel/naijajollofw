@@ -29,12 +29,10 @@ export function ItemCustomizePanel({
 }: ItemCustomizePanelProps) {
   const { success, error: toastError } = useToast();
   const [quantity, setQuantity] = useState(1);
-  const [selectedByGroup, setSelectedByGroup] = useState<
-    Record<string, string[]>
-  >(() => {
-    const initial: Record<string, string[]> = {};
+  const [selectedByGroup, setSelectedByGroup] = useState(() => {
+    const initial = new Map<string, string[]>();
     for (const group of item.modifierGroups) {
-      initial[group.id] = [];
+      initial.set(group.id, []);
     }
     return initial;
   });
@@ -42,7 +40,7 @@ export function ItemCustomizePanel({
   const [formError, setFormError] = useState<string | null>(null);
 
   const selectedModifiers = useMemo(
-    () => Object.values(selectedByGroup).flat(),
+    () => Array.from(selectedByGroup.values()).flat(),
     [selectedByGroup],
   );
 
@@ -64,23 +62,27 @@ export function ItemCustomizePanel({
     maxSelect: number,
   ) {
     setSelectedByGroup((current) => {
-      const existing = current[groupId] ?? [];
+      const next = new Map(current);
+      const existing = next.get(groupId) ?? [];
       if (existing.includes(modifierId)) {
-        return {
-          ...current,
-          [groupId]: existing.filter((id) => id !== modifierId),
-        };
+        next.set(
+          groupId,
+          existing.filter((id) => id !== modifierId),
+        );
+        return next;
       }
 
       if (maxSelect === 1) {
-        return { ...current, [groupId]: [modifierId] };
+        next.set(groupId, [modifierId]);
+        return next;
       }
 
       if (existing.length >= maxSelect) {
         return current;
       }
 
-      return { ...current, [groupId]: [...existing, modifierId] };
+      next.set(groupId, [...existing, modifierId]);
+      return next;
     });
   }
 
@@ -171,8 +173,18 @@ export function ItemCustomizePanel({
             </p>
           ) : scheduleLabel ? (
             <p className="mt-3 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
-              Restaurant is closed — your order will be scheduled for{" "}
-              <span className="font-medium text-foreground">{scheduleLabel}</span>.
+              Restaurant is closed — you&apos;ll pick a time at checkout
+              {scheduleLabel ? (
+                <>
+                  {" "}
+                  (next open{" "}
+                  <span className="font-medium text-foreground">
+                    {scheduleLabel}
+                  </span>
+                  )
+                </>
+              ) : null}
+              .
             </p>
           ) : null}
         </div>
@@ -199,7 +211,7 @@ export function ItemCustomizePanel({
               </div>
               <div className="divide-y divide-border rounded-lg border border-border">
                 {group.modifiers.map((modifier) => {
-                  const checked = (selectedByGroup[group.id] ?? []).includes(
+                  const checked = (selectedByGroup.get(group.id) ?? []).includes(
                     modifier.id,
                   );
                   const disabled = !modifier.available || !item.available;
@@ -304,7 +316,7 @@ export function ItemCustomizePanel({
             {pending
               ? "Adding…"
               : scheduleLabel
-                ? `Schedule · ${formatCadFromCents(unitPriceCents * quantity)}`
+                ? `Add ${quantity} · pick time at checkout · ${formatCadFromCents(unitPriceCents * quantity)}`
                 : `Add ${quantity} to order · ${formatCadFromCents(unitPriceCents * quantity)}`}
           </Button>
         </div>
