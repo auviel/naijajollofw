@@ -20,6 +20,15 @@ export function CartDrawer() {
   const [cart, setCart] = useState<CartView>(EMPTY_CART);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wasOpen, setWasOpen] = useState(cartOpen);
+
+  if (cartOpen !== wasOpen) {
+    setWasOpen(cartOpen);
+    if (cartOpen) {
+      setLoading(true);
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!cartOpen) {
@@ -27,8 +36,6 @@ export function CartDrawer() {
     }
 
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     void (async () => {
       try {

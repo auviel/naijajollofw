@@ -28,6 +28,11 @@ export function StorefrontHeaderBar({
   const [scrolled, setScrolled] = useState(false);
   const urlQuery = searchParams.get("q") ?? "";
   const [draftQuery, setDraftQuery] = useState<string | null>(null);
+  const [syncedUrlQuery, setSyncedUrlQuery] = useState(urlQuery);
+  if (urlQuery !== syncedUrlQuery) {
+    setSyncedUrlQuery(urlQuery);
+    setDraftQuery(null);
+  }
   const query = draftQuery ?? urlQuery;
   const setQuery = (value: string) => setDraftQuery(value);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
@@ -37,10 +42,6 @@ export function StorefrontHeaderBar({
   const accountHref = role === "STORE_MANAGER" ? "/dashboard" : "/account";
   const accountLabel =
     role === "STORE_MANAGER" ? "Dashboard" : "Account";
-
-  useEffect(() => {
-    setDraftQuery(null);
-  }, [urlQuery]);
 
   useEffect(() => {
     if (!mobileSearchOpen) {
