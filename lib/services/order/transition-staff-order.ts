@@ -7,7 +7,7 @@ import {
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { canTransition } from "@/lib/domain/order/transitions";
 import { orderTransitionSchema } from "@/lib/domain/order/validation-staff";
-import { notifyOrderStatusWhatsApp } from "@/lib/services/order/notify-order-status";
+import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
 import { AppError } from "@/lib/utils/errors";
 
 export async function transitionStaffOrder(
@@ -48,14 +48,18 @@ export async function transitionStaffOrder(
     throw new AppError("NOT_FOUND", "Order not found.", 404);
   }
 
-  void notifyOrderStatusWhatsApp({
+  void notifyOrderStatus({
     customerPhone: updated.customerPhone,
+    customerEmail: updated.customerEmail,
+    userEmail: updated.user?.email,
+    customerName: updated.customerName,
     storeName: updated.store?.name ?? "Restaurant",
     orderId: updated.id,
     publicToken: updated.publicToken,
     status: updated.status,
     fulfillmentType: updated.fulfillmentType,
     courierTrackingUrl: updated.delivery?.trackingUrl,
+    note: parsed.note?.trim() || null,
   });
 
   return mapOrderToStaffDetail(updated);

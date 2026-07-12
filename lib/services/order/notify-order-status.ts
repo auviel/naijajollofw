@@ -1,5 +1,8 @@
 import type { OrderStatus } from "@prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/domain/order/types";
+import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
+import { sendEmailInBackground } from "@/lib/integrations/email/send";
+import { buildOrderStatusEmail } from "@/lib/integrations/email/templates";
 import {
   getWhatsAppConfig,
   isWhatsAppEnabled,
@@ -25,22 +28,61 @@ const NOTIFY_STATUSES = new Set<OrderStatus>([
   "cancelled",
 ]);
 
+type EmailNotifyStatus =
+  | "accepted"
+  | "ready"
+  | "ready_for_pickup"
+  | "out_for_delivery"
+  | "completed"
+  | "cancelled";
+
+function isEmailNotifyStatus(status: OrderStatus): status is EmailNotifyStatus {
+  return NOTIFY_STATUSES.has(status);
+}
+
 function trackingUrl(orderId: string, publicToken: string): string | null {
-  const base = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  const base = getAppBaseUrl();
   if (!base) {
     return null;
   }
   return `${base}/orders/${orderId}?token=${publicToken}`;
 }
 
-function buildMessage(input: {
+function orderStatusLabel(status: OrderStatus): string {
+  switch (status) {
+    case "pending_payment":
+      return ORDER_STATUS_LABELS.pending_payment;
+    case "pending_acceptance":
+      return ORDER_STATUS_LABELS.pending_acceptance;
+    case "accepted":
+      return ORDER_STATUS_LABELS.accepted;
+    case "preparing":
+      return ORDER_STATUS_LABELS.preparing;
+    case "ready":
+      return ORDER_STATUS_LABELS.ready;
+    case "ready_for_pickup":
+      return ORDER_STATUS_LABELS.ready_for_pickup;
+    case "out_for_delivery":
+      return ORDER_STATUS_LABELS.out_for_delivery;
+    case "completed":
+      return ORDER_STATUS_LABELS.completed;
+    case "cancelled":
+      return ORDER_STATUS_LABELS.cancelled;
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
+function buildWhatsAppMessage(input: {
   storeName: string;
   status: OrderStatus;
   fulfillmentType: "pickup" | "delivery";
   trackUrl: string | null;
   courierTrackingUrl?: string | null;
 }): string {
-  const label = ORDER_STATUS_LABELS[input.status];
+  const label = orderStatusLabel(input.status);
   const lines = [`${input.storeName}: ${label}.`];
 
   if (input.status === "ready_for_pickup" || input.status === "ready") {
@@ -50,6 +92,9 @@ function buildMessage(input: {
   }
   if (input.status === "out_for_delivery") {
     lines.push("Your order is on the way.");
+  }
+  if (input.status === "cancelled") {
+    lines.push("If you were charged, contact the restaurant for a refund.");
   }
 
   if (input.courierTrackingUrl) {
@@ -61,8 +106,17 @@ function buildMessage(input: {
   return lines.join("\n");
 }
 
-/** Best-effort WhatsApp note to the diner. Never throws into order flows. */
-export async function notifyOrderStatusWhatsApp(input: {
+function resolveNotifyEmail(input: {
+  customerEmail?: string | null;
+  userEmail?: string | null;
+}): string | null {
+  const fromOrder = input.customerEmail?.trim().toLowerCase() || "";
+  if (fromOrder) return fromOrder;
+  const fromUser = input.userEmail?.trim().toLowerCase() || "";
+  return fromUser || null;
+}
+
+async function sendWhatsAppUpdate(input: {
   customerPhone: string;
   storeName: string;
   orderId: string;
@@ -79,7 +133,7 @@ export async function notifyOrderStatusWhatsApp(input: {
   }
 
   try {
-    const body = buildMessage({
+    const body = buildWhatsAppMessage({
       storeName: input.storeName,
       status: input.status,
       fulfillmentType: input.fulfillmentType,
@@ -98,4 +152,81 @@ export async function notifyOrderStatusWhatsApp(input: {
       error: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+function sendEmailUpdate(input: {
+  customerEmail?: string | null;
+  userEmail?: string | null;
+  customerName: string;
+  storeName: string;
+  orderId: string;
+  publicToken: string;
+  status: OrderStatus;
+  fulfillmentType: "pickup" | "delivery";
+  courierTrackingUrl?: string | null;
+  note?: string | null;
+}): void {
+  if (!isEmailNotifyStatus(input.status)) {
+    return;
+  }
+
+  const to = resolveNotifyEmail(input);
+  if (!to) {
+    logger.info("email.order_status_skipped_no_address", {
+      orderId: input.orderId,
+      status: input.status,
+    });
+    return;
+  }
+
+  const trackUrl = trackingUrl(input.orderId, input.publicToken);
+  if (!trackUrl) {
+    logger.warn("email.order_status_skipped_no_app_url", {
+      orderId: input.orderId,
+    });
+    return;
+  }
+
+  const mail = buildOrderStatusEmail({
+    customerName: input.customerName,
+    storeName: input.storeName,
+    status: input.status,
+    fulfillmentType: input.fulfillmentType,
+    trackUrl,
+    courierTrackingUrl: input.courierTrackingUrl,
+    note: input.note,
+  });
+
+  sendEmailInBackground({
+    to,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    idempotencyKey: `order-status/${input.orderId}/${input.status}`,
+  });
+}
+
+export type OrderStatusNotifyInput = {
+  customerPhone: string;
+  customerEmail?: string | null;
+  userEmail?: string | null;
+  customerName: string;
+  storeName: string;
+  orderId: string;
+  publicToken: string;
+  status: OrderStatus;
+  fulfillmentType: "pickup" | "delivery";
+  courierTrackingUrl?: string | null;
+  note?: string | null;
+};
+
+/**
+ * Best-effort diner notify (email + WhatsApp). Never throws into order flows.
+ * Call with `void notifyOrderStatus(...)`.
+ */
+export async function notifyOrderStatus(
+  input: OrderStatusNotifyInput,
+): Promise<void> {
+  sendEmailUpdate(input);
+  await sendWhatsAppUpdate(input);
 }

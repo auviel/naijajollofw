@@ -172,7 +172,7 @@ export function CartClient({ initialCart }: CartClientProps) {
         </span>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-4 backdrop-blur safe-bottom">
+      <div className="fixed inset-x-0 bottom-14 z-30 border-t border-border bg-background/95 p-4 backdrop-blur md:bottom-0 md:safe-bottom">
         <div className="mx-auto max-w-3xl">
           <Link
             href="/checkout"

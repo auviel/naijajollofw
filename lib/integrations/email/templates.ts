@@ -93,10 +93,6 @@ function layout(input: {
               <p style="margin:0 0 4px;font-weight:600;color:#6b6b6b;">Naija Jollof Waterloo</p>
               <p style="margin:0 0 12px;">${escapeHtml(STORE_ADDRESS)}</p>
               <p style="margin:0 0 14px;">${footerLinksHtml()}</p>
-              <p style="margin:0;font-size:11px;color:#a3a3a3;">
-                Prefer fewer emails? Use Unsubscribe to opt out of promotional messages.
-                Order and account emails may still be sent when needed.
-              </p>
             </td>
           </tr>
         </table>
@@ -120,12 +116,11 @@ export function buildWelcomeEmail(input: {
     reason,
     bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
      <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Your account is ready. Order pickup or delivery anytime, and track your orders from your account.</p>
-     <p style="margin:24px 0;">
+     <p style="margin:24px 0 0;">
        <a href="${escapeHtml(input.accountUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">View account</a>
-     </p>
-     <p style="margin:0;font-size:13px;color:#757575;">You can also order as a guest anytime.</p>`,
+     </p>`,
   });
-  const text = `Hi ${first},\n\nYour Naija Jollof Waterloo account is ready.\nView account: ${input.accountUrl}\n\nYou can also order as a guest anytime.\n\n${footerText(reason)}`;
+  const text = `Hi ${first},\n\nYour Naija Jollof Waterloo account is ready.\nView account: ${input.accountUrl}\n\n${footerText(reason)}`;
   return { subject, html, text };
 }
 
@@ -155,10 +150,9 @@ export function buildOrderConfirmationEmail(input: {
     bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
      <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">We received your ${mode} order from <strong>${escapeHtml(input.storeName)}</strong>. Total ${escapeHtml(input.totalLabel)}.</p>
      ${scheduleLine}
-     <p style="margin:24px 0;">
+     <p style="margin:24px 0 0;">
        <a href="${escapeHtml(input.trackUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Track order</a>
-     </p>
-     <p style="margin:0;font-size:13px;color:#757575;">Keep this email for your records.</p>`,
+     </p>`,
   });
   const text = `Hi ${first},\n\nWe received your ${mode} order from ${input.storeName}. Total ${input.totalLabel}.${scheduleText}\n\nTrack order: ${input.trackUrl}\n\n${footerText(reason)}`;
   return { subject, html, text };
@@ -177,13 +171,132 @@ export function buildPasswordResetEmail(input: {
     reason,
     bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
      <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">We received a request to reset your Naija Jollof Waterloo password. This link expires in 1 hour.</p>
-     <p style="margin:24px 0;">
+     <p style="margin:24px 0 0;">
        <a href="${escapeHtml(input.resetUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Reset password</a>
-     </p>
-     <p style="margin:0;font-size:13px;color:#757575;">If you did not request this, you can ignore this email.</p>`,
+     </p>`,
   });
-  const text = `Hi ${first},\n\nReset your password (expires in 1 hour):\n${input.resetUrl}\n\nIf you did not request this, ignore this email.\n\n${footerText(reason)}`;
+  const text = `Hi ${first},\n\nReset your password (expires in 1 hour):\n${input.resetUrl}\n\n${footerText(reason)}`;
   return { subject, html, text };
+}
+
+type OrderStatusEmailStatus =
+  | "accepted"
+  | "ready"
+  | "ready_for_pickup"
+  | "out_for_delivery"
+  | "completed"
+  | "cancelled";
+
+function orderStatusCopy(input: {
+  status: OrderStatusEmailStatus;
+  fulfillmentType: "pickup" | "delivery";
+  storeName: string;
+}): { subject: string; headline: string; body: string; cta: string } {
+  const store = input.storeName;
+  switch (input.status) {
+    case "accepted":
+      return {
+        subject: `Order accepted · ${store}`,
+        headline: "We’ve got your order",
+        body: `${store} accepted your order and the kitchen is getting started.`,
+        cta: "Track order",
+      };
+    case "ready":
+    case "ready_for_pickup":
+      return {
+        subject:
+          input.fulfillmentType === "pickup"
+            ? `Ready for pickup · ${store}`
+            : `Order ready · ${store}`,
+        headline:
+          input.fulfillmentType === "pickup"
+            ? "Ready for pickup"
+            : "Your order is ready",
+        body:
+          input.fulfillmentType === "pickup"
+            ? "Your order is ready. Head over when you can."
+            : "Your order is ready and will be on its way shortly.",
+        cta: "Track order",
+      };
+    case "out_for_delivery":
+      return {
+        subject: `On the way · ${store}`,
+        headline: "Your order is on the way",
+        body: "A courier is bringing your food. You can follow along with the track link.",
+        cta: "Track order",
+      };
+    case "completed":
+      return {
+        subject: `Enjoy · ${store}`,
+        headline: "Order complete",
+        body: "Thanks for ordering with us. We hope it hits the spot.",
+        cta: "View order",
+      };
+    case "cancelled":
+      return {
+        subject: `Order cancelled · ${store}`,
+        headline: "Order cancelled",
+        body: `Your order from ${store} was cancelled. If you were charged, reply to this email or contact ${CONTACT_EMAIL} and we’ll help with a refund.`,
+        cta: "View order",
+      };
+  }
+}
+
+export function buildOrderStatusEmail(input: {
+  customerName: string;
+  storeName: string;
+  status: OrderStatusEmailStatus;
+  fulfillmentType: "pickup" | "delivery";
+  trackUrl: string;
+  courierTrackingUrl?: string | null;
+  note?: string | null;
+}): { subject: string; html: string; text: string } {
+  const first = input.customerName.trim().split(/\s+/)[0] || "there";
+  const copy = orderStatusCopy({
+    status: input.status,
+    fulfillmentType: input.fulfillmentType,
+    storeName: input.storeName,
+  });
+  const reason =
+    input.status === "cancelled"
+      ? "You’re receiving this because an order with Naija Jollof Waterloo was cancelled."
+      : "You’re receiving this because you placed an order with Naija Jollof Waterloo.";
+
+  const noteLine = input.note?.trim()
+    ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;">Note: ${escapeHtml(input.note.trim())}</p>`
+    : "";
+  const courierLine = input.courierTrackingUrl
+    ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;"><a href="${escapeHtml(input.courierTrackingUrl)}" style="color:#CC5400;">Courier tracking</a></p>`
+    : "";
+
+  const html = layout({
+    title: copy.subject,
+    reason,
+    bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
+     <p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">${escapeHtml(copy.headline)}</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">${escapeHtml(copy.body)}</p>
+     ${noteLine}
+     ${courierLine}
+     <p style="margin:24px 0 0;">
+       <a href="${escapeHtml(input.trackUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">${escapeHtml(copy.cta)}</a>
+     </p>`,
+  });
+
+  const textLines = [
+    `Hi ${first},`,
+    "",
+    copy.headline,
+    copy.body,
+    input.note?.trim() ? `Note: ${input.note.trim()}` : null,
+    input.courierTrackingUrl
+      ? `Courier: ${input.courierTrackingUrl}`
+      : null,
+    `Track: ${input.trackUrl}`,
+    "",
+    footerText(reason),
+  ].filter((line): line is string => line != null);
+
+  return { subject: copy.subject, html, text: textLines.join("\n") };
 }
 
 /** Mailto used for List-Unsubscribe / marketing opt-out. */

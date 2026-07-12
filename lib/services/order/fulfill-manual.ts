@@ -5,7 +5,7 @@ import {
 } from "@/lib/db/repositories/order.repository";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { fulfillManualSchema } from "@/lib/domain/order/validation-staff";
-import { notifyOrderStatusWhatsApp } from "@/lib/services/order/notify-order-status";
+import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
 import { AppError } from "@/lib/utils/errors";
 
 export async function fulfillOrderManual(
@@ -55,8 +55,11 @@ export async function fulfillOrderManual(
     throw new AppError("NOT_FOUND", "Order not found.", 404);
   }
 
-  void notifyOrderStatusWhatsApp({
+  void notifyOrderStatus({
     customerPhone: updated.customerPhone,
+    customerEmail: updated.customerEmail,
+    userEmail: updated.user?.email,
+    customerName: updated.customerName,
     storeName: updated.store?.name ?? "Restaurant",
     orderId: updated.id,
     publicToken: updated.publicToken,

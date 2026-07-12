@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
+import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { Search, ShoppingBag, User, X } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 
@@ -22,12 +23,12 @@ export function StorefrontHeaderBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const { mobileSearchOpen, setMobileSearchOpen } = useStorefrontUi();
   const [scrolled, setScrolled] = useState(false);
   const urlQuery = searchParams.get("q") ?? "";
   const [draftQuery, setDraftQuery] = useState<string | null>(null);
   const query = draftQuery ?? urlQuery;
   const setQuery = (value: string) => setDraftQuery(value);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const isLoggedIn = status === "authenticated" && Boolean(session?.user);
@@ -35,6 +36,10 @@ export function StorefrontHeaderBar({
   const accountHref = role === "STORE_MANAGER" ? "/dashboard" : "/account";
   const accountLabel =
     role === "STORE_MANAGER" ? "Dashboard" : "Account";
+
+  useEffect(() => {
+    setDraftQuery(null);
+  }, [urlQuery]);
 
   useEffect(() => {
     if (!mobileSearchOpen) {
@@ -87,7 +92,7 @@ export function StorefrontHeaderBar({
     }, 280);
 
     return () => window.clearTimeout(timeout);
-  }, [query, pathname, router, searchParams]);
+  }, [query, pathname, router, searchParams, startTransition]);
 
   const accountControl = (
     <Link
@@ -109,7 +114,6 @@ export function StorefrontHeaderBar({
       )}
     >
       <div className="flex h-14 w-full items-center gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6 lg:px-8 xl:px-10">
-        {/* Mobile expanded search */}
         <div
           className={cn(
             "min-w-0 flex-1 items-center gap-1 sm:hidden",
@@ -141,7 +145,6 @@ export function StorefrontHeaderBar({
           </label>
         </div>
 
-        {/* Default header row (hidden on mobile while search is open) */}
         <div
           className={cn(
             "min-w-0 flex-1 items-center justify-between gap-3 sm:gap-6 lg:gap-8",
@@ -173,16 +176,7 @@ export function StorefrontHeaderBar({
             </label>
           </div>
 
-          <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileSearchOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface sm:hidden"
-              aria-label="Search menu"
-            >
-              <Search className="h-5 w-5" aria-hidden />
-            </button>
-
+          <nav className="hidden shrink-0 items-center gap-1 sm:flex sm:gap-2">
             <CartLink count={cartItemCount} />
 
             {status === "loading" ? (
@@ -193,7 +187,7 @@ export function StorefrontHeaderBar({
               <>
                 <Link
                   href="/signin"
-                  className="hidden px-2 text-sm font-medium text-foreground no-underline transition-opacity hover:opacity-70 sm:inline"
+                  className="px-2 text-sm font-medium text-foreground no-underline transition-opacity hover:opacity-70"
                 >
                   Log in
                 </Link>
@@ -222,9 +216,11 @@ function CartLink({ count }: { count: number }) {
       aria-label={label}
     >
       <ShoppingBag className="h-5 w-5" aria-hidden />
-      <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-success px-1 text-[11px] font-semibold leading-none text-white">
-        {count > 99 ? "99+" : count}
-      </span>
+      {count > 0 ? (
+        <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-success px-1 text-[11px] font-semibold leading-none text-white">
+          {count > 99 ? "99+" : count}
+        </span>
+      ) : null}
     </Link>
   );
 }

@@ -3,6 +3,7 @@ import {
   parseSquareWebhookEvent,
   verifySquareWebhookSignature,
 } from "@/lib/integrations/payments/square/webhook";
+import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
 import { logger } from "@/lib/utils/logger";
 
 export async function handleSquareWebhook(
@@ -22,11 +23,30 @@ export async function handleSquareWebhook(
   }
 
   if (status === "FAILED" || status === "CANCELED") {
-    await orderRepository.updateStatusBySquarePaymentId(
+    const previous = await orderRepository.findBySquarePaymentId(paymentId);
+    const updated = await orderRepository.updateStatusBySquarePaymentId(
       paymentId,
       "cancelled",
       `Square payment ${status.toLowerCase()}`,
     );
+    if (
+      updated &&
+      updated.status === "cancelled" &&
+      previous?.status !== "cancelled"
+    ) {
+      void notifyOrderStatus({
+        customerPhone: updated.customerPhone,
+        customerEmail: updated.customerEmail,
+        userEmail: updated.user?.email,
+        customerName: updated.customerName,
+        storeName: updated.store?.name ?? "Restaurant",
+        orderId: updated.id,
+        publicToken: updated.publicToken,
+        status: "cancelled",
+        fulfillmentType: updated.fulfillmentType,
+        note: `Square payment ${status.toLowerCase()}`,
+      });
+    }
     return;
   }
 

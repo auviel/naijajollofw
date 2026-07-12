@@ -9,6 +9,7 @@ import {
   ClipboardListIcon,
   Clock01Icon,
   Facebook01Icon,
+  Home01Icon,
   IceCubesIcon,
   InstagramIcon,
   LeftToRightListDashIcon,
@@ -99,6 +100,7 @@ export const ChevronRight = createIcon(ArrowRight01Icon, "ChevronRight");
 export const ClipboardList = createIcon(ClipboardListIcon, "ClipboardList");
 export const Clock = createIcon(Clock01Icon, "Clock");
 export const ExternalLink = createIcon(LinkSquare01Icon, "ExternalLink");
+export const Home = createIcon(Home01Icon, "Home");
 export const List = createIcon(LeftToRightListDashIcon, "List");
 export const Location = createIcon(Location01Icon, "Location");
 export const Package = createIcon(Package01Icon, "Package");

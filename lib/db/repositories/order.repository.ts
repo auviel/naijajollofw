@@ -217,6 +217,7 @@ const orderInclude = {
   events: { orderBy: { createdAt: "asc" as const } },
   delivery: true,
   store: { select: { name: true, prepMinutes: true } },
+  user: { select: { email: true, name: true } },
 } satisfies Prisma.OrderInclude;
 
 const listInclude = {
@@ -229,6 +230,7 @@ export type CreateOrderInput = {
   fulfillmentType: "pickup" | "delivery";
   customerName: string;
   customerPhone: string;
+  customerEmail?: string | null;
   dropoffAddress?: string | null;
   dropoffLat?: number | null;
   dropoffLng?: number | null;
@@ -334,6 +336,7 @@ export const orderRepository = {
         fulfillmentMethod: "unassigned",
         customerName: input.customerName,
         customerPhone: input.customerPhone,
+        customerEmail: input.customerEmail?.trim().toLowerCase() || null,
         dropoffAddress: input.dropoffAddress ?? null,
         dropoffLat: input.dropoffLat ?? null,
         dropoffLng: input.dropoffLng ?? null,
@@ -546,6 +549,7 @@ export const orderRepository = {
   ) {
     const existing = await prisma.order.findUnique({
       where: { squarePaymentId },
+      include: orderInclude,
     });
     if (!existing) {
       return null;
@@ -555,7 +559,7 @@ export const orderRepository = {
     }
 
     return prisma.$transaction(async (tx) => {
-      const updated = await tx.order.update({
+      await tx.order.update({
         where: { id: existing.id },
         data: { status },
       });
@@ -567,7 +571,10 @@ export const orderRepository = {
           note,
         },
       });
-      return updated;
+      return tx.order.findFirstOrThrow({
+        where: { id: existing.id },
+        include: orderInclude,
+      });
     });
   },
 };

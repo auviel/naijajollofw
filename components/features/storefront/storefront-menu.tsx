@@ -1,5 +1,4 @@
 import { MenuCatalogBrowse } from "@/components/features/storefront/menu-catalog-browse";
-import { StickyCartBar } from "@/components/features/storefront/sticky-cart-bar";
 import { StorefrontFaq } from "@/components/features/storefront/storefront-faq";
 import { StorefrontHero } from "@/components/features/storefront/storefront-hero";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,8 +20,6 @@ type StorefrontMenuProps = {
 export function StorefrontMenu({
   store,
   catalog,
-  cartItemCount,
-  cartSubtotalCents,
   openStatus,
   prepMinutes,
   searchQuery = "",
@@ -52,7 +49,7 @@ export function StorefrontMenu({
 
   if (!hasAnyMenuItems) {
     return (
-      <div className="space-y-8 pb-24">
+      <div className="space-y-8">
         <StorefrontHero
           store={store}
           openStatus={openStatus}
@@ -73,7 +70,7 @@ export function StorefrontMenu({
   }
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-8">
       <StorefrontHero
         store={store}
         openStatus={openStatus}
@@ -105,13 +102,6 @@ export function StorefrontMenu({
         prepMinutes={prepMinutes}
         todayLabel={openStatus.todayLabel}
       />
-
-      {canOrder ? (
-        <StickyCartBar
-          itemCount={cartItemCount}
-          subtotalCents={cartSubtotalCents}
-        />
-      ) : null}
     </div>
   );
 }

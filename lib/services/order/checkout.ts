@@ -193,6 +193,7 @@ export async function checkoutWithSquare(
       fulfillmentType: parsed.fulfillmentType,
       customerName,
       customerPhone: phone,
+      customerEmail: receiptEmail,
       dropoffAddress:
         parsed.fulfillmentType === "delivery"
           ? parsed.dropoffAddress?.trim() ?? null

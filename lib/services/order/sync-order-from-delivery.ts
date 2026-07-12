@@ -1,7 +1,7 @@
 import type { DeliveryStatus } from "@prisma/client";
 import { orderRepository } from "@/lib/db/repositories/order.repository";
 import { mapDeliveryStatusToOrderStatus } from "@/lib/domain/order/transitions";
-import { notifyOrderStatusWhatsApp } from "@/lib/services/order/notify-order-status";
+import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
 import { logger } from "@/lib/utils/logger";
 
 /** When a linked Delivery status changes, mirror progress onto the Order. */
@@ -49,8 +49,11 @@ export async function syncOrderFromLinkedDelivery(delivery: {
   });
 
   if (updated && (next === "out_for_delivery" || next === "completed")) {
-    void notifyOrderStatusWhatsApp({
+    void notifyOrderStatus({
       customerPhone: updated.customerPhone,
+      customerEmail: updated.customerEmail,
+      userEmail: updated.user?.email,
+      customerName: updated.customerName,
       storeName: updated.store?.name ?? "Restaurant",
       orderId: updated.id,
       publicToken: updated.publicToken,

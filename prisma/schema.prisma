@@ -391,6 +391,8 @@ model Order {
   fulfillmentMethod    FulfillmentMethod @default(unassigned)
   customerName         String
   customerPhone        String
+  /// Receipt / status email captured at checkout (guest or diner).
+  customerEmail        String?
   dropoffAddress       String?
   dropoffLat           Float?
   dropoffLng           Float?

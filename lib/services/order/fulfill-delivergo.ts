@@ -6,7 +6,7 @@ import {
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { fulfillDelivergoSchema } from "@/lib/domain/order/validation-staff";
 import { createDeliveryForStore } from "@/lib/services/delivery/create-delivery";
-import { notifyOrderStatusWhatsApp } from "@/lib/services/order/notify-order-status";
+import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
 import { AppError } from "@/lib/utils/errors";
 
 export async function fulfillOrderDelivergo(
@@ -78,8 +78,11 @@ export async function fulfillOrderDelivergo(
     throw new AppError("NOT_FOUND", "Order not found after dispatch.", 404);
   }
 
-  void notifyOrderStatusWhatsApp({
+  void notifyOrderStatus({
     customerPhone: updated.customerPhone,
+    customerEmail: updated.customerEmail,
+    userEmail: updated.user?.email,
+    customerName: updated.customerName,
     storeName: updated.store?.name ?? "Restaurant",
     orderId: updated.id,
     publicToken: updated.publicToken,
