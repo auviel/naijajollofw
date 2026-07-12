@@ -6,7 +6,10 @@ import {
   CART_ADD_WINDOW_MS,
   assertDurableRateLimit,
 } from "@/lib/services/auth/login-protection";
-import { readCartSessionId } from "@/lib/services/cart/session";
+import {
+  readCartSessionId,
+  touchCartSessionCookie,
+} from "@/lib/services/cart/session";
 import { parseJsonBody } from "@/lib/utils/api-request";
 import { handleApiError } from "@/lib/utils/errors";
 import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
@@ -15,6 +18,9 @@ export async function GET() {
   try {
     const cart = await getCart();
     const sessionId = await readCartSessionId();
+    if (sessionId) {
+      await touchCartSessionCookie(sessionId);
+    }
     return NextResponse.json({ data: cart, sessionId });
   } catch (error) {
     return handleApiError(error);

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SkipLink } from "@/components/layout/skip-link";
 import { TopBar } from "@/components/layout/top-bar";
@@ -15,7 +16,9 @@ export default function DashboardLayout({
       <SkipLink />
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <Sidebar />
+          <Suspense fallback={null}>
+            <Sidebar />
+          </Suspense>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <TopBar />
             <main
@@ -29,7 +32,9 @@ export default function DashboardLayout({
             </main>
           </div>
         </div>
-        <MobileNav />
+        <Suspense fallback={null}>
+          <MobileNav />
+        </Suspense>
       </div>
     </DashboardProviders>
   );

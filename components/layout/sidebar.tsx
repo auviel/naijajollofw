@@ -1,4 +1,11 @@
-import { ClipboardList, Package, Store, UtensilsCrossed, Users } from "@/components/ui/icons";
+import {
+  ClipboardList,
+  Clock,
+  Package,
+  Store,
+  UtensilsCrossed,
+  Users,
+} from "@/components/ui/icons";
 import { auth } from "@/lib/auth/index";
 import { LogoutButton } from "@/components/features/auth/logout-button";
 import { SidebarNavLink } from "@/components/layout/sidebar-nav-link";
@@ -8,7 +15,9 @@ import { getSessionContext } from "@/lib/auth/session";
 export async function Sidebar() {
   const session = await auth();
   const context = await getSessionContext();
-  const storeAddress = context?.store ? formatStoreProfileAddress(context.store) : null;
+  const storeAddress = context?.store
+    ? formatStoreProfileAddress(context.store)
+    : null;
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start overflow-hidden border-r border-border bg-surface md:flex">
@@ -22,8 +31,9 @@ export async function Sidebar() {
           label="Orders"
           icon={<ClipboardList className="h-5 w-5" />}
           exact
-          // Treat /dashboard/orders* as Orders too (list + detail).
           matchPrefixes={["/dashboard/orders"]}
+          excludeSearchParam="channel"
+          excludeSearchValue="courier"
         />
         <SidebarNavLink
           href="/dashboard/menu"
@@ -34,7 +44,9 @@ export async function Sidebar() {
           href="/dashboard/orders?channel=courier"
           label="Courier"
           icon={<Package className="h-5 w-5" />}
-          matchPrefixes={["/dashboard/deliveries"]}
+          matchPrefixes={["/dashboard/orders"]}
+          matchSearchParam="channel"
+          matchSearchValue="courier"
         />
         <SidebarNavLink
           href="/dashboard/customers"
@@ -45,6 +57,11 @@ export async function Sidebar() {
           href="/dashboard/store"
           label="Store profile"
           icon={<Store className="h-5 w-5" />}
+        />
+        <SidebarNavLink
+          href="/dashboard/hours"
+          label="Hours & prep"
+          icon={<Clock className="h-5 w-5" />}
         />
       </nav>
 

@@ -34,19 +34,17 @@ const NAV = [
 export function AccountNav({ userName }: { userName: string }) {
   const pathname = usePathname();
   const active = NAV.find((item) => item.match(pathname)) ?? NAV[0];
-  const [open, setOpen] = useState(false);
+  // Open only while path matches — closes automatically on navigation.
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const open = openPath === pathname;
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
     function onPointer(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+        setOpenPath(null);
       }
     }
     document.addEventListener("mousedown", onPointer);
@@ -63,7 +61,9 @@ export function AccountNav({ userName }: { userName: string }) {
           className="mt-2 flex h-12 w-full items-center justify-between rounded-xl border border-border bg-background px-4 text-left text-sm font-semibold text-foreground"
           aria-expanded={open}
           aria-controls={listId}
-          onClick={() => setOpen((value) => !value)}
+          onClick={() =>
+            setOpenPath((current) => (current === pathname ? null : pathname))
+          }
         >
           {active.label}
           <ChevronRight

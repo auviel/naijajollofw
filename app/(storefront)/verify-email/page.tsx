@@ -28,21 +28,22 @@ export default async function VerifyEmailPage({
     );
   }
 
+  let title = "Email verified";
+  let body = "";
+  let ok = true;
+
   try {
     const result = await verifyDinerEmailToken(token);
-    return (
-      <VerifyResult
-        title="Email verified"
-        body={`Thanks — ${result.email} is confirmed. You’re all set.`}
-        ok
-      />
-    );
+    body = `Thanks — ${result.email} is confirmed. You’re all set.`;
   } catch (error) {
-    const message = isAppError(error)
+    ok = false;
+    title = "Couldn’t verify email";
+    body = isAppError(error)
       ? error.message
       : "This verification link is invalid or has expired.";
-    return <VerifyResult title="Couldn’t verify email" body={message} ok={false} />;
   }
+
+  return <VerifyResult title={title} body={body} ok={ok} />;
 }
 
 function VerifyResult({

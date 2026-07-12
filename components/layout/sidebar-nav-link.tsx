@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
@@ -13,6 +13,18 @@ type SidebarNavLinkProps = {
   /** Extra path prefixes that should mark this link active (e.g. /dashboard/orders). */
   matchPrefixes?: string[];
   excludePaths?: string[];
+  /**
+   * When set, this link is active only if the named search param equals
+   * `matchSearchValue` (and path rules also match). Use for channel tabs.
+   */
+  matchSearchParam?: string;
+  matchSearchValue?: string;
+  /**
+   * When set, this link is inactive if the named search param equals
+   * `excludeSearchValue` (e.g. Orders should not light when channel=courier).
+   */
+  excludeSearchParam?: string;
+  excludeSearchValue?: string;
 };
 
 export function SidebarNavLink({
@@ -22,19 +34,60 @@ export function SidebarNavLink({
   exact = false,
   matchPrefixes = [],
   excludePaths = [],
+  matchSearchParam,
+  matchSearchValue,
+  excludeSearchParam,
+  excludeSearchValue,
 }: SidebarNavLinkProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const pathOnly = href.split("?")[0] ?? href;
   const excluded = excludePaths.some((path) => pathname.startsWith(path));
   const matchedPrefix = matchPrefixes.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
-  const isActive =
+  const pathActive =
     !excluded &&
     (matchedPrefix ||
       (exact
-        ? pathname === href
-        : pathname === href || pathname.startsWith(`${href}/`)));
+        ? pathname === pathOnly
+        : pathname === pathOnly || pathname.startsWith(`${pathOnly}/`)));
 
+  // Courier (and similar): require search param match, or deliveries routes.
+  if (matchSearchParam && matchSearchValue) {
+    const paramMatches =
+      searchParams.get(matchSearchParam) === matchSearchValue;
+    const deliveriesPath = pathname.startsWith("/dashboard/deliveries");
+    const isActive = (pathActive && paramMatches) || deliveriesPath;
+
+    return (
+      <NavLinkShell href={href} label={label} icon={icon} isActive={isActive} />
+    );
+  }
+
+  let isActive = pathActive;
+  if (isActive && excludeSearchParam && excludeSearchValue) {
+    if (searchParams.get(excludeSearchParam) === excludeSearchValue) {
+      isActive = false;
+    }
+  }
+
+  return (
+    <NavLinkShell href={href} label={label} icon={icon} isActive={isActive} />
+  );
+}
+
+function NavLinkShell({
+  href,
+  label,
+  icon,
+  isActive,
+}: {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  isActive: boolean;
+}) {
   return (
     <Link
       href={href}

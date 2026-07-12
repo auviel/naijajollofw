@@ -13,11 +13,11 @@ export function DeliveryDetailHeader({ delivery }: DeliveryDetailHeaderProps) {
   return (
     <header className="border-b border-border pb-5 sm:pb-6">
       <Link
-        href="/dashboard/deliveries"
+        href="/dashboard/orders?channel=courier"
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to deliveries
+        Back to courier orders
       </Link>
 
       <div className="flex items-start justify-between gap-4">

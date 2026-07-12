@@ -49,7 +49,10 @@ export function useSquareCardForm({
   const containerId = useId().replace(/:/g, "");
   const cardRef = useRef<SquareCard | null>(null);
   const onReadyChangeRef = useRef(onReadyChange);
-  onReadyChangeRef.current = onReadyChange;
+
+  useEffect(() => {
+    onReadyChangeRef.current = onReadyChange;
+  }, [onReadyChange]);
 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -6,7 +6,12 @@ import { withSentryConfig } from "@sentry/nextjs";
  * Missing pci-connect / squarecdn fonts causes “card form failed to load”
  * especially under Firefox’s stricter third-party checks.
  * @see https://developer.squareup.com/docs/web-payments/content-security-policy
+ *
+ * Dev-only `'unsafe-eval'`: React 19 + Turbopack need eval for debug callstacks.
+ * Never ship that in production.
  */
+const isDev = process.env.NODE_ENV !== "production";
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -44,6 +49,7 @@ const securityHeaders = [
         "script-src",
         "'self'",
         "'unsafe-inline'",
+        ...(isDev ? ["'unsafe-eval'"] : []),
         "https://challenges.cloudflare.com",
         "https://web.squarecdn.com",
         "https://sandbox.web.squarecdn.com",

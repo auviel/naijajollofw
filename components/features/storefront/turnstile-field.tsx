@@ -54,8 +54,11 @@ export function TurnstileField({
   const onTokenRef = useRef(onToken);
   const onStatusRef = useRef(onStatusChange);
   const lastResetKeyRef = useRef(resetKey);
-  onTokenRef.current = onToken;
-  onStatusRef.current = onStatusChange;
+
+  useEffect(() => {
+    onTokenRef.current = onToken;
+    onStatusRef.current = onStatusChange;
+  }, [onToken, onStatusChange]);
 
   const [status, setStatus] = useState<TurnstileStatus>("loading");
   const [scriptKey, setScriptKey] = useState(0);
@@ -111,6 +114,8 @@ export function TurnstileField({
   }, [containerId, setStatusSafe, siteKey]);
 
   useEffect(() => {
+    // Widget mount lifecycle: sync status when siteKey/script remounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Turnstile external widget lifecycle
     setStatusSafe("loading");
     onTokenRef.current(null);
 
@@ -145,24 +150,10 @@ export function TurnstileField({
     }
     lastResetKeyRef.current = resetKey;
     onTokenRef.current(null);
-
-    if (!widgetIdRef.current || !window.turnstile) {
-      // Widget not mounted yet — full remount path via scriptKey.
-      destroyWidget();
-      setScriptKey((key) => key + 1);
-      setStatusSafe("loading");
-      return;
-    }
-
-    try {
-      window.turnstile.reset(widgetIdRef.current);
-      setStatusSafe("waiting");
-    } catch {
-      destroyWidget();
-      setScriptKey((key) => key + 1);
-      setStatusSafe("loading");
-    }
-  }, [destroyWidget, resetKey, setStatusSafe]);
+    destroyWidget();
+    // Remount widget for a fresh single-use token.
+    setScriptKey((key) => key + 1);
+  }, [destroyWidget, resetKey]);
 
   function retry() {
     destroyWidget();

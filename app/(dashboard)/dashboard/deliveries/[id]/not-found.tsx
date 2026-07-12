@@ -11,10 +11,10 @@ export default function DeliveryNotFound() {
             This delivery does not exist or you do not have access to it.
           </p>
           <Link
-            href="/dashboard/deliveries"
+            href="/dashboard/orders?channel=courier"
             className="mt-6 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Back to deliveries
+            Back to courier orders
           </Link>
         </div>
       </DashboardPageBody>
