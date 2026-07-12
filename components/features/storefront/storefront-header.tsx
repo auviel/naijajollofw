@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { StorefrontHeaderBar } from "@/components/features/storefront/storefront-header-bar";
 import { getCart } from "@/lib/services/cart/cart-actions";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
@@ -9,6 +10,15 @@ export async function StorefrontHeader() {
   const storeName = store?.name ?? "Order online";
 
   return (
-    <StorefrontHeaderBar storeName={storeName} cartItemCount={cart.itemCount} />
+    <Suspense
+      fallback={
+        <header className="sticky top-0 z-20 h-14 border-b border-transparent bg-background/90 sm:h-16" />
+      }
+    >
+      <StorefrontHeaderBar
+        storeName={storeName}
+        cartItemCount={cart.itemCount}
+      />
+    </Suspense>
   );
 }

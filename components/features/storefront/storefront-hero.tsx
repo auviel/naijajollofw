@@ -1,8 +1,10 @@
-import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
+import Image from "next/image";
 import type { StoreOpenStatus } from "@/lib/domain/store/hours";
 import { formatStoreProfileAddress } from "@/lib/domain/store/format";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import { cn } from "@/lib/utils/cn";
+
+export const STORE_HERO_SRC = "/brand/naija-jollof-hero.png";
 
 type StorefrontHeroProps = {
   store: StoreProfile;
@@ -19,107 +21,65 @@ export function StorefrontHero({
   soldOut = false,
 }: StorefrontHeroProps) {
   const address = formatStoreProfileAddress(store);
-  const statusLabel = openStatus.isOpen ? "Open" : "Closed";
 
   return (
     <section className="pb-2 sm:pb-4">
-      <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
+      <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 xl:gap-12">
         <div className="relative order-1 lg:order-2">
           <div
             className={cn(
               "storefront-hero-cover relative overflow-hidden rounded-2xl bg-surface ring-1 ring-border",
-              "aspect-[16/10] sm:aspect-[16/9] lg:aspect-auto lg:min-h-[280px] xl:min-h-[320px]",
+              "aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3]",
             )}
-            aria-hidden
           >
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(145deg, #eceae6 0%, #d8d4cc 42%, #c4bfb5 100%)",
-              }}
-            />
-            <div
-              className="absolute inset-0 opacity-40"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.55) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(0,0,0,0.06) 0%, transparent 40%)",
-              }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-sm font-medium tracking-wide text-text-tertiary">
-                Cover photo
-              </p>
-            </div>
-          </div>
-
-          {/* Mobile only: logo overlaps cover */}
-          <div className="storefront-hero-logo absolute -bottom-5 left-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] lg:hidden">
-            <StoreBrandLogo
-              alt=""
-              variant="hero"
-              className="h-12 w-[11.5rem] sm:h-14 sm:w-[13rem]"
+            <Image
+              src={STORE_HERO_SRC}
+              alt={`Food from ${store.name}`}
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="object-cover object-center"
             />
           </div>
         </div>
 
-        <div className="storefront-hero-copy order-2 pt-8 lg:order-1 lg:pt-0 lg:pb-2">
-          <div className="mb-4 hidden lg:mb-5 lg:block">
-            <StoreBrandLogo alt="" variant="hero" />
-          </div>
-
+        <div className="storefront-hero-copy order-2 flex flex-col justify-center lg:order-1 lg:min-h-0 lg:py-2">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
             {store.name}
           </h1>
 
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-text-secondary sm:text-[15px]">
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-text-secondary sm:mt-4 sm:text-[15px]">
             {address}
           </p>
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-secondary">
-            <span
-              className={cn(
-                "font-medium",
-                openStatus.isOpen ? "text-success" : "text-foreground",
-              )}
-            >
-              {statusLabel}
-            </span>
-            <span aria-hidden className="text-border-strong">
-              ·
-            </span>
-            <span>{openStatus.todayLabel}</span>
+          <p
+            role="status"
+            className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-secondary sm:mt-5"
+          >
             {openStatus.isOpen ? (
               <>
+                <span className="font-medium text-success">Open</span>
+                <span aria-hidden className="text-border-strong">
+                  ·
+                </span>
+                <span>{openStatus.todayLabel}</span>
                 <span aria-hidden className="text-border-strong">
                   ·
                 </span>
                 <span>Ready in ~{prepMinutes} min</span>
               </>
-            ) : null}
-          </div>
-
-          {!openStatus.isOpen ? (
-            <p role="status" className="mt-4 max-w-md text-sm text-foreground">
-              {openStatus.message}. You can browse the menu, but ordering is
-              paused.
-            </p>
-          ) : null}
+            ) : (
+              <span className="font-medium text-foreground">
+                {openStatus.message}
+              </span>
+            )}
+          </p>
 
           {openStatus.isOpen && soldOut ? (
-            <p role="status" className="mt-4 text-sm text-text-secondary">
+            <p className="mt-3 text-sm text-text-secondary">
               Nothing is available to order right now. Items may be sold out.
             </p>
           ) : null}
-
-          <div className="mt-6">
-            <a
-              href="#menu"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-foreground px-5 text-sm font-medium text-background no-underline transition-opacity hover:opacity-90"
-            >
-              Browse menu
-            </a>
-          </div>
         </div>
       </div>
     </section>

@@ -1,3 +1,4 @@
+import { StorefrontFooter } from "@/components/features/storefront/storefront-footer";
 import { StorefrontHeader } from "@/components/features/storefront/storefront-header";
 import { StorefrontProviders } from "@/components/providers/storefront-providers";
 import { Outfit } from "next/font/google";
@@ -20,9 +21,13 @@ export default function StorefrontLayout({
         className={`${outfit.variable} flex min-h-full flex-1 flex-col overflow-y-auto bg-background`}
       >
         <StorefrontHeader />
-        <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <main
+          id="main-content"
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+        >
           {children}
         </main>
+        <StorefrontFooter />
       </div>
     </StorefrontProviders>
   );

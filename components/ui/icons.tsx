@@ -13,6 +13,7 @@ import {
   SpoonAndForkIcon,
   Store01Icon,
   Tick02Icon,
+  UserIcon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
@@ -64,6 +65,7 @@ export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");
 export const ShoppingBag = createIcon(ShoppingCart01Icon, "ShoppingBag");
 export const Store = createIcon(Store01Icon, "Store");
+export const User = createIcon(UserIcon, "User");
 export const Users = createIcon(UserMultipleIcon, "Users");
 export const UtensilsCrossed = createIcon(SpoonAndForkIcon, "UtensilsCrossed");
 export const X = createIcon(Cancel01Icon, "X");

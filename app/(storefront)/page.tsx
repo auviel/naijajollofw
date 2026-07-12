@@ -3,12 +3,18 @@ import { getCart } from "@/lib/services/cart/cart-actions";
 import { getPublicStoreOpenStatus } from "@/lib/services/store/store-hours";
 import { getPublicStorefront } from "@/lib/services/storefront/get-public-menu";
 
-export default async function StorefrontHomePage() {
-  const [{ store, catalog, prepMinutes }, cart, openStatus] = await Promise.all([
-    getPublicStorefront(),
-    getCart(),
-    getPublicStoreOpenStatus(),
-  ]);
+type PageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function StorefrontHomePage({ searchParams }: PageProps) {
+  const [{ q }, { store, catalog, prepMinutes }, cart, openStatus] =
+    await Promise.all([
+      searchParams,
+      getPublicStorefront(),
+      getCart(),
+      getPublicStoreOpenStatus(),
+    ]);
 
   return (
     <StorefrontMenu
@@ -18,6 +24,7 @@ export default async function StorefrontHomePage() {
       cartSubtotalCents={cart.subtotalCents}
       openStatus={openStatus}
       prepMinutes={prepMinutes}
+      searchQuery={q?.trim() ?? ""}
     />
   );
 }

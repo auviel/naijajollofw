@@ -411,6 +411,59 @@ Mobile priority: new delivery form and delivery detail must be fully usable at 3
 
 ---
 
+## Storefront mobile UX (future reference)
+
+Single-restaurant storefront should feel like **Uber Eats consumer**, adapted for one store — not a marketplace.
+
+### Bottom sheets (preferred on mobile)
+
+On phones, **action menus and secondary flows should open as bottom sheets**, not centered desktop dialogs.
+
+**Why:** thumbs rest along the bottom half of the screen. Sliding a sheet up puts primary actions in the easy-reach zone; dimming the page behind keeps focus without a hard navigation.
+
+**Pattern (Uber Eats–style):**
+
+```
+┌─────────────────────────────┐
+│  Dimmed page (hero, menu…)  │
+│                             │
+│ ╭─────────────────────────╮ │
+│ │  rounded top sheet      │ │
+│ │  • action + icon        │ │
+│ │  • action + icon        │ │
+│ │  • Store info           │ │
+│ │    Address, hours…      │ │
+│ ╰─────────────────────────╯ │
+└─────────────────────────────┘
+```
+
+| Rule | Detail |
+|------|--------|
+| **Entry** | Sheet slides up from the bottom; backdrop fades in |
+| **Shape** | Full-bleed width; large top corner radius; optional drag handle |
+| **Actions** | Vertical list, icon left, label (+ optional caption); large tap targets (≥44px) |
+| **Dismiss** | Tap backdrop, swipe down, or Escape (a11y) |
+| **Desktop** | Same content can use a centered modal or popover — keep **mobile = bottom sheet** |
+
+**Good candidates for bottom sheets later:** store info, item options / modifiers overflow, cart overflow actions, filters, “more” menus — anything that is a short choice list, not a long form.
+
+**Avoid on mobile:** tiny centered modals floating mid-screen; nested sheets without a clear back affordance.
+
+### Header (shipped direction)
+
+| Viewport | Auth | Search |
+|----------|------|--------|
+| Mobile | Sign up only when logged out; **Account (User icon)** when logged in | Icon that expands inline search |
+| Desktop | Log in + Sign up → Account icon when logged in | Full pill search field |
+
+Session-aware header: use live session state so auth controls update without a full reload.
+
+### Not marketplace chrome
+
+Do **not** add Uber Eats location / “Deliver to… · Now” in the header for a single store. Address + pickup/delivery stay at checkout; store address + hours live in the hero / store info.
+
+---
+
 ## Accessibility checklist
 
 - [ ] Color contrast ≥ 4.5:1 for body text, 3:1 for large text

@@ -14,7 +14,7 @@
 | Tenancy | One restaurant (existing `Store`) — not a marketplace |
 | Fulfillment at checkout | Customer chooses **pickup** or **delivery** |
 | Dispatch after order | Staff chooses **deliverGO carriers** (Uber / DoorDash) **or** **manual** delivery elsewhere |
-| UX reference | Uber Eats consumer feel: browse → item → cart → short checkout → live status |
+| UX reference | Uber Eats consumer feel: browse → item → cart → short checkout → live status. **Mobile:** bottom sheets for action menus (thumb-reach) — see [STYLING.md — Storefront mobile UX](./STYLING.md#storefront-mobile-ux-future-reference) |
 | Checkout | **Guest** checkout (name + phone; address when delivery). Diner accounts later |
 | Payments | **Square** (restaurant’s existing processor) — Web Payments SDK → CreatePayment before kitchen |
 | Cart | Server-backed cart keyed by **cookie session id** (no diner login required) |

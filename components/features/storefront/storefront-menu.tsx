@@ -16,6 +16,7 @@ type StorefrontMenuProps = {
   cartSubtotalCents: number;
   openStatus: StoreOpenStatus;
   prepMinutes: number;
+  searchQuery?: string;
 };
 
 export function StorefrontMenu({
@@ -25,8 +26,23 @@ export function StorefrontMenu({
   cartSubtotalCents,
   openStatus,
   prepMinutes,
+  searchQuery = "",
 }: StorefrontMenuProps) {
-  const categories = catalog.categories.filter(
+  const needle = searchQuery.trim().toLowerCase();
+  const categories = catalog.categories
+    .map((category) => ({
+      ...category,
+      items: needle
+        ? category.items.filter(
+            (item) =>
+              item.name.toLowerCase().includes(needle) ||
+              (item.description?.toLowerCase().includes(needle) ?? false),
+          )
+        : category.items,
+    }))
+    .filter((category) => category.items.length > 0);
+
+  const hasAnyMenuItems = catalog.categories.some(
     (category) => category.items.length > 0,
   );
   const hasOrderable = categories.some((category) =>
@@ -34,7 +50,7 @@ export function StorefrontMenu({
   );
   const canOrder = openStatus.isOpen && hasOrderable;
 
-  if (categories.length === 0) {
+  if (!hasAnyMenuItems) {
     return (
       <div className="space-y-8 pb-24">
         <StorefrontHero
@@ -57,34 +73,44 @@ export function StorefrontMenu({
         store={store}
         openStatus={openStatus}
         prepMinutes={prepMinutes}
-        soldOut={!hasOrderable}
+        soldOut={!hasOrderable && !needle}
       />
 
       <div id="menu" className="scroll-mt-24 space-y-6">
-        <CategoryRail categories={categories} />
+        {needle && categories.length === 0 ? (
+          <EmptyState
+            icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
+            title="No matches"
+            description={`Nothing matched “${searchQuery}”. Try another search.`}
+          />
+        ) : (
+          <>
+            <CategoryRail categories={categories} />
 
-        <div className="space-y-8">
-          {categories.map((category) => (
-            <section
-              key={category.id}
-              id={`category-${category.id}`}
-              className="scroll-mt-32 space-y-3"
-            >
-              <h2 className="font-display text-lg font-semibold text-foreground">
-                {category.name}
-              </h2>
-              <div className="space-y-2">
-                {category.items.map((item) => (
-                  <MenuItemCard
-                    key={item.id}
-                    item={item}
-                    orderingEnabled={canOrder}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+            <div className="space-y-8">
+              {categories.map((category) => (
+                <section
+                  key={category.id}
+                  id={`category-${category.id}`}
+                  className="scroll-mt-32 space-y-3"
+                >
+                  <h2 className="font-display text-lg font-semibold text-foreground">
+                    {category.name}
+                  </h2>
+                  <div className="space-y-2">
+                    {category.items.map((item) => (
+                      <MenuItemCard
+                        key={item.id}
+                        item={item}
+                        orderingEnabled={canOrder}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {canOrder ? (
