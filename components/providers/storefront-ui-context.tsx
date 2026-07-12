@@ -5,9 +5,16 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useToast } from "@/components/ui/toast";
+
+export type AddedToCartItem = {
+  name: string;
+  imageUrl: string | null;
+};
 
 type StorefrontUiContextValue = {
   mobileSearchOpen: boolean;
@@ -16,15 +23,31 @@ type StorefrontUiContextValue = {
   cartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
+  addedToCart: AddedToCartItem | null;
+  notifyItemAdded: (item: AddedToCartItem) => void;
+  dismissAddedToCart: () => void;
 };
 
 const StorefrontUiContext = createContext<StorefrontUiContextValue | null>(
   null,
 );
 
+const ADDED_POPOVER_MS = 6000;
+
 export function StorefrontUiProvider({ children }: { children: ReactNode }) {
+  const { success } = useToast();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [addedToCart, setAddedToCart] = useState<AddedToCartItem | null>(null);
+  const dismissTimerRef = useRef<number | null>(null);
+
+  const dismissAddedToCart = useCallback(() => {
+    if (dismissTimerRef.current != null) {
+      window.clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+    setAddedToCart(null);
+  }, []);
 
   const openMobileSearch = useCallback(() => {
     setMobileSearchOpen(true);
@@ -32,12 +55,36 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
 
   const openCart = useCallback(() => {
     setMobileSearchOpen(false);
+    dismissAddedToCart();
     setCartOpen(true);
-  }, []);
+  }, [dismissAddedToCart]);
 
   const closeCart = useCallback(() => {
     setCartOpen(false);
   }, []);
+
+  const notifyItemAdded = useCallback(
+    (item: AddedToCartItem) => {
+      const desktop =
+        typeof window !== "undefined" &&
+        window.matchMedia("(min-width: 640px)").matches;
+
+      if (!desktop) {
+        success("Added to cart");
+        return;
+      }
+
+      if (dismissTimerRef.current != null) {
+        window.clearTimeout(dismissTimerRef.current);
+      }
+      setAddedToCart(item);
+      dismissTimerRef.current = window.setTimeout(() => {
+        setAddedToCart(null);
+        dismissTimerRef.current = null;
+      }, ADDED_POPOVER_MS);
+    },
+    [success],
+  );
 
   const value = useMemo(
     () => ({
@@ -47,6 +94,9 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       cartOpen,
       openCart,
       closeCart,
+      addedToCart,
+      notifyItemAdded,
+      dismissAddedToCart,
     }),
     [
       mobileSearchOpen,
@@ -54,6 +104,9 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       cartOpen,
       openCart,
       closeCart,
+      addedToCart,
+      notifyItemAdded,
+      dismissAddedToCart,
     ],
   );
 

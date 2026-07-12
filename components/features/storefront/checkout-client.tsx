@@ -30,14 +30,6 @@ async function readApiError(response: Response): Promise<string> {
   return body.error ?? "Something went wrong. Please try again.";
 }
 
-const TIP_OPTIONS = [
-  { label: "No tip", cents: 0 },
-  { label: "$1", cents: 100 },
-  { label: "$2", cents: 200 },
-  { label: "$3", cents: 300 },
-  { label: "$5", cents: 500 },
-] as const;
-
 type CheckoutClientProps = {
   initialCart: CartView;
   applicationId: string | null;
@@ -76,7 +68,6 @@ export function CheckoutClient({
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(
     "pickup",
   );
-  const [tipCents, setTipCents] = useState(0);
   const [notes, setNotes] = useState("");
   const [address, setAddress] = useState("");
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(null);
@@ -94,8 +85,8 @@ export function CheckoutClient({
     : null;
 
   const totals = useMemo(
-    () => computeOrderTotals(initialCart.subtotalCents, tipCents, taxRateBps),
-    [initialCart.subtotalCents, tipCents, taxRateBps],
+    () => computeOrderTotals(initialCart.subtotalCents, 0, taxRateBps),
+    [initialCart.subtotalCents, taxRateBps],
   );
 
   const squareSrc =
@@ -261,7 +252,7 @@ export function CheckoutClient({
           customerPhone: customerPhone.trim(),
           customerEmail: customerEmail.trim() || undefined,
           fulfillmentType,
-          tipCents,
+          tipCents: 0,
           notes: notes.trim() || undefined,
           scheduledFor: scheduledFor ?? undefined,
           dropoffAddress:
@@ -566,29 +557,6 @@ export function CheckoutClient({
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
-          Tip
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {TIP_OPTIONS.map((option) => (
-            <button
-              key={option.cents}
-              type="button"
-              onClick={() => setTipCents(option.cents)}
-              className={cn(
-                "h-10 rounded-md border px-3 text-sm font-medium transition-colors",
-                tipCents === option.cents
-                  ? "border-accent bg-accent/10 text-foreground"
-                  : "border-border text-text-secondary hover:border-accent/40",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Payment
         </h2>
         {configured ? (
@@ -604,10 +572,6 @@ export function CheckoutClient({
         <div className="flex justify-between text-text-secondary">
           <span>Tax</span>
           <span>{formatCadFromCents(totals.taxCents)}</span>
-        </div>
-        <div className="flex justify-between text-text-secondary">
-          <span>Tip</span>
-          <span>{formatCadFromCents(totals.tipCents)}</span>
         </div>
         <div className="flex justify-between border-t border-border pt-2 text-base font-semibold text-foreground">
           <span>Total</span>

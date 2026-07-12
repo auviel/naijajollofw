@@ -5,6 +5,7 @@ import type { MenuItemDetail } from "@/lib/domain/menu/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { cn } from "@/lib/utils/cn";
 
 async function readApiError(response: Response): Promise<string> {
@@ -27,7 +28,8 @@ export function ItemCustomizePanel({
   scheduleLabel = null,
   onAdded,
 }: ItemCustomizePanelProps) {
-  const { success, error: toastError } = useToast();
+  const { error: toastError } = useToast();
+  const { notifyItemAdded } = useStorefrontUi();
   const [quantity, setQuantity] = useState(1);
   const [selectedByGroup, setSelectedByGroup] = useState(() => {
     const initial = new Map<string, string[]>();
@@ -112,7 +114,10 @@ export function ItemCustomizePanel({
         return;
       }
 
-      success("Added to cart");
+      notifyItemAdded({
+        name: item.name,
+        imageUrl: item.imageUrl,
+      });
       onAdded?.();
     } catch {
       const message = "Unable to add to cart.";
