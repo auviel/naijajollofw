@@ -89,7 +89,7 @@ export function CheckoutClient({
       !configured ||
       !scriptLoaded ||
       initialCart.items.length === 0 ||
-      !openStatus.isOpen,
+      (!openStatus.isOpen && !openStatus.nextOpenAt),
   });
 
   useEffect(() => {
@@ -161,7 +161,7 @@ export function CheckoutClient({
     );
   }
 
-  if (!openStatus.isOpen) {
+  if (!openStatus.isOpen && !openStatus.nextOpenAt) {
     return (
       <EmptyState
         icon={<ShoppingBag className="h-6 w-6" aria-hidden />}
@@ -297,6 +297,15 @@ export function CheckoutClient({
           {initialCart.itemCount} item{initialCart.itemCount === 1 ? "" : "s"} ·{" "}
           {formatCadFromCents(initialCart.subtotalCents)} before tax & tip
         </p>
+        {!openStatus.isOpen && openStatus.nextOpenLabel ? (
+          <p className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+            Restaurant is closed — this order will be scheduled for{" "}
+            <span className="font-medium text-foreground">
+              {openStatus.nextOpenLabel}
+            </span>
+            .
+          </p>
+        ) : null}
         {environment === "sandbox" && configured ? (
           <p className="text-xs text-text-tertiary">
             Square sandbox mode — use test cards from the Square docs.

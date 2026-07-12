@@ -46,7 +46,9 @@ describe("evaluateStoreOpenStatus", () => {
     const sundayNoonEt = new Date("2026-07-12T16:00:00.000Z"); // EDT Sunday 12:00
     const status = evaluateStoreOpenStatus(week, "America/Toronto", sundayNoonEt);
     expect(status.isOpen).toBe(false);
-    expect(status.message).toMatch(/Opens Monday/i);
+    expect(status.message).toMatch(/Schedule for Monday/i);
+    expect(status.nextOpenLabel).toMatch(/Monday/i);
+    expect(status.nextOpenAt).toBeTruthy();
   });
 
   it("reports open during weekday hours", () => {

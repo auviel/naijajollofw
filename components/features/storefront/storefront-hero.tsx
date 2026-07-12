@@ -49,7 +49,14 @@ export function StorefrontHero({
           </h1>
 
           <p className="mt-3 max-w-md text-sm leading-relaxed text-text-secondary sm:mt-4 sm:text-[15px]">
-            {address}
+            <a
+              href="https://maps.app.goo.gl/wG9369vQfH76S6BYA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-text-secondary no-underline transition-colors hover:text-foreground hover:underline"
+            >
+              {address}
+            </a>
           </p>
 
           <p
@@ -67,6 +74,14 @@ export function StorefrontHero({
                   ·
                 </span>
                 <span>Ready in ~{prepMinutes} min</span>
+              </>
+            ) : openStatus.nextOpenLabel ? (
+              <>
+                <span className="font-medium text-foreground">Closed</span>
+                <span aria-hidden className="text-border-strong">
+                  ·
+                </span>
+                <span>Schedule for {openStatus.nextOpenLabel}</span>
               </>
             ) : (
               <span className="font-medium text-foreground">

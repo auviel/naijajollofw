@@ -103,6 +103,7 @@ export function mapOrderToPublicView(order: OrderWithRelations): PublicOrderView
     customerPhone: order.customerPhone,
     dropoffAddress: order.dropoffAddress,
     notes: order.notes,
+    scheduledFor: order.scheduledFor?.toISOString() ?? null,
     subtotalCents: order.subtotalCents,
     tipCents: order.tipCents,
     taxCents: order.taxCents,
@@ -151,6 +152,7 @@ export function mapOrderToStaffListItem(
     customerPhone: order.customerPhone,
     dropoffAddress: order.dropoffAddress,
     notes: order.notes,
+    scheduledFor: order.scheduledFor?.toISOString() ?? null,
     deliveryId: order.deliveryId,
     manualDeliveryNote: order.manualDeliveryNote,
     itemCount,
@@ -230,6 +232,7 @@ export type CreateOrderInput = {
   dropoffLat?: number | null;
   dropoffLng?: number | null;
   notes?: string | null;
+  scheduledFor?: Date | null;
   subtotalCents: number;
   tipCents: number;
   taxCents: number;
@@ -321,6 +324,7 @@ export const orderRepository = {
         dropoffLat: input.dropoffLat ?? null,
         dropoffLng: input.dropoffLng ?? null,
         notes: input.notes ?? null,
+        scheduledFor: input.scheduledFor ?? null,
         subtotalCents: input.subtotalCents,
         tipCents: input.tipCents,
         taxCents: input.taxCents,
@@ -344,7 +348,9 @@ export const orderRepository = {
             {
               status: "pending_acceptance",
               actor: "system",
-              note: "Payment received via Square",
+              note: input.scheduledFor
+                ? `Payment received · Scheduled order`
+                : "Payment received via Square",
             },
           ],
         },

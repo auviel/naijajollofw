@@ -89,6 +89,18 @@ export function OrderStatusClient({
           {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} for{" "}
           {order.customerName}
         </p>
+        {order.scheduledFor ? (
+          <p className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+            Scheduled for{" "}
+            <span className="font-medium text-foreground">
+              {new Date(order.scheduledFor).toLocaleString("en-CA", {
+                weekday: "long",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          </p>
+        ) : null}
       </div>
 
       {order.timeline.cancelled ? (

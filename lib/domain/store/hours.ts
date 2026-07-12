@@ -57,6 +57,10 @@ export type StoreOpenStatus = {
   message: string;
   /** Today's hours label, e.g. "11:00 – 22:00" or "Closed". */
   todayLabel: string;
+  /** Next open instant (UTC) when currently closed; null if open or unknown. */
+  nextOpenAt: string | null;
+  /** Guest-facing schedule label, e.g. "Monday, 11:00 a.m.". */
+  nextOpenLabel: string | null;
 };
 
 export function minutesToTimeString(minutes: number): string {
@@ -171,6 +175,8 @@ export function evaluateStoreOpenStatus(
       timezone: timeZone,
       message: "Open for orders",
       todayLabel: "Hours not set",
+      nextOpenAt: null,
+      nextOpenLabel: null,
     };
   }
 
@@ -200,6 +206,8 @@ export function evaluateStoreOpenStatus(
       timezone: timeZone,
       message: "Open for orders",
       todayLabel,
+      nextOpenAt: null,
+      nextOpenLabel: null,
     };
   }
 
@@ -216,42 +224,151 @@ export function evaluateStoreOpenStatus(
       timezone: timeZone,
       message: "Open for orders",
       todayLabel,
+      nextOpenAt: null,
+      nextOpenLabel: null,
     };
   }
 
-  const nextOpen = findNextOpen(byDay, instant.dayOfWeek, instant.minuteOfDay);
+  const next = findNextOpenSlot(byDay, timeZone, now, instant);
   return {
     isOpen: false,
     alwaysOpen: false,
     timezone: timeZone,
-    message: nextOpen
-      ? `Closed · Opens ${nextOpen}`
+    message: next
+      ? `Closed · Schedule for ${next.label}`
       : "Closed · Check back later",
     todayLabel,
+    nextOpenAt: next?.at.toISOString() ?? null,
+    nextOpenLabel: next?.label ?? null,
   };
 }
 
-function findNextOpen(
+type CalendarParts = {
+  year: number;
+  month: number;
+  day: number;
+};
+
+function getCalendarPartsInZone(date: Date, timeZone: string): CalendarParts {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  return {
+    year: Number.parseInt(parts.find((p) => p.type === "year")?.value ?? "0", 10),
+    month: Number.parseInt(parts.find((p) => p.type === "month")?.value ?? "1", 10),
+    day: Number.parseInt(parts.find((p) => p.type === "day")?.value ?? "1", 10),
+  };
+}
+
+/** Convert a wall-clock time in `timeZone` to a UTC Date. */
+export function zonedLocalToUtc(
+  timeZone: string,
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+): Date {
+  let utc = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+  for (let i = 0; i < 4; i += 1) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(utc);
+
+    const gotY = Number.parseInt(
+      parts.find((p) => p.type === "year")?.value ?? "0",
+      10,
+    );
+    const gotM = Number.parseInt(
+      parts.find((p) => p.type === "month")?.value ?? "1",
+      10,
+    );
+    const gotD = Number.parseInt(
+      parts.find((p) => p.type === "day")?.value ?? "1",
+      10,
+    );
+    const gotH = Number.parseInt(
+      parts.find((p) => p.type === "hour")?.value ?? "0",
+      10,
+    );
+    const gotMin = Number.parseInt(
+      parts.find((p) => p.type === "minute")?.value ?? "0",
+      10,
+    );
+
+    const desired = Date.UTC(year, month - 1, day, hour, minute);
+    const actual = Date.UTC(gotY, gotM - 1, gotD, gotH, gotMin);
+    const delta = desired - actual;
+    if (delta === 0) {
+      break;
+    }
+    utc = new Date(utc.getTime() + delta);
+  }
+
+  return utc;
+}
+
+function addCalendarDays(parts: CalendarParts, days: number): CalendarParts {
+  const base = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + days));
+  return {
+    year: base.getUTCFullYear(),
+    month: base.getUTCMonth() + 1,
+    day: base.getUTCDate(),
+  };
+}
+
+function formatNextOpenLabel(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(at);
+}
+
+function findNextOpenSlot(
   byDay: Map<number, HoursRow>,
-  fromDay: number,
-  fromMinute: number,
-): string | null {
+  timeZone: string,
+  now: Date,
+  instant: InstantInZone,
+): { at: Date; label: string } | null {
+  const todayParts = getCalendarPartsInZone(now, timeZone);
+
   for (let offset = 0; offset < 7; offset += 1) {
-    const day = (fromDay + offset) % 7;
+    const day = ((instant.dayOfWeek + offset) % 7) as DayOfWeek;
     const row = byDay.get(day);
     if (!row || row.closed || row.openMinute == null) {
       continue;
     }
-    if (offset === 0 && row.openMinute <= fromMinute) {
-      // Already past today's open (and we're closed), try later days
+    if (offset === 0 && row.openMinute <= instant.minuteOfDay) {
       continue;
     }
-    if (offset === 0 && row.openMinute > fromMinute) {
-      return `today at ${minutesToTimeString(row.openMinute)}`;
-    }
-    const label = dayOfWeekLabel(day);
-    return `${label} at ${minutesToTimeString(row.openMinute)}`;
+
+    const calendar = addCalendarDays(todayParts, offset);
+    const hour = Math.floor(row.openMinute / 60);
+    const minute = row.openMinute % 60;
+    const at = zonedLocalToUtc(
+      timeZone,
+      calendar.year,
+      calendar.month,
+      calendar.day,
+      hour,
+      minute,
+    );
+    return { at, label: formatNextOpenLabel(at, timeZone) };
   }
+
   return null;
 }
 

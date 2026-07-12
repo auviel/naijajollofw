@@ -374,6 +374,8 @@ model Order {
   dropoffAddress       String?
   dropoffLat           Float?
   dropoffLng           Float?
+  /// Guest scheduled ready/pickup time (next open when store is closed).
+  scheduledFor         DateTime?
   subtotalCents        Int
   tipCents             Int               @default(0)
   taxCents             Int               @default(0)

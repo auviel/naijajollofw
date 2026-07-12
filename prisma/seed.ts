@@ -15,7 +15,7 @@ const SEED_USER = {
 
 const SEED_STORE_BASE = {
   name: "Naija Jollof Waterloo",
-  phone: "+15195550199",
+  phone: "+15198851517",
   addressLine1: "280 Lester St",
   addressLine2: "#102",
   city: "Waterloo",

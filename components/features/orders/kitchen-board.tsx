@@ -244,6 +244,16 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
             {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} ·{" "}
             {formatAge(order.placedAt ?? order.createdAt)}
           </p>
+          {order.scheduledFor ? (
+            <p className="text-xs font-medium text-amber-800">
+              Scheduled{" "}
+              {new Date(order.scheduledFor).toLocaleString("en-CA", {
+                weekday: "short",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </p>
+          ) : null}
         </div>
         <OrderStatusBadge status={order.status} />
       </div>

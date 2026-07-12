@@ -147,7 +147,7 @@ export function StorefrontHeaderBar({
         {/* Default header row (hidden on mobile while search is open) */}
         <div
           className={cn(
-            "min-w-0 flex-1 items-center gap-2 sm:gap-4",
+            "min-w-0 flex-1 items-center gap-3 sm:gap-6 lg:gap-8",
             mobileSearchOpen ? "hidden sm:flex" : "flex",
           )}
         >
@@ -159,7 +159,7 @@ export function StorefrontHeaderBar({
             <StoreBrandLogo alt={storeName} variant="header" priority />
           </Link>
 
-          <label className="relative hidden min-w-0 flex-1 sm:block">
+          <label className="relative hidden min-w-0 flex-1 sm:block sm:max-w-2xl lg:max-w-3xl">
             <span className="sr-only">Search menu</span>
             <Search
               className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-text-tertiary"
@@ -174,7 +174,7 @@ export function StorefrontHeaderBar({
             />
           </label>
 
-          <nav className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <nav className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={() => setMobileSearchOpen(true)}

@@ -30,12 +30,17 @@ export async function checkoutWithSquare(
   const parsed: CheckoutRequest = checkoutRequestSchema.parse(input);
   const storeId = await resolvePublicStoreId();
   const openStatus = await getPublicStoreOpenStatus(storeId);
+
+  let scheduledFor: Date | null = null;
   if (!openStatus.isOpen) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      openStatus.message || "The restaurant is currently closed.",
-      400,
-    );
+    if (!openStatus.nextOpenAt) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        openStatus.message || "The restaurant is currently closed.",
+        400,
+      );
+    }
+    scheduledFor = new Date(openStatus.nextOpenAt);
   }
 
   const sessionId = await readCartSessionId();
@@ -104,6 +109,7 @@ export async function checkoutWithSquare(
       dropoffLng:
         parsed.fulfillmentType === "delivery" ? (parsed.dropoffLng ?? null) : null,
       notes: parsed.notes?.trim() || null,
+      scheduledFor,
       subtotalCents: totals.subtotalCents,
       tipCents: totals.tipCents,
       taxCents: totals.taxCents,

@@ -38,6 +38,7 @@ export type PublicOrderView = {
   customerPhone: string;
   dropoffAddress: string | null;
   notes: string | null;
+  scheduledFor: string | null;
   subtotalCents: number;
   tipCents: number;
   taxCents: number;
@@ -80,6 +81,7 @@ export type StaffOrderListItem = {
   customerPhone: string;
   dropoffAddress: string | null;
   notes: string | null;
+  scheduledFor: string | null;
   deliveryId: string | null;
   manualDeliveryNote: string | null;
   itemCount: number;

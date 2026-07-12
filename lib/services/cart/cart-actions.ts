@@ -16,7 +16,6 @@ import {
   getOrCreateCartSessionId,
   readCartSessionId,
 } from "@/lib/services/cart/session";
-import { getPublicStoreOpenStatus } from "@/lib/services/store/store-hours";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 import { AppError } from "@/lib/utils/errors";
 
@@ -33,14 +32,7 @@ export async function getCart(): Promise<CartView> {
 
 export async function addCartItem(input: unknown): Promise<CartView> {
   const storeId = await resolvePublicStoreId();
-  const openStatus = await getPublicStoreOpenStatus(storeId);
-  if (!openStatus.isOpen) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      openStatus.message || "The restaurant is currently closed.",
-      400,
-    );
-  }
+  // Closed stores still accept cart adds — checkout schedules for next open.
 
   const parsed = addCartItemSchema.parse(input);
   const { sessionId } = await getOrCreateCartSessionId();

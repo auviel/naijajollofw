@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ItemDetailClient } from "@/components/features/storefront/item-detail-client";
+import { getPublicStoreOpenStatus } from "@/lib/services/store/store-hours";
 import { getPublicMenuItem } from "@/lib/services/storefront/get-public-menu";
 import { isAppError } from "@/lib/utils/errors";
 
@@ -11,8 +12,12 @@ export default async function ItemDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   let item;
+  let openStatus;
   try {
-    ({ item } = await getPublicMenuItem(id));
+    [{ item }, openStatus] = await Promise.all([
+      getPublicMenuItem(id),
+      getPublicStoreOpenStatus(),
+    ]);
   } catch (error) {
     if (isAppError(error) && error.status === 404) {
       notFound();
@@ -22,7 +27,10 @@ export default async function ItemDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <ItemDetailClient item={item} />
+      <ItemDetailClient
+        item={item}
+        scheduleLabel={openStatus.isOpen ? null : openStatus.nextOpenLabel}
+      />
     </div>
   );
 }

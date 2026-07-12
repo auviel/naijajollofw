@@ -13,7 +13,7 @@ export function StickyCartBar({ itemCount, subtotalCents }: StickyCartBarProps) 
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-4 backdrop-blur safe-bottom">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-7xl">
         <Link
           href="/cart"
           className="flex h-12 w-full items-center justify-between rounded-md bg-accent px-5 text-sm font-medium text-text-inverse transition-colors hover:bg-accent-hover"

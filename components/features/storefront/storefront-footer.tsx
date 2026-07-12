@@ -1,87 +1,137 @@
 import Link from "next/link";
 import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
-import { formatStoreProfileAddress } from "@/lib/domain/store/format";
+import { Call, Location } from "@/components/ui/icons";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
+import type { StoreProfile } from "@/lib/domain/store/types";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 
 const YEAR = new Date().getFullYear();
+
+function formatFooterAddress(store: StoreProfile): string {
+  const line2 = store.addressLine2 ? `, ${store.addressLine2}` : "";
+  return `${store.addressLine1}${line2}, ${store.city}, ${store.province}`;
+}
+
+function formatFooterPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const local = digits.slice(1);
+    return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return phone;
+}
 
 export async function StorefrontFooter() {
   const storeId = await resolvePublicStoreId();
   const store = await storeRepository.getProfileById(storeId);
   const storeName = store?.name ?? "Restaurant";
-  const address = store ? formatStoreProfileAddress(store) : null;
+  const address = store ? formatFooterAddress(store) : null;
   const phone = store?.phone ?? null;
+  const phoneLabel = phone ? formatFooterPhone(phone) : null;
 
   return (
     <footer className="mt-auto border-t border-border bg-background">
-      <div className="mx-auto w-full max-w-7xl px-4 pt-12 pb-8 sm:px-6 lg:px-8 lg:pt-14">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))] lg:gap-12">
-          <div className="max-w-xs">
+      <div className="mx-auto w-full max-w-7xl px-4 pt-14 pb-10 sm:px-6 lg:px-8 lg:pt-16">
+        <div className="flex flex-col gap-12 lg:flex-row lg:justify-between lg:gap-20">
+          <div className="shrink-0 lg:w-64">
             <Link
               href="/"
               className="inline-flex text-foreground no-underline"
               aria-label={storeName}
             >
-              <StoreBrandLogo alt={storeName} variant="header" />
+              <StoreBrandLogo
+                alt={storeName}
+                variant="header"
+                className="h-10 w-[9.5rem] sm:h-11 sm:w-[10.5rem]"
+              />
             </Link>
-            <p className="mt-4 text-sm leading-relaxed text-text-secondary">
-              Order pickup or delivery from {storeName}.
+            <p className="mt-5 max-w-[16rem] text-sm leading-relaxed text-text-secondary">
+              Pickup and delivery from Waterloo.
             </p>
           </div>
 
-          <FooterColumn title="Order">
-            <FooterLink href="/#menu">Menu</FooterLink>
-            <FooterLink href="/cart">Cart</FooterLink>
-            <FooterLink href="/checkout">Checkout</FooterLink>
-          </FooterColumn>
+          <div className="grid grid-cols-2 gap-x-10 gap-y-10 sm:grid-cols-3 sm:gap-x-14 lg:min-w-0 lg:flex-1 lg:justify-items-start lg:gap-x-16 xl:max-w-3xl">
+            <FooterColumn title="Order">
+              <FooterLink href="/#menu">Menu</FooterLink>
+              <FooterLink href="/cart">Cart</FooterLink>
+              <FooterLink href="/checkout">Checkout</FooterLink>
+            </FooterColumn>
 
-          <FooterColumn title="Restaurant">
-            {address ? (
-              <p className="text-sm leading-relaxed text-text-secondary">{address}</p>
-            ) : null}
-            {phone ? (
-              <a
-                href={`tel:${phone}`}
-                className="block text-sm text-foreground no-underline transition-opacity hover:opacity-70"
-              >
-                {phone}
-              </a>
-            ) : null}
-            <FooterLink href="/#menu">Hours & ordering</FooterLink>
-          </FooterColumn>
+            <FooterColumn title="Restaurant">
+              {address ? (
+                <a
+                  href="https://maps.app.goo.gl/wG9369vQfH76S6BYA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex gap-2 text-sm leading-relaxed text-text-secondary no-underline transition-colors hover:text-foreground"
+                >
+                  <Location
+                    className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary"
+                    aria-hidden
+                  />
+                  <span>{address}</span>
+                </a>
+              ) : null}
+              {phone && phoneLabel ? (
+                <a
+                  href={`tel:${phone}`}
+                  className="flex items-start gap-2 text-sm text-text-secondary no-underline transition-colors hover:text-foreground"
+                >
+                  <Call
+                    className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary"
+                    aria-hidden
+                  />
+                  <span>{phoneLabel}</span>
+                </a>
+              ) : null}
+            </FooterColumn>
 
-          <FooterColumn title="Support">
-            {phone ? (
-              <a
-                href={`tel:${phone}`}
-                className="block text-sm text-foreground no-underline transition-opacity hover:opacity-70"
-              >
-                Call the restaurant
-              </a>
-            ) : (
-              <span className="block text-sm text-text-secondary">Get help</span>
-            )}
-            <FooterLink href="/cart">View your cart</FooterLink>
-          </FooterColumn>
+            <FooterColumn title="Support" className="col-span-2 sm:col-span-1">
+              {phone ? (
+                <a
+                  href={`tel:${phone}`}
+                  className="block text-sm text-text-secondary no-underline transition-colors hover:text-foreground"
+                >
+                  Call the restaurant
+                </a>
+              ) : null}
+              <FooterLink href="/cart">View your cart</FooterLink>
+              <FooterLink href="/#menu">Hours &amp; ordering</FooterLink>
+            </FooterColumn>
+          </div>
         </div>
 
-        <div className="mt-12 border-t border-border pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-secondary">
-              <span className="cursor-default" title="Coming soon">
-                Privacy Policy
-              </span>
-              <span className="cursor-default" title="Coming soon">
-                Terms
-              </span>
-            </nav>
-            <p className="text-sm text-text-tertiary">
-              © {YEAR} {storeName}
-            </p>
-          </div>
-          <p className="mt-4 text-xs text-text-tertiary">
-            Powered by deliverGO
+        <div className="mt-14 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <nav
+            aria-label="Legal"
+            className="flex shrink-0 items-center gap-6 text-sm text-text-secondary"
+          >
+            <Link
+              href="/privacy-policy"
+              className="text-text-secondary no-underline transition-colors hover:text-foreground"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms-and-conditions"
+              className="text-text-secondary no-underline transition-colors hover:text-foreground"
+            >
+              Terms
+            </Link>
+          </nav>
+          <p className="shrink-0 text-sm whitespace-nowrap text-text-tertiary sm:text-right">
+            © {YEAR} {storeName}. Designed by{" "}
+            <a
+              href="https://auviel.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-text-tertiary no-underline transition-colors hover:text-foreground"
+            >
+              Auviel
+            </a>
           </p>
         </div>
       </div>
@@ -92,14 +142,16 @@ export async function StorefrontFooter() {
 function FooterColumn({
   title,
   children,
+  className,
 }: {
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div>
-      <p className="mb-3 text-sm font-medium text-foreground">{title}</p>
-      <div className="space-y-2.5">{children}</div>
+    <div className={className}>
+      <p className="mb-4 text-sm font-medium text-foreground">{title}</p>
+      <div className="space-y-3">{children}</div>
     </div>
   );
 }
@@ -114,7 +166,7 @@ function FooterLink({
   return (
     <Link
       href={href}
-      className="block text-sm text-foreground no-underline transition-opacity hover:opacity-70"
+      className="block text-sm text-text-secondary no-underline transition-colors hover:text-foreground"
     >
       {children}
     </Link>

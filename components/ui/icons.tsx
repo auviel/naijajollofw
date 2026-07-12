@@ -2,10 +2,13 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Calendar01Icon,
+  CallIcon,
   Cancel01Icon,
   ClipboardListIcon,
   Clock01Icon,
+  LeftToRightListDashIcon,
   LinkSquare01Icon,
+  Location01Icon,
   Package01Icon,
   Search01Icon,
   SearchRemoveIcon,
@@ -54,12 +57,15 @@ function createIcon(icon: IconSvgElement, displayName: string) {
 /** Stroke Rounded icons via Hugeicons — Lucide-compatible names for app usage. */
 export const ArrowLeft = createIcon(ArrowLeft01Icon, "ArrowLeft");
 export const Calendar = createIcon(Calendar01Icon, "Calendar");
+export const Call = createIcon(CallIcon, "Call");
 export const Check = createIcon(Tick02Icon, "Check");
 export const ChevronLeft = createIcon(ArrowLeft01Icon, "ChevronLeft");
 export const ChevronRight = createIcon(ArrowRight01Icon, "ChevronRight");
 export const ClipboardList = createIcon(ClipboardListIcon, "ClipboardList");
 export const Clock = createIcon(Clock01Icon, "Clock");
 export const ExternalLink = createIcon(LinkSquare01Icon, "ExternalLink");
+export const List = createIcon(LeftToRightListDashIcon, "List");
+export const Location = createIcon(Location01Icon, "Location");
 export const Package = createIcon(Package01Icon, "Package");
 export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");
