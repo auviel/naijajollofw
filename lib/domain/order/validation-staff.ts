@@ -18,6 +18,7 @@ export type OrderTransitionInput = z.infer<typeof orderTransitionSchema>;
 
 export const listOrdersQuerySchema = z.object({
   filter: z.string().optional(),
+  channel: z.enum(["all", "kitchen", "courier"]).optional(),
   q: z.string().trim().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });

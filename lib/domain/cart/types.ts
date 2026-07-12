@@ -1,5 +1,7 @@
 export const CART_SESSION_COOKIE = "dg_cart_sid";
 export const CART_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+/** localStorage backup of the guest cart sid (Safari ITP may drop the cookie early). */
+export const CART_SESSION_STORAGE_KEY = "dg_cart_sid";
 
 export type CartModifierSelection = {
   groupId: string;

@@ -15,7 +15,10 @@
 | Fulfillment at checkout | Customer chooses **pickup** or **delivery** |
 | Dispatch after order | Staff chooses **deliverGO carriers** (Uber / DoorDash) **or** **manual** delivery elsewhere |
 | UX reference | Uber Eats consumer feel: browse → item → cart → short checkout → live status. **Mobile:** bottom sheets for action menus (thumb-reach) — see [STYLING.md — Storefront mobile UX](./STYLING.md#storefront-mobile-ux-future-reference) |
-| Checkout | **Guest** checkout (name + phone; address when delivery). Diner accounts later |
+| Checkout | Guest or **diner account**; both upsert a **Customer** by phone |
+| Identity | **Customer** is CRM person of record; diner `User` links via `customerId` |
+| Jobs | **Order** is the only job; **Delivery** is carrier child only |
+| Addresses | **CustomerAddress** only (diner account uses the same book) |
 | Payments | **Square** (restaurant’s existing processor) — Web Payments SDK → CreatePayment before kitchen |
 | Cart | Server-backed cart keyed by **cookie session id** (no diner login required) |
 | Staff auth | Existing NextAuth store manager; kitchen uses same dashboard for now |

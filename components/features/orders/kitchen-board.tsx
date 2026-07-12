@@ -101,8 +101,9 @@ export function KitchenBoard({
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/api/orders?filter=active&limit=80", {
-        cache: "no-store",
+      const response = await fetch(
+        "/api/orders?filter=active&channel=kitchen&limit=80",
+        {        cache: "no-store",
       });
       if (!response.ok) {
         return;

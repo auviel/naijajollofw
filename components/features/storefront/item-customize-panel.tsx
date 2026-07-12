@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
+import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -113,6 +114,11 @@ export function ItemCustomizePanel({
         toastError(message);
         return;
       }
+
+      const body = (await response.json().catch(() => ({}))) as {
+        sessionId?: string | null;
+      };
+      rememberCartSessionId(body.sessionId);
 
       notifyItemAdded({
         name: item.name,

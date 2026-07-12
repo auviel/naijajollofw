@@ -6,6 +6,7 @@ import {
   CART_ADD_WINDOW_MS,
   assertDurableRateLimit,
 } from "@/lib/services/auth/login-protection";
+import { readCartSessionId } from "@/lib/services/cart/session";
 import { parseJsonBody } from "@/lib/utils/api-request";
 import { handleApiError } from "@/lib/utils/errors";
 import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
@@ -13,7 +14,8 @@ import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 export async function GET() {
   try {
     const cart = await getCart();
-    return NextResponse.json({ data: cart });
+    const sessionId = await readCartSessionId();
+    return NextResponse.json({ data: cart, sessionId });
   } catch (error) {
     return handleApiError(error);
   }
@@ -30,7 +32,8 @@ export async function POST(request: Request) {
 
     const body = await parseJsonBody(request, addCartItemSchema);
     const cart = await addCartItem(body);
-    return NextResponse.json({ data: cart }, { status: 201 });
+    const sessionId = await readCartSessionId();
+    return NextResponse.json({ data: cart, sessionId }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Trash } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { SavedCardView } from "@/lib/integrations/payments/square/cards";
+import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 
 async function readApiError(response: Response): Promise<string> {
   const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -60,9 +61,7 @@ export function AccountPaymentClient({
     const timeout = window.setTimeout(() => {
       if (!window.Square) {
         setScriptFailed(true);
-        setFormError(
-          "Could not load Square. Firefox tracking protection or an ad blocker may be blocking it — allow squarecdn.com and refresh.",
-        );
+        setFormError(THIRD_PARTY_BLOCKED.square);
       }
     }, 12_000);
     return () => window.clearTimeout(timeout);
@@ -149,9 +148,7 @@ export function AccountPaymentClient({
         onError={() => {
           setScriptLoaded(false);
           setScriptFailed(true);
-          setFormError(
-            "Could not load Square. Firefox tracking protection or an ad blocker may be blocking it — allow squarecdn.com and refresh.",
-          );
+          setFormError(THIRD_PARTY_BLOCKED.square);
         }}
       />
 

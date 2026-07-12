@@ -7,6 +7,7 @@ import { MotionSheet } from "@/components/motion/primitives";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { X } from "@/components/ui/icons";
 import type { CartView } from "@/lib/domain/cart/types";
+import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 
 const EMPTY_CART: CartView = {
   id: null,
@@ -44,12 +45,14 @@ export function CartDrawer() {
         const response = await fetch("/api/cart");
         const body = (await response.json().catch(() => ({}))) as {
           data?: CartView;
+          sessionId?: string | null;
           error?: string;
         };
         if (!response.ok) {
           throw new Error(body.error ?? "Could not load cart.");
         }
         if (!cancelled && body.data) {
+          rememberCartSessionId(body.sessionId);
           setCart(body.data);
         }
       } catch (err) {

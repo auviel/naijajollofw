@@ -64,7 +64,7 @@ function CustomerListRow({ customer }: { customer: CustomerListItem }) {
             </p>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-tertiary">
-            <span>{customer.deliveryCount} deliveries</span>
+            <span>{customer.orderCount} orders</span>
             {customer.phoneCount > 1 ? (
               <span>{customer.phoneCount} phones</span>
             ) : null}

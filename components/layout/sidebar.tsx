@@ -31,9 +31,10 @@ export async function Sidebar() {
           icon={<UtensilsCrossed className="h-5 w-5" />}
         />
         <SidebarNavLink
-          href="/dashboard/deliveries"
-          label="Deliveries"
+          href="/dashboard/orders?channel=courier"
+          label="Courier"
           icon={<Package className="h-5 w-5" />}
+          matchPrefixes={["/dashboard/deliveries"]}
         />
         <SidebarNavLink
           href="/dashboard/customers"

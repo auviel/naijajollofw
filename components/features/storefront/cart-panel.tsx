@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ShoppingBag, Trash } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { CartView } from "@/lib/domain/cart/types";
+import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
@@ -51,7 +52,11 @@ export function CartPanel({
         return;
       }
 
-      const body = (await response.json()) as { data: CartView };
+      const body = (await response.json()) as {
+        data: CartView;
+        sessionId?: string | null;
+      };
+      rememberCartSessionId(body.sessionId);
       onCartChange(body.data);
       router.refresh();
     } catch {
@@ -69,7 +74,11 @@ export function CartPanel({
         toastError(await readApiError(response));
         return;
       }
-      const body = (await response.json()) as { data: CartView };
+      const body = (await response.json()) as {
+        data: CartView;
+        sessionId?: string | null;
+      };
+      rememberCartSessionId(body.sessionId);
       onCartChange(body.data);
       router.refresh();
     } catch {

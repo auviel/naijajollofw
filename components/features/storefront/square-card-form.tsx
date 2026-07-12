@@ -5,12 +5,12 @@ import type {
   SquareCard,
   SquareVerificationDetails,
 } from "@/lib/integrations/payments/square/web-sdk.types";
+import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 
 const SDK_WAIT_MS = 12_000;
 const SDK_POLL_MS = 200;
 
-const BLOCKED_MESSAGE =
-  "Card form couldn’t load. Firefox tracking protection or an ad blocker may be blocking Square — allow squarecdn.com, then try again.";
+const BLOCKED_MESSAGE = THIRD_PARTY_BLOCKED.square;
 
 type SquareCardFormProps = {
   applicationId: string;

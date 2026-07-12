@@ -70,9 +70,11 @@ function summarizeLines(lineItems: OrderLineItem[]): {
     line.quantity > 1 ? `${line.quantity}× ${line.name}` : line.name,
   );
   const itemSummary =
-    names.length <= 2
-      ? names.join(", ")
-      : `${names.slice(0, 2).join(", ")} +${names.length - 2} more`;
+    names.length === 0
+      ? "Courier job"
+      : names.length <= 2
+        ? names.join(", ")
+        : `${names.slice(0, 2).join(", ")} +${names.length - 2} more`;
   return { itemCount, itemSummary };
 }
 
@@ -282,6 +284,19 @@ export const orderRepository = {
     });
   },
 
+  async findManyForCustomer(customerId: string, storeId: string, limit = 20) {
+    return prisma.order.findMany({
+      where: {
+        customerId,
+        storeId,
+        NOT: { status: "pending_payment" },
+      },
+      include: orderInclude,
+      orderBy: [{ placedAt: "desc" }, { createdAt: "desc" }],
+      take: limit,
+    });
+  },
+
   async findBySquarePaymentId(squarePaymentId: string) {
     return prisma.order.findUnique({
       where: { squarePaymentId },
@@ -294,12 +309,19 @@ export const orderRepository = {
     statuses?: OrderStatus[];
     search?: string;
     limit?: number;
+    channel?: "all" | "kitchen" | "courier";
   }) {
     const search = input.search?.trim();
+    const channel = input.channel ?? "all";
     return prisma.order.findMany({
       where: {
         storeId: input.storeId,
         ...(input.statuses ? { status: { in: input.statuses } } : {}),
+        ...(channel === "kitchen"
+          ? { source: "storefront" }
+          : channel === "courier"
+            ? { source: { in: ["dashboard", "whatsapp"] } }
+            : {}),
         ...(search
           ? {
               OR: [
@@ -317,11 +339,20 @@ export const orderRepository = {
     });
   },
 
-  async countForStore(storeId: string, statuses?: OrderStatus[]) {
+  async countForStore(
+    storeId: string,
+    statuses?: OrderStatus[],
+    channel: "all" | "kitchen" | "courier" = "all",
+  ) {
     return prisma.order.count({
       where: {
         storeId,
         ...(statuses ? { status: { in: statuses } } : {}),
+        ...(channel === "kitchen"
+          ? { source: "storefront" }
+          : channel === "courier"
+            ? { source: { in: ["dashboard", "whatsapp"] } }
+            : {}),
         NOT: { status: "pending_payment" },
       },
     });
@@ -419,7 +450,10 @@ export const orderRepository = {
   async findByDeliveryId(deliveryId: string) {
     return prisma.order.findUnique({
       where: { deliveryId },
-      include: orderInclude,
+      include: {
+        ...orderInclude,
+        user: { select: { email: true } },
+      },
     });
   },
 
@@ -561,17 +595,6 @@ export const orderRepository = {
         },
       },
       include: orderInclude,
-    });
-  },
-
-  async findByDeliveryId(deliveryId: string) {
-    return prisma.order.findFirst({
-      where: { deliveryId },
-      include: {
-        ...orderInclude,
-        user: { select: { email: true } },
-        store: { select: { name: true, prepMinutes: true } },
-      },
     });
   },
 

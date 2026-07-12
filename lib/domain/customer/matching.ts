@@ -1,5 +1,3 @@
-import type { NormalizedAddress } from "@/lib/domain/address/types";
-
 export function normalizeCustomerName(name: string): string {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -33,11 +31,15 @@ export function namesMatch(left: string, right: string): boolean {
 }
 
 export function addressesMatch(
-  left: Pick<NormalizedAddress, "line1" | "postalCode" | "latitude" | "longitude"> & {
+  left: {
+    line1: string;
+    postalCode: string;
     latitude?: number | null;
     longitude?: number | null;
   },
-  right: Pick<NormalizedAddress, "line1" | "postalCode" | "latitude" | "longitude"> & {
+  right: {
+    line1: string;
+    postalCode: string;
     latitude?: number | null;
     longitude?: number | null;
   },

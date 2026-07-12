@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Check } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 import type { AddressSuggestion } from "@/lib/integrations/geocoding/types";
+import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 
 type AddressAutocompleteProps = {
   id?: string;
@@ -123,7 +124,7 @@ export function AddressAutocomplete({
       } catch {
         setSuggestions([]);
         setIsOpen(false);
-        setSuggestError("Unable to load address suggestions.");
+        setSuggestError(THIRD_PARTY_BLOCKED.mapbox);
       } finally {
         setIsLoading(false);
       }

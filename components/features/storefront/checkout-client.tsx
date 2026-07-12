@@ -23,6 +23,7 @@ import { formatScheduledForLabel } from "@/lib/domain/store/schedule-slots";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
+import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 import { ChevronRight, ShoppingBag, X } from "@/components/ui/icons";
 
 async function readApiError(response: Response): Promise<string> {
@@ -123,9 +124,7 @@ export function CheckoutClient({
     const timeout = window.setTimeout(() => {
       if (!window.Square) {
         setScriptFailed(true);
-        setFormError(
-          "Could not load Square. Firefox tracking protection or an ad blocker may be blocking it — allow squarecdn.com and refresh.",
-        );
+        setFormError(THIRD_PARTY_BLOCKED.square);
       }
     }, 12_000);
     return () => window.clearTimeout(timeout);
@@ -343,9 +342,7 @@ export function CheckoutClient({
           onError={() => {
             setScriptLoaded(false);
             setScriptFailed(true);
-            setFormError(
-              "Could not load Square. Firefox tracking protection or an ad blocker may be blocking it — allow squarecdn.com and refresh.",
-            );
+            setFormError(THIRD_PARTY_BLOCKED.square);
           }}
         />
       ) : null}

@@ -6,6 +6,7 @@ import { listStaffOrders } from "@/lib/services/order/list-staff-orders";
 export default async function DashboardHomePage() {
   const { items, pendingAcceptanceCount } = await listStaffOrders({
     filter: "active",
+    channel: "kitchen",
     limit: 80,
   });
 

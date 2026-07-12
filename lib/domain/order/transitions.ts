@@ -1,14 +1,14 @@
 import type { FulfillmentMethod, FulfillmentType, OrderStatus } from "@prisma/client";
 
 /** Base kitchen transitions (fulfillment-aware overrides applied in helpers). */
-const STAFF_TRANSITIONS: Partial<Record<OrderStatus, readonly OrderStatus[]>> = {
-  pending_acceptance: ["accepted", "cancelled"],
-  accepted: ["preparing", "cancelled"],
-  preparing: ["ready", "cancelled"],
-  ready: ["cancelled"],
-  ready_for_pickup: ["completed", "cancelled"],
-  out_for_delivery: ["completed", "cancelled"],
-};
+const STAFF_TRANSITIONS = new Map<OrderStatus, readonly OrderStatus[]>([
+  ["pending_acceptance", ["accepted", "cancelled"]],
+  ["accepted", ["preparing", "cancelled"]],
+  ["preparing", ["ready", "cancelled"]],
+  ["ready", ["cancelled"]],
+  ["ready_for_pickup", ["completed", "cancelled"]],
+  ["out_for_delivery", ["completed", "cancelled"]],
+]);
 
 export type TransitionContext = {
   fulfillmentType: FulfillmentType;
@@ -21,16 +21,17 @@ export type TransitionAction = {
   variant: "primary" | "secondary" | "danger";
 };
 
-const ACTION_META: Partial<
-  Record<OrderStatus, { label: string; variant: TransitionAction["variant"] }>
-> = {
-  accepted: { label: "Accept", variant: "primary" },
-  preparing: { label: "Start preparing", variant: "primary" },
-  ready: { label: "Mark ready", variant: "primary" },
-  ready_for_pickup: { label: "Ready for pickup", variant: "primary" },
-  completed: { label: "Complete", variant: "primary" },
-  cancelled: { label: "Cancel order", variant: "danger" },
-};
+const ACTION_META = new Map<
+  OrderStatus,
+  { label: string; variant: TransitionAction["variant"] }
+>([
+  ["accepted", { label: "Accept", variant: "primary" }],
+  ["preparing", { label: "Start preparing", variant: "primary" }],
+  ["ready", { label: "Mark ready", variant: "primary" }],
+  ["ready_for_pickup", { label: "Ready for pickup", variant: "primary" }],
+  ["completed", { label: "Complete", variant: "primary" }],
+  ["cancelled", { label: "Cancel order", variant: "danger" }],
+]);
 
 export function getAllowedTransitions(
   from: OrderStatus,
@@ -41,7 +42,7 @@ export function getAllowedTransitions(
   }
 
   // Delivery from ready is fulfilled via dedicated endpoints (manual / deliverGO).
-  return STAFF_TRANSITIONS[from] ?? [];
+  return STAFF_TRANSITIONS.get(from) ?? [];
 }
 
 export function canTransition(
@@ -57,7 +58,7 @@ export function getTransitionActions(
   ctx?: TransitionContext,
 ): TransitionAction[] {
   return getAllowedTransitions(from, ctx).flatMap((to) => {
-    const meta = ACTION_META[to];
+    const meta = ACTION_META.get(to);
     if (!meta) {
       return [];
     }
@@ -111,6 +112,8 @@ export type StaffOrderListFilter =
   | "cancelled"
   | "all";
 
+export type StaffOrderChannel = "all" | "kitchen" | "courier";
+
 export function parseStaffOrderListFilter(
   value: string | undefined,
 ): StaffOrderListFilter {
@@ -125,6 +128,19 @@ export function parseStaffOrderListFilter(
       return value;
     default:
       return "active";
+  }
+}
+
+export function parseStaffOrderChannel(
+  value: string | undefined,
+): StaffOrderChannel {
+  switch (value) {
+    case "kitchen":
+    case "courier":
+    case "all":
+      return value;
+    default:
+      return "all";
   }
 }
 

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { OrderStatusBadge } from "@/components/features/orders/order-status-badge";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
-import type { StaffOrderListFilter } from "@/lib/domain/order/transitions";
+import type { StaffOrderChannel, StaffOrderListFilter } from "@/lib/domain/order/transitions";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
@@ -19,12 +19,23 @@ const FILTERS: Array<{ id: StaffOrderListFilter; label: string }> = [
   { id: "all", label: "All" },
 ];
 
+const CHANNELS: Array<{ id: StaffOrderChannel; label: string }> = [
+  { id: "all", label: "All jobs" },
+  { id: "kitchen", label: "Kitchen" },
+  { id: "courier", label: "Courier" },
+];
+
 type OrderListFiltersProps = {
   filter: StaffOrderListFilter;
+  channel: StaffOrderChannel;
   search: string;
 };
 
-export function OrderListFilters({ filter, search }: OrderListFiltersProps) {
+export function OrderListFilters({
+  filter,
+  channel,
+  search,
+}: OrderListFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -32,13 +43,20 @@ export function OrderListFilters({ filter, search }: OrderListFiltersProps) {
   const [query, setQuery] = useState(search);
 
   const pushParams = useCallback(
-    (next: { filter?: string; q?: string }) => {
+    (next: { filter?: string; channel?: string; q?: string }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (next.filter !== undefined) {
         if (next.filter === "active") {
           params.delete("filter");
         } else {
           params.set("filter", next.filter);
+        }
+      }
+      if (next.channel !== undefined) {
+        if (next.channel === "all") {
+          params.delete("channel");
+        } else {
+          params.set("channel", next.channel);
         }
       }
       if (next.q !== undefined) {
@@ -57,6 +75,24 @@ export function OrderListFilters({ filter, search }: OrderListFiltersProps) {
 
   return (
     <div className="mb-4 space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {CHANNELS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            disabled={pending}
+            onClick={() => pushParams({ channel: item.id })}
+            className={cn(
+              "h-9 rounded-md border px-3 text-sm font-medium transition-colors",
+              channel === item.id
+                ? "border-accent bg-accent-subtle text-accent"
+                : "border-border bg-surface-elevated text-text-secondary hover:text-foreground",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((item) => (
           <button

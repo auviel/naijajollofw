@@ -19,8 +19,8 @@ const items = [
     exact: false,
   },
   {
-    href: "/dashboard/deliveries",
-    label: "Deliveries",
+    href: "/dashboard/orders?channel=courier",
+    label: "Courier",
     icon: Package,
     exact: false,
   },
@@ -35,6 +35,10 @@ const items = [
 function isActive(pathname: string, href: string, exact: boolean) {
   if (exact) {
     return pathname === href || pathname.startsWith("/dashboard/orders");
+  }
+
+  if (href.startsWith("/dashboard/orders")) {
+    return pathname.startsWith("/dashboard/deliveries");
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);

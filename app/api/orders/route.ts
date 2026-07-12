@@ -13,6 +13,7 @@ export async function GET(request: Request) {
       listOrdersQuerySchema,
       (params) => ({
         filter: params.get("filter") ?? undefined,
+        channel: params.get("channel") ?? undefined,
         q: params.get("q") ?? undefined,
         limit: params.get("limit") ?? undefined,
       }),
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
 
     const result = await listStaffOrders({
       filter: query.filter,
+      channel: query.channel,
       search: query.q,
       limit: query.limit,
     });

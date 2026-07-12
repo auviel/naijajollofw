@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 
 const LOAD_TIMEOUT_MS = 12_000;
 
@@ -194,8 +195,7 @@ export function TurnstileField({
       {showHelp ? (
         <div className="space-y-2 rounded-md border border-border bg-surface px-3 py-2">
           <p className="text-sm text-foreground" role="alert">
-            The security check couldn’t load. Firefox Enhanced Tracking
-            Protection or an ad blocker may be blocking Cloudflare.
+            {THIRD_PARTY_BLOCKED.turnstile}
           </p>
           <button
             type="button"

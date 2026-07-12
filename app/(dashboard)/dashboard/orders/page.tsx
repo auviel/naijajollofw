@@ -6,13 +6,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { listStaffOrders } from "@/lib/services/order/list-staff-orders";
 
 type PageProps = {
-  searchParams: Promise<{ filter?: string; q?: string }>;
+  searchParams: Promise<{ filter?: string; channel?: string; q?: string }>;
 };
 
 export default async function OrdersListPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const { items, filter, search } = await listStaffOrders({
-    filter: params.filter,
+  const { items, filter, channel, search } = await listStaffOrders({
+    filter: params.filter ?? (params.channel === "courier" ? "all" : undefined),
+    channel: params.channel,
     search: params.q,
     limit: 100,
   });
@@ -21,10 +22,10 @@ export default async function OrdersListPage({ searchParams }: PageProps) {
     <DashboardPage>
       <PageHeader
         title="All orders"
-        description="Filter and search paid restaurant orders."
+        description="Kitchen and courier jobs in one list."
       />
       <Suspense fallback={null}>
-        <OrderListFilters filter={filter} search={search} />
+        <OrderListFilters filter={filter} channel={channel} search={search} />
       </Suspense>
       <DashboardPageBody>
         {items.length === 0 ? (
@@ -34,7 +35,7 @@ export default async function OrdersListPage({ searchParams }: PageProps) {
             description={
               search
                 ? "Nothing matched that search."
-                : "Orders show up here after Square checkout."
+                : "Orders show up here after checkout or courier dispatch."
             }
           />
         ) : (

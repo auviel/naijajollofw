@@ -275,35 +275,37 @@ export function toDomainDelivery(uber: UberDeliveryResponse): ProviderDelivery {
 
 Design the schema so ecommerce and multi-provider fit later **without renaming everything**.
 
-### v1 entities
+### Entities (current)
 
-- **Store** — pickup location + future provider credentials per store
-- **User** — auth; `role` enum grows (`STORE_MANAGER`, `ADMIN`, …)
-- **Delivery** — fulfillment record (v1: 1:1 with Uber trip)
+- **Store** — pickup location + provider credentials per store
+- **User** — auth (`STORE_MANAGER` | `DINER`). Diners optionally link to Customer via `User.customerId`.
+- **Customer** — person of record per store (phone-keyed CRM). Owns phones, addresses, and Orders.
+- **Order** — the only job (`source`: storefront | dashboard | whatsapp). Kitchen board = storefront only.
+- **Delivery** — carrier child linked by `Order.deliveryId` (Uber / DoorDash). Dashboard “New delivery” creates Order + Delivery.
 - **WebhookEvent** — idempotency audit
 
-### v1 Delivery fields (provider-ready)
+### Delivery fields (provider-ready)
 
 | Field | Purpose now | Future |
 |-------|-------------|--------|
-| `providerId` | `'uber_direct'` | Which carrier fulfilled |
-| `providerDeliveryId` | Uber delivery id | Generic external id |
-| `providerOrderId` | Uber order id | Same |
+| `providerId` | `'uber_direct'` / `'doordash_drive'` | Which carrier fulfilled |
+| `providerDeliveryId` | Carrier delivery id | Generic external id |
+| `providerOrderId` | Carrier order id | Same |
 | `providerPayload` | JSON snapshot | Debug + reconcile across APIs |
-| `orderId` | nullable | FK to **Order** when ecommerce ships |
 
 Do **not** name columns `uberDeliveryId` in new code — use `providerDeliveryId` + `providerId`.
 
-### Future entities (placeholders — do not build yet)
+### Relationship shape
 
 ```
-Order ──▶ OrderLineItem
-  │
-  └──▶ Delivery (1:N possible: split shipment)
-         └── providerId, providerDeliveryId
+Customer ──▶ Order ──▶ OrderLineItem (0+ ; courier jobs may have none)
+  │              │
+  │              └──▶ Delivery (optional carrier child)
+  └──▶ CustomerAddress / CustomerPhone
+User (DINER) ──optional──▶ Customer
 ```
 
-When ecommerce arrives, **OrderService** creates an order; **FulfillmentService** chooses provider and calls the same `DeliveryProvider` interface.
+**OrderService** creates orders; **FulfillmentService** / create-delivery chooses provider and calls the same `DeliveryProvider` interface.
 
 ---
 

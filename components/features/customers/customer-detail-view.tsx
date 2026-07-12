@@ -10,10 +10,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
 import type { CustomerDetail } from "@/lib/domain/customer/types";
+import type { StaffOrderListItem } from "@/lib/domain/order/types";
+import { formatCadFromCents } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/date";
 
 type CustomerDetailViewProps = {
   customer: CustomerDetail;
+  recentOrders?: StaffOrderListItem[];
 };
 
 async function readApiError(response: Response): Promise<string> {
@@ -21,7 +24,10 @@ async function readApiError(response: Response): Promise<string> {
   return body.error ?? "Something went wrong. Please try again.";
 }
 
-export function CustomerDetailView({ customer: initialCustomer }: CustomerDetailViewProps) {
+export function CustomerDetailView({
+  customer: initialCustomer,
+  recentOrders = [],
+}: CustomerDetailViewProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
   const [customer, setCustomer] = useState(initialCustomer);
@@ -67,7 +73,8 @@ export function CustomerDetailView({ customer: initialCustomer }: CustomerDetail
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{customer.name}</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            {customer.deliveryCount} deliveries · Added {formatDateTime(customer.createdAt)}
+            {customer.orderCount} orders · {customer.deliveryCount} courier
+            dispatches · Added {formatDateTime(customer.createdAt)}
           </p>
         </div>
         <Link
@@ -163,6 +170,39 @@ export function CustomerDetailView({ customer: initialCustomer }: CustomerDetail
           </Card>
         </div>
       </form>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-base font-semibold text-foreground">Recent orders</h2>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {recentOrders.length === 0 ? (
+            <p className="text-sm text-text-secondary">No orders yet.</p>
+          ) : (
+            recentOrders.map((order) => (
+              <Link
+                key={order.id}
+                href={`/dashboard/orders/${order.id}`}
+                className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 no-underline transition-colors hover:bg-surface"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {order.itemSummary || "Courier job"}
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {order.placedAt
+                      ? formatDateTime(order.placedAt)
+                      : formatDateTime(order.createdAt)}
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-medium tabular-nums text-foreground">
+                  {formatCadFromCents(order.totalCents)}
+                </p>
+              </Link>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

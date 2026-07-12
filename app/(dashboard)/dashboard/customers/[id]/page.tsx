@@ -1,14 +1,22 @@
 import { notFound } from "next/navigation";
 import { DashboardPage, DashboardPageBody } from "../../layout";
 import { CustomerDetailView } from "@/components/features/customers/customer-detail-view";
+import { requireStoreManager } from "@/lib/auth/session";
+import {
+  mapOrderToStaffListItem,
+  orderRepository,
+} from "@/lib/db/repositories/order.repository";
 import { getCustomer } from "@/lib/services/customer/get-customer";
 
 type CustomerDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function CustomerDetailPage({ params }: CustomerDetailPageProps) {
+export default async function CustomerDetailPage({
+  params,
+}: CustomerDetailPageProps) {
   const { id } = await params;
+  const user = await requireStoreManager();
 
   let customer;
   try {
@@ -17,10 +25,19 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
     notFound();
   }
 
+  const orders = await orderRepository.findManyForCustomer(
+    id,
+    user.storeId,
+    20,
+  );
+
   return (
     <DashboardPage>
       <DashboardPageBody>
-        <CustomerDetailView customer={customer} />
+        <CustomerDetailView
+          customer={customer}
+          recentOrders={orders.map(mapOrderToStaffListItem)}
+        />
       </DashboardPageBody>
     </DashboardPage>
   );

@@ -15,6 +15,7 @@ import {
 import {
   getOrCreateCartSessionId,
   readCartSessionId,
+  touchCartSessionCookie,
 } from "@/lib/services/cart/session";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 import { AppError } from "@/lib/utils/errors";
@@ -25,6 +26,8 @@ export async function getCart(): Promise<CartView> {
   if (!sessionId) {
     return mapCartToView(storeId, null);
   }
+
+  await touchCartSessionCookie(sessionId);
 
   const cart = await cartRepository.findByStoreAndSession(storeId, sessionId);
   return mapCartToView(storeId, cart);

@@ -76,7 +76,10 @@ export default function PrivacyPolicyPage() {
           ]}
         />
         <p>
-          You can clear or disable cookies in your browser settings anytime.
+          We may also store a copy of your guest cart ID in your browser’s local
+          storage so your cart can be restored if Safari clears cookies after a
+          period of inactivity. You can clear cookies and site data in your
+          browser settings anytime.
         </p>
       </LegalSection>
 
