@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { Search } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 
 type CustomerListFiltersProps = {
@@ -15,11 +14,13 @@ export function CustomerListFilters({ search }: CustomerListFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(search);
+  const [prevSearch, setPrevSearch] = useState(search);
   const [, startTransition] = useTransition();
 
-  useEffect(() => {
+  if (search !== prevSearch) {
+    setPrevSearch(search);
     setQuery(search);
-  }, [search]);
+  }
 
   useEffect(() => {
     const trimmed = query.trim();

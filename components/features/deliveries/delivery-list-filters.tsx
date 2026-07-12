@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { Search } from "@/components/ui/icons";
 import {
   DELIVERY_LIST_FILTERS,
   type DeliveryListFilter,
@@ -21,11 +21,13 @@ export function DeliveryListFilters({ filter, search }: DeliveryListFiltersProps
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(search);
+  const [prevSearch, setPrevSearch] = useState(search);
   const [, startTransition] = useTransition();
 
-  useEffect(() => {
+  if (search !== prevSearch) {
+    setPrevSearch(search);
     setQuery(search);
-  }, [search]);
+  }
 
   function buildHref(nextFilter: DeliveryListFilter) {
     const params = new URLSearchParams(searchParams.toString());

@@ -10,17 +10,18 @@ type CustomerDetailPageProps = {
 export default async function CustomerDetailPage({ params }: CustomerDetailPageProps) {
   const { id } = await params;
 
+  let customer;
   try {
-    const customer = await getCustomer(id);
-
-    return (
-      <DashboardPage>
-        <DashboardPageBody>
-          <CustomerDetailView customer={customer} />
-        </DashboardPageBody>
-      </DashboardPage>
-    );
+    customer = await getCustomer(id);
   } catch {
     notFound();
   }
+
+  return (
+    <DashboardPage>
+      <DashboardPageBody>
+        <CustomerDetailView customer={customer} />
+      </DashboardPageBody>
+    </DashboardPage>
+  );
 }

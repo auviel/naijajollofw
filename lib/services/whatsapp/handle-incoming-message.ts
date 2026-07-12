@@ -1,5 +1,5 @@
 import { getRecommendedQuote } from "@/lib/domain/delivery/compare-quotes";
-import { DELIVERY_PROVIDER_LABELS } from "@/lib/domain/delivery/types";
+import { getDeliveryProviderLabel } from "@/lib/domain/delivery/types";
 import {
   parseInteractiveSelection,
   parseWhatsAppCommand,
@@ -235,7 +235,7 @@ async function startQuoteFlow(
         buildQuoteMessage({
           customerName: payload.customerName,
           dropoffAddress: payload.dropoffAddress,
-          providerLabel: DELIVERY_PROVIDER_LABELS[quote.providerId],
+          providerLabel: getDeliveryProviderLabel(quote.providerId),
           feeCents: quote.feeCents,
           currency: quote.currency,
           dropoffEta: quote.dropoffEta?.toISOString(),
@@ -251,7 +251,7 @@ async function startQuoteFlow(
       feeCents: quote.feeCents,
       currency: quote.currency,
       dropoffEta: quote.dropoffEta?.toISOString(),
-      label: DELIVERY_PROVIDER_LABELS[quote.providerId],
+      label: getDeliveryProviderLabel(quote.providerId),
     }));
 
     const recommended = getRecommendedQuote(quoteResult.quotes);
@@ -538,7 +538,8 @@ export async function handleIncomingWhatsAppMessage(
     let addressId: string | undefined;
 
     if (command.type === "pick") {
-      addressId = payload.addressOptions?.[command.index - 1]?.id;
+      const index = command.index - 1;
+      addressId = index >= 0 ? payload.addressOptions?.at(index)?.id : undefined;
     } else if (
       command.type === "interactive" &&
       command.id.toLowerCase().startsWith("addr:")
@@ -588,7 +589,8 @@ export async function handleIncomingWhatsAppMessage(
     let customerId: string | undefined;
 
     if (command.type === "pick") {
-      customerId = payload.customerOptions?.[command.index - 1]?.id;
+      const index = command.index - 1;
+      customerId = index >= 0 ? payload.customerOptions?.at(index)?.id : undefined;
     } else if (
       command.type === "interactive" &&
       command.id.toLowerCase().startsWith("cust:")
@@ -648,7 +650,8 @@ export async function handleIncomingWhatsAppMessage(
   }
 
   if (state === "awaiting_provider_pick" && command.type === "pick") {
-    const option = payload.providerOptions?.[command.index - 1];
+    const index = command.index - 1;
+    const option = index >= 0 ? payload.providerOptions?.at(index) : undefined;
     if (!option) {
       await replyText(
         input.staffPhoneE164,

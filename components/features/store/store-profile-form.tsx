@@ -70,19 +70,20 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
 
   useEffect(() => {
     const query = addressQuery.trim();
-    if (query.length < 5) {
-      setGeocoded(null);
-      setGeocodeError(null);
-      return;
-    }
-
-    if (query === initialAddressQuery && addressLine2 === (store.addressLine2 ?? "")) {
-      setGeocoded(storeToGeocoded(store));
-      setGeocodeError(null);
-      return;
-    }
 
     const timeout = window.setTimeout(async () => {
+      if (query.length < 5) {
+        setGeocoded(null);
+        setGeocodeError(null);
+        return;
+      }
+
+      if (query === initialAddressQuery && addressLine2 === (store.addressLine2 ?? "")) {
+        setGeocoded(storeToGeocoded(store));
+        setGeocodeError(null);
+        return;
+      }
+
       setIsGeocoding(true);
       setGeocodeError(null);
 
@@ -107,7 +108,9 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
       } finally {
         setIsGeocoding(false);
       }
-    }, 600);
+    }, query.length < 5 || (query === initialAddressQuery && addressLine2 === (store.addressLine2 ?? ""))
+      ? 0
+      : 600);
 
     return () => window.clearTimeout(timeout);
   }, [addressQuery, addressLine2, initialAddressQuery, store]);

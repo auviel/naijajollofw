@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { DeliveryDetailView } from "@/components/features/deliveries/delivery-detail-view";
 import { ACTIVE_DELIVERY_POLL_MS, useLiveRefresh } from "@/components/hooks/use-live-refresh";
 import { reviveDeliveryDetail } from "@/lib/domain/delivery/revive-dates";
@@ -17,10 +17,12 @@ type DetailApiResponse = {
 
 export function DeliveryDetailLive({ initialDelivery }: DeliveryDetailLiveProps) {
   const [delivery, setDelivery] = useState(initialDelivery);
+  const [prevInitialDelivery, setPrevInitialDelivery] = useState(initialDelivery);
 
-  useEffect(() => {
+  if (initialDelivery !== prevInitialDelivery) {
+    setPrevInitialDelivery(initialDelivery);
     setDelivery(initialDelivery);
-  }, [initialDelivery]);
+  }
 
   const refresh = useCallback(async () => {
     try {

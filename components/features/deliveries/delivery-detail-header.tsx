@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@/components/ui/icons";
 import { DeliveryStatusBadge } from "@/components/features/deliveries/delivery-status-badge";
 import type { DeliveryDetail } from "@/lib/domain/delivery/types";
-import { DELIVERY_PROVIDER_LABELS } from "@/lib/domain/delivery/types";
+import { getDeliveryProviderLabel } from "@/lib/domain/delivery/types";
 import { formatDateTime } from "@/lib/utils/date";
 
 type DeliveryDetailHeaderProps = {
@@ -31,7 +31,7 @@ export function DeliveryDetailHeader({ delivery }: DeliveryDetailHeaderProps) {
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
-            <span>{DELIVERY_PROVIDER_LABELS[delivery.providerId]}</span>
+            <span>{getDeliveryProviderLabel(delivery.providerId)}</span>
             <span aria-hidden className="hidden sm:inline">
               ·
             </span>

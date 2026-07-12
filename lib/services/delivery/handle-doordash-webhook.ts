@@ -5,6 +5,7 @@ import { mapDoorDashStatusToDomain } from "@/lib/integrations/delivery/doordash/
 import { doorDashDriveAdapter } from "@/lib/integrations/delivery/doordash/adapter";
 import { parseDoorDashWebhook } from "@/lib/integrations/delivery/doordash/webhook";
 import { syncDeliveryFromProvider } from "@/lib/services/delivery/sync-from-provider";
+import { syncOrderFromLinkedDelivery } from "@/lib/services/order/sync-order-from-delivery";
 import { logger } from "@/lib/utils/logger";
 
 async function resolveDeliveryForWebhook(externalDeliveryId?: string) {
@@ -70,6 +71,8 @@ export async function handleDoorDashWebhook(
   if (status === "completed") {
     updated = await syncDeliveryFromProvider(updated);
   }
+
+  await syncOrderFromLinkedDelivery(updated);
 
   await webhookEventRepository.markProcessed(event.id, updated.id);
 

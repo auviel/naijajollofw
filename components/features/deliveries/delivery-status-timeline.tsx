@@ -4,7 +4,7 @@ import {
   type TimelineStep,
 } from "@/lib/domain/delivery/timeline";
 import { cn } from "@/lib/utils/cn";
-import { Check, Circle, X } from "lucide-react";
+import { Check, X } from "@/components/ui/icons";
 
 type DeliveryStatusTimelineProps = {
   status: DeliveryStatus;
@@ -23,7 +23,7 @@ function StepIcon({ state }: { state: TimelineStep["state"] }) {
   if (state === "current") {
     return (
       <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-accent bg-accent-subtle">
-        <Circle className="h-2.5 w-2.5 fill-accent text-accent" aria-hidden />
+        <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
       </span>
     );
   }
@@ -38,7 +38,7 @@ function StepIcon({ state }: { state: TimelineStep["state"] }) {
 
   return (
     <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-surface-elevated">
-      <Circle className="h-2.5 w-2.5 text-text-tertiary" aria-hidden />
+      <span className="h-2.5 w-2.5 rounded-full border border-text-tertiary" aria-hidden />
     </span>
   );
 }

@@ -11,16 +11,9 @@ type PageProps = {
 export default async function DeliveryDetailPage({ params }: PageProps) {
   const { id } = await params;
 
+  let delivery;
   try {
-    const delivery = await getDelivery(id);
-
-    return (
-      <DashboardPage>
-        <DashboardPageBody>
-          <DeliveryDetailLive initialDelivery={delivery} />
-        </DashboardPageBody>
-      </DashboardPage>
-    );
+    delivery = await getDelivery(id);
   } catch (error) {
     if (isAppError(error) && error.status === 404) {
       notFound();
@@ -28,4 +21,12 @@ export default async function DeliveryDetailPage({ params }: PageProps) {
 
     throw error;
   }
+
+  return (
+    <DashboardPage>
+      <DashboardPageBody>
+        <DeliveryDetailLive initialDelivery={delivery} />
+      </DashboardPageBody>
+    </DashboardPage>
+  );
 }

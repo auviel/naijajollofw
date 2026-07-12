@@ -1,5 +1,5 @@
 import type { NormalizedAddress } from "@/lib/domain/address/types";
-import type { DeliveryStatus, ProofOfDeliveryConfig } from "@/lib/domain/delivery/types";
+import type { DeliveryStatus } from "@/lib/domain/delivery/types";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 import type {
   ProviderCreateDeliveryRequest,

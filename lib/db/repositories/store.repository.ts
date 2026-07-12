@@ -70,4 +70,11 @@ export const storeRepository = {
       },
     });
   },
+
+  async updatePrepMinutes(id: string, prepMinutes: number): Promise<Store> {
+    return prisma.store.update({
+      where: { id },
+      data: { prepMinutes },
+    });
+  },
 };

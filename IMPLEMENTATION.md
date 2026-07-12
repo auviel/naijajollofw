@@ -1,6 +1,7 @@
 # deliverGO — Implementation Plan
 
 > Store manager dashboard for dispatching last-mile deliveries in Canada (Uber Direct v1; DoorDash Drive next).  
+> Restaurant ordering (storefront + kitchen): see [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md).  
 > Check off tasks with `[x]` as they are completed.
 
 ---

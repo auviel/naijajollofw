@@ -48,6 +48,7 @@
   --color-sandbox-banner: var(--sandbox-banner);
   --color-sandbox-text: var(--sandbox-text);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-storefront-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --transition-duration-fast: var(--duration-fast);
   --transition-duration-normal: var(--duration-normal);
   --ease-out: var(--ease-out);
@@ -84,6 +85,40 @@
   }
 }
 
+@keyframes storefront-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes storefront-fade-scale {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.storefront-hero-copy {
+  animation: storefront-fade-up 520ms var(--ease-out) both;
+}
+
+.storefront-hero-cover {
+  animation: storefront-fade-scale 700ms var(--ease-out) both;
+}
+
+.storefront-hero-logo {
+  animation: storefront-fade-up 520ms var(--ease-out) 120ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -91,5 +126,11 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .storefront-hero-copy,
+  .storefront-hero-cover,
+  .storefront-hero-logo {
+    animation: none !important;
   }
 }

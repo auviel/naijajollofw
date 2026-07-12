@@ -1,7 +1,7 @@
 # deliverGO — Architecture & Engineering Guide
 
 > How we structure code today so v1 stays simple, and v2+ (ecommerce, multi-carrier) scales without rewrites.  
-> Companion docs: [IMPLEMENTATION.md](./IMPLEMENTATION.md) · [STYLING.md](./STYLING.md)
+> Companion docs: [IMPLEMENTATION.md](./IMPLEMENTATION.md) · [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md) · [STYLING.md](./STYLING.md)
 
 ---
 
@@ -11,8 +11,9 @@
 |-------|--------|-------------------|
 | **v1 (now)** | Store manager dispatches Uber Direct deliveries (Canada) | Thin UI, clear layers, one delivery provider behind an interface |
 | **v2** | Cancel, schedule, POD, webhooks, multi-store | Same layers; add events + tenant scoping |
-| **v3** | Ecommerce (catalog, cart, checkout, orders) | New **Order** domain; delivery becomes a downstream fulfillment step |
+| **v3** | Restaurant ordering (catalog, cart, checkout, kitchen, pickup/delivery) | New **Order** domain; delivery is a staff-chosen fulfillment step — see [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md) |
 | **v4** | Uber + other delivery partners | Plug-in providers; routing/fallback without touching UI or order logic |
+| **Later** | iOS/Android apps, blog/marketing | Same `lib/` + `app/api` contract; no monorepo until a second real client ships |
 
 We optimize for a **modular monolith** first. Extract services (workers, webhooks, catalog) only when traffic or team size demands it — not on day one.
 
@@ -44,15 +45,19 @@ We optimize for a **modular monolith** first. Extract services (workers, webhook
 ```
 ┌──────────┐    ┌─────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │ Storefront│───▶│ Order       │───▶│ Fulfillment      │───▶│ Delivery        │
-│ (shop)    │    │ (ecommerce) │    │ (pick/pack/route)│    │ Provider Router │
-└──────────┘    └─────────────┘    └──────────────────┘    └────────┬────────┘
-                                                                    │
-                                                          ┌─────────┼─────────┐
-                                                          ▼         ▼         ▼
-                                                       Uber     Partner B   Partner C
+│ (diner)   │    │ (restaurant)│    │ pickup | delivery│    │ Provider Router │
+└──────────┘    └─────────────┘    │ staff: delivergo │    └────────┬────────┘
+┌──────────┐           ▲           │      or manual   │             │
+│ Staff UI │───────────┘           └──────────────────┘   ┌─────────┼─────────┐
+└──────────┘                                              ▼         ▼         ▼
+                                                       Uber     DoorDash   Manual
+┌──────────┐
+│ Mobile   │───▶ same app/api ──▶ same lib/services     (no carrier API)
+│ (later)  │
+└──────────┘
 ```
 
-**Rule:** UI and order logic never import `uber` directly. They call `DeliveryService` → `DeliveryProvider` interface.
+**Rule:** UI and order logic never import `uber` directly. They call `DeliveryService` / fulfillment services → `DeliveryProvider` interface. Mobile and blog clients never import React feature components — only HTTP + shared domain rules.
 
 ---
 
@@ -89,119 +94,120 @@ Strict dependency direction — **inner layers never depend on outer layers**.
 
 ## Folder structure
 
+**Conventions (locked for v3+):**
+
+- `app/` route groups by **audience**: `(storefront)`, `(dashboard)`, `(marketing)`, `(auth)`
+- `lib/domain`, `lib/services`, `components/features` grow by **domain** (`menu`, `cart`, `order`, `delivery`, …)
+- `app/api` is the **shared HTTP contract** for web today and mobile later — thin handlers, stable JSON
+- **Do not** introduce Turborepo / `packages/*` until a real second client (native app) ships
+- Blog/marketing stays an island under `(marketing)` — no coupling to Order/Delivery
+
+Full restaurant checklist: [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md).
+
 ```
 deliverGO/
 ├── app/                              # Next.js App Router — keep routes thin
+│   ├── (marketing)/                  # Landing + future blog
+│   ├── (storefront)/                 # Diner UX (menu, cart, checkout, track)
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── item/[id]/
+│   │   ├── cart/
+│   │   ├── checkout/
+│   │   └── orders/[id]/
 │   ├── (auth)/
 │   │   └── login/
 │   │       └── page.tsx
-│   ├── (dashboard)/
-│   │   ├── layout.tsx                # shell: sidebar, sandbox banner
-│   │   └── deliveries/
-│   │       ├── page.tsx              # list
-│   │       ├── new/
-│   │       │   └── page.tsx
-│   │       └── [id]/
-│   │           └── page.tsx
-│   ├── api/
+│   ├── (dashboard)/                  # Staff / kitchen shell
+│   │   ├── layout.tsx
+│   │   ├── page.tsx                  # live orders board
+│   │   ├── orders/
+│   │   ├── menu/
+│   │   ├── hours/
+│   │   ├── customers/
+│   │   ├── deliveries/
+│   │   └── store/
+│   ├── api/                          # ★ Shared contract (web + future mobile)
+│   │   ├── menu/
+│   │   ├── cart/
+│   │   ├── orders/
+│   │   ├── payments/
 │   │   ├── geocode/
 │   │   ├── deliveries/
-│   │   │   ├── route.ts              # GET list, POST create
-│   │   │   ├── quote/
-│   │   │   │   └── route.ts
-│   │   │   └── [id]/
-│   │   │       ├── route.ts          # GET one
-│   │   │       └── cancel/
-│   │   │           └── route.ts
 │   │   ├── webhooks/
-│   │   │   └── uber/
-│   │   │       └── route.ts
+│   │   │   ├── uber/
+│   │   │   ├── doordash/
+│   │   │   └── square/
 │   │   └── health/
-│   │       └── route.ts
 │   ├── globals.css
 │   └── layout.tsx
 │
 ├── components/
-│   ├── ui/                           # Design system (Button, Input, Card…) — see STYLING.md
-│   ├── layout/                       # Sidebar, SandboxBanner, PageHeader
-│   └── features/                     # Feature UI — co-locate by domain
+│   ├── ui/                           # Design system — see STYLING.md
+│   ├── layout/                       # Shells per audience
+│   └── features/                     # Co-locate by domain
+│       ├── menu/
+│       ├── cart/
+│       ├── orders/
+│       ├── storefront/
 │       └── deliveries/
-│           ├── delivery-list.tsx
-│           ├── delivery-form.tsx
-│           ├── delivery-timeline.tsx
-│           ├── quote-card.tsx
-│           └── proof-of-delivery.tsx
 │
 ├── lib/
 │   ├── domain/                       # Pure domain — no I/O
+│   │   ├── menu/
+│   │   ├── cart/
+│   │   ├── order/
+│   │   ├── fulfillment/
 │   │   ├── delivery/
-│   │   │   ├── types.ts              # DeliveryStatus, Quote, CreateDeliveryInput
-│   │   │   ├── status.ts             # map Uber status ↔ domain status
-│   │   │   └── validation.ts         # Zod schemas
 │   │   ├── store/
-│   │   │   └── types.ts
+│   │   ├── customer/
 │   │   └── address/
-│   │       └── types.ts              # NormalizedAddress (country-agnostic)
-│   │
-│   ├── services/                     # Use cases — entry point for app/ and api/
+│   ├── services/                     # Use cases — entry for app/ and api/
+│   │   ├── menu/
+│   │   ├── cart/
+│   │   ├── order/
+│   │   ├── fulfillment/
+│   │   ├── payment/
 │   │   ├── delivery/
-│   │   │   ├── create-quote.ts
-│   │   │   ├── create-delivery.ts
-│   │   │   ├── cancel-delivery.ts
-│   │   │   ├── get-delivery.ts
-│   │   │   ├── list-deliveries.ts
-│   │   │   └── sync-from-provider.ts # webhook + poll refresh
 │   │   └── geocoding/
-│   │       └── geocode-address.ts
-│   │
 │   ├── db/
-│   │   ├── client.ts                 # Prisma singleton
+│   │   ├── client.ts
 │   │   └── repositories/
-│   │       ├── delivery.repository.ts
-│   │       ├── store.repository.ts
-│   │       └── webhook-event.repository.ts
-│   │
 │   ├── integrations/
-│   │   ├── delivery/                 # ★ Provider abstraction — extend here for new carriers
+│   │   ├── delivery/                 # ★ Provider abstraction
 │   │   │   ├── provider.interface.ts
-│   │   │   ├── provider.registry.ts  # resolve provider by store config / env
-│   │   │   ├── types.ts              # ProviderQuote, ProviderDelivery (normalized)
-│   │   │   └── uber/
-│   │   │       ├── client.ts         # OAuth + HTTP
-│   │   │       ├── adapter.ts        # implements DeliveryProvider
-│   │   │       ├── mappers.ts        # Uber JSON ↔ domain types
-│   │   │       └── webhook.ts        # verify signature, parse payload
+│   │   │   ├── uber/
+│   │   │   └── doordash/
+│   │   ├── payments/
+│   │   │   └── square/
 │   │   └── geocoding/
 │   │       └── mapbox/
-│   │           ├── client.ts
-│   │           └── adapter.ts
-│   │
 │   ├── auth/
-│   │   ├── config.ts                 # Auth.js
-│   │   └── session.ts                # getSessionUser(), requireStore()
-│   │
 │   └── utils/
-│       ├── errors.ts                 # AppError, error codes
-│       ├── logger.ts
-│       ├── phone.ts                  # E.164 normalize (CA)
-│       └── currency.ts               # cents ↔ CAD display
 │
 ├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
-│
 ├── tests/
-│   ├── unit/                         # domain + mappers + pure services
-│   ├── integration/                  # services + db (test DB)
-│   └── e2e/                          # Playwright
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
 │
-├── docker-compose.yml                # Postgres local
+├── docker-compose.yml
 ├── .env.example
-├── ARCHITECTURE.md                   # this file
-├── IMPLEMENTATION.md
+├── ARCHITECTURE.md
+├── IMPLEMENTATION.md                 # Delivery stack checklist
+├── RESTAURANT_IMPLEMENTATION.md      # Ordering / kitchen checklist
 └── STYLING.md
 ```
+
+### Multi-client readiness (without restructuring)
+
+| Client | Talks to | Must not |
+|--------|----------|----------|
+| Storefront / dashboard (Next.js) | `lib/services` via RSC/API | Import Uber/DoorDash in UI |
+| Future iOS / Android | `app/api` over HTTPS | Import `components/` or Prisma |
+| Future blog | `(marketing)` + CMS/MDX | Touch Order/Cart/Delivery domains |
+
+When mobile starts: add token auth beside cookie sessions; optionally introduce `/api/v1`. Extract `packages/` only if sharing across repos becomes painful — not before.
 
 ### Naming conventions
 
@@ -506,7 +512,7 @@ When adding commerce, treat these as separate **domain modules** inside the mono
 lib/domain/
 ├── catalog/       # products, variants, inventory
 ├── cart/
-├── order/         # checkout, payment intent
+├── order/         # checkout, Square payment
 ├── fulfillment/   # warehouse, pick lists
 └── delivery/      # already exists — consumes Order
 ```

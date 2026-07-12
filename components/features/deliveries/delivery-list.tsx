@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Package, SearchX } from "lucide-react";
+import { ChevronRight, Package, SearchX } from "@/components/ui/icons";
 import type { DeliveryListItem } from "@/lib/domain/delivery/types";
 import type { DeliveryListFilter } from "@/lib/domain/delivery/filters";
 import { DeliveryProviderBadge } from "@/components/features/deliveries/delivery-provider-badge";

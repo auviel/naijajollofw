@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@/components/ui/icons";
 import { CancelDeliveryButton } from "@/components/features/deliveries/delivery-cancel-button";
 import { DeliveryCourierSection } from "@/components/features/deliveries/delivery-courier-section";
 import { DeliveryDetailHeader } from "@/components/features/deliveries/delivery-detail-header";

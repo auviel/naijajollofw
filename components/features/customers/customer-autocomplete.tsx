@@ -43,10 +43,6 @@ export function CustomerNameAutocomplete({
 
   useEffect(() => {
     if (!userEditedRef.current) {
-      setSuggestions([]);
-      setIsOpen(false);
-      setActiveIndex(-1);
-      setSearchError(null);
       return;
     }
 
@@ -54,17 +50,10 @@ export function CustomerNameAutocomplete({
 
     if (skipNextSearchRef.current) {
       skipNextSearchRef.current = false;
-      setSuggestions([]);
-      setIsOpen(false);
-      setActiveIndex(-1);
       return;
     }
 
     if (trimmed.length < 1) {
-      setSuggestions([]);
-      setIsOpen(false);
-      setActiveIndex(-1);
-      setSearchError(null);
       return;
     }
 
@@ -134,7 +123,10 @@ export function CustomerNameAutocomplete({
       );
     } else if (event.key === "Enter" && activeIndex >= 0) {
       event.preventDefault();
-      chooseCustomer(suggestions[activeIndex]!);
+      const selected = suggestions.at(activeIndex);
+      if (selected) {
+        chooseCustomer(selected);
+      }
     } else if (event.key === "Escape") {
       setIsOpen(false);
     }
@@ -148,7 +140,14 @@ export function CustomerNameAutocomplete({
         value={value}
         onChange={(event) => {
           userEditedRef.current = true;
-          onChange(event.target.value);
+          const nextValue = event.target.value;
+          onChange(nextValue);
+          if (nextValue.trim().length < 1) {
+            setSuggestions([]);
+            setIsOpen(false);
+            setActiveIndex(-1);
+            setSearchError(null);
+          }
         }}
         onFocus={() => {
           if (suggestions.length > 0) {

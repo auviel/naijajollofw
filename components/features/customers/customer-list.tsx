@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, SearchX, Users } from "lucide-react";
+import { ChevronRight, SearchX, Users } from "@/components/ui/icons";
 import type { CustomerListItem } from "@/lib/domain/customer/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PrimaryLink } from "@/components/layout/page-header";

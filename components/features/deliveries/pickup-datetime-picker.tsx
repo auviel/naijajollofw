@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock } from "@/components/ui/icons";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -56,6 +56,9 @@ export function PickupDatetimePicker({
 
   const [openPanel, setOpenPanel] = useState<"date" | "time" | null>(null);
   const [viewMonth, setViewMonth] = useState(() => startOfDay(parseDatetimeLocalValue(value)));
+  const [prevSelectedTime, setPrevSelectedTime] = useState(() =>
+    parseDatetimeLocalValue(value).getTime(),
+  );
 
   const selected = useMemo(() => parseDatetimeLocalValue(value), [value]);
   const minDate = useMemo(() => parseDatetimeLocalValue(min), [min]);
@@ -65,9 +68,10 @@ export function PickupDatetimePicker({
     [selected, minDate, maxDate],
   );
 
-  useEffect(() => {
+  if (selected.getTime() !== prevSelectedTime) {
+    setPrevSelectedTime(selected.getTime());
     setViewMonth(startOfDay(selected));
-  }, [selected]);
+  }
 
   useEffect(() => {
     if (!openPanel) {
@@ -161,16 +165,17 @@ export function PickupDatetimePicker({
         <button
           id={id}
           type="button"
-          aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedBy}
           aria-expanded={openPanel === "date"}
           aria-controls={datePanelId}
           aria-haspopup="dialog"
+          data-invalid={ariaInvalid ? "true" : undefined}
           onClick={() => setOpenPanel((current) => (current === "date" ? null : "date"))}
           className={cn(
             "flex h-12 w-full items-center gap-3 rounded-md border border-border-strong bg-background px-4 text-left text-base text-foreground transition-colors hover:bg-surface",
             "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-foreground",
             openPanel === "date" && "border-foreground",
+            ariaInvalid && "border-error/30",
           )}
         >
           <Calendar className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />

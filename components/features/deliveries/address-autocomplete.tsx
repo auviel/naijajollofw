@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 import type { AddressSuggestion } from "@/lib/integrations/geocoding/types";
 
@@ -48,10 +48,6 @@ export function AddressAutocomplete({
 
   useEffect(() => {
     if (!userEditedRef.current) {
-      setSuggestions([]);
-      setIsOpen(false);
-      setActiveIndex(-1);
-      setSuggestError(null);
       return;
     }
 
@@ -59,17 +55,10 @@ export function AddressAutocomplete({
 
     if (skipNextSuggestRef.current) {
       skipNextSuggestRef.current = false;
-      setSuggestions([]);
-      setIsOpen(false);
-      setActiveIndex(-1);
       return;
     }
 
     if (query.length < 3) {
-      setSuggestions([]);
-      setIsOpen(false);
-      setActiveIndex(-1);
-      setSuggestError(null);
       return;
     }
 
@@ -148,7 +137,10 @@ export function AddressAutocomplete({
 
     if (event.key === "Enter" && activeIndex >= 0) {
       event.preventDefault();
-      selectSuggestion(suggestions[activeIndex]);
+      const selected = suggestions.at(activeIndex);
+      if (selected) {
+        selectSuggestion(selected);
+      }
       return;
     }
 
@@ -191,7 +183,14 @@ export function AddressAutocomplete({
           className="min-w-0 flex-1 bg-transparent px-4 text-base text-foreground placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed"
           onChange={(event) => {
             userEditedRef.current = true;
-            onChange(event.target.value);
+            const nextValue = event.target.value;
+            onChange(nextValue);
+            if (nextValue.trim().length < 3) {
+              setSuggestions([]);
+              setIsOpen(false);
+              setActiveIndex(-1);
+              setSuggestError(null);
+            }
           }}
           onFocus={() => {
             if (suggestions.length > 0) {

@@ -4,7 +4,6 @@ import type {
   DeliveryDetail,
   DeliveryProofOfDelivery,
   DeliveryStatus,
-  ProofOfDeliveryConfig,
 } from "@/lib/domain/delivery/types";
 import { isCancellable } from "@/lib/domain/delivery/status";
 import type { ProofOfDeliveryData } from "@/lib/db/repositories/delivery.repository";

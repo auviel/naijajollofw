@@ -5,6 +5,20 @@ export const DELIVERY_PROVIDER_LABELS: Record<DeliveryProviderId, string> = {
   doordash_drive: "DoorDash Drive",
 };
 
+/** Safe label lookup — avoids dynamic bracket access on user-influenced keys. */
+export function getDeliveryProviderLabel(providerId: DeliveryProviderId): string {
+  switch (providerId) {
+    case "uber_direct":
+      return DELIVERY_PROVIDER_LABELS.uber_direct;
+    case "doordash_drive":
+      return DELIVERY_PROVIDER_LABELS.doordash_drive;
+    default: {
+      const _exhaustive: never = providerId;
+      return _exhaustive;
+    }
+  }
+}
+
 export type DeliveryStatus =
   | "draft"
   | "pending"

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock } from "lucide-react";
+import { Clock } from "@/components/ui/icons";
 import {
   getRecommendedQuote,
   isRecommendedQuote,
 } from "@/lib/domain/delivery/compare-quotes";
 import { getQuoteAcceptWindowLabel } from "@/lib/domain/delivery/quote-display";
 import {
-  DELIVERY_PROVIDER_LABELS,
+  getDeliveryProviderLabel,
   type DeliveryQuote,
   type DeliveryQuoteFailure,
   type DeliveryProviderId,
@@ -45,20 +45,27 @@ function QuoteOption({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const expiresAt = new Date(quote.expiresAt);
+  const expiresAtTime = new Date(quote.expiresAt).getTime();
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
-    getRemainingSeconds(expiresAt),
+    getRemainingSeconds(new Date(expiresAtTime)),
   );
+  const [prevExpiresAtTime, setPrevExpiresAtTime] = useState(expiresAtTime);
   const recommended = isRecommendedQuote(quote, quotes);
   const isExpired = remainingSeconds <= 0;
 
+  if (expiresAtTime !== prevExpiresAtTime) {
+    setPrevExpiresAtTime(expiresAtTime);
+    setRemainingSeconds(getRemainingSeconds(new Date(expiresAtTime)));
+  }
+
   useEffect(() => {
+    const expiresAt = new Date(expiresAtTime);
     const interval = window.setInterval(() => {
       setRemainingSeconds(getRemainingSeconds(expiresAt));
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [expiresAt]);
+  }, [expiresAtTime]);
 
   return (
     <label
@@ -82,7 +89,7 @@ function QuoteOption({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-base font-semibold text-foreground">
-                  {DELIVERY_PROVIDER_LABELS[quote.providerId]}
+                  {getDeliveryProviderLabel(quote.providerId)}
                 </span>
                 {recommended ? (
                   <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
@@ -163,7 +170,7 @@ export function QuoteComparison({
           <h2 className="text-lg font-semibold text-foreground">Choose a carrier</h2>
           <p className="mt-1 text-sm text-text-secondary">
             {quotes.length > 1 && recommended
-              ? `${DELIVERY_PROVIDER_LABELS[recommended.providerId]} has the lowest fee. You can pick either option.`
+              ? `${getDeliveryProviderLabel(recommended.providerId)} has the lowest fee. You can pick either option.`
               : "Review the price before you send."}
           </p>
         </div>
@@ -185,7 +192,7 @@ export function QuoteComparison({
             {failures.map((failure) => (
               <p key={failure.providerId} className="text-sm text-text-secondary">
                 <span className="font-medium text-foreground">
-                  {DELIVERY_PROVIDER_LABELS[failure.providerId]}:
+                  {getDeliveryProviderLabel(failure.providerId)}:
                 </span>{" "}
                 {failure.error}
               </p>

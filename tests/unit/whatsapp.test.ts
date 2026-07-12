@@ -7,7 +7,6 @@ import {
   parseNewCustomerOneLine,
   parseNewCustomerPartialMultiline,
   parsePlainCustomerMultiline,
-  parsePlainCustomerOneLine,
   parseWhatsAppCommand,
 } from "@/lib/domain/whatsapp/commands";
 import { buildHelpMessage, buildSentMessage } from "@/lib/domain/whatsapp/messages";

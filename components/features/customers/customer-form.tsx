@@ -45,18 +45,18 @@ export function CustomerForm() {
 
   useEffect(() => {
     const query = address.trim();
-    if (query.length < 5) {
-      setGeocoded(null);
-      setVerifiedAddress(null);
-      setGeocodeError(null);
-      return;
-    }
-
-    setVerifiedAddress(null);
 
     const timeout = window.setTimeout(async () => {
+      if (query.length < 5) {
+        setGeocoded(null);
+        setVerifiedAddress(null);
+        setGeocodeError(null);
+        return;
+      }
+
       setIsGeocoding(true);
       setGeocodeError(null);
+      setVerifiedAddress(null);
 
       try {
         const response = await fetch("/api/geocode", {
@@ -82,7 +82,7 @@ export function CustomerForm() {
       } finally {
         setIsGeocoding(false);
       }
-    }, 600);
+    }, query.length < 5 ? 0 : 600);
 
     return () => window.clearTimeout(timeout);
   }, [address]);

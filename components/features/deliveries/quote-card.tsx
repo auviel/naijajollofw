@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock } from "lucide-react";
+import { Clock } from "@/components/ui/icons";
 import type { DeliveryQuote } from "@/lib/domain/delivery/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatCadFromCents } from "@/lib/utils/currency";
@@ -22,18 +22,25 @@ function formatCountdown(totalSeconds: number): string {
 }
 
 export function QuoteCard({ quote }: QuoteCardProps) {
-  const expiresAt = new Date(quote.expiresAt);
+  const expiresAtTime = new Date(quote.expiresAt).getTime();
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
-    getRemainingSeconds(expiresAt),
+    getRemainingSeconds(new Date(expiresAtTime)),
   );
+  const [prevExpiresAtTime, setPrevExpiresAtTime] = useState(expiresAtTime);
+
+  if (expiresAtTime !== prevExpiresAtTime) {
+    setPrevExpiresAtTime(expiresAtTime);
+    setRemainingSeconds(getRemainingSeconds(new Date(expiresAtTime)));
+  }
 
   useEffect(() => {
+    const expiresAt = new Date(expiresAtTime);
     const interval = window.setInterval(() => {
       setRemainingSeconds(getRemainingSeconds(expiresAt));
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [expiresAt]);
+  }, [expiresAtTime]);
 
   const isExpired = remainingSeconds <= 0;
 

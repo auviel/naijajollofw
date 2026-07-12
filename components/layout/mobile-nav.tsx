@@ -2,18 +2,39 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Package, Store, Users } from "lucide-react";
+import { ClipboardList, Package, Store, UtensilsCrossed } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 
 const items = [
-  { href: "/dashboard/deliveries", label: "Deliveries", icon: Package, excludePaths: [] },
-  { href: "/dashboard/customers", label: "Customers", icon: Users, excludePaths: [] },
-  { href: "/dashboard/store", label: "Store", icon: Store, excludePaths: [] },
+  {
+    href: "/dashboard",
+    label: "Orders",
+    icon: ClipboardList,
+    exact: true,
+  },
+  {
+    href: "/dashboard/menu",
+    label: "Menu",
+    icon: UtensilsCrossed,
+    exact: false,
+  },
+  {
+    href: "/dashboard/deliveries",
+    label: "Deliveries",
+    icon: Package,
+    exact: false,
+  },
+  {
+    href: "/dashboard/store",
+    label: "Store",
+    icon: Store,
+    exact: false,
+  },
 ];
 
-function isActive(pathname: string, href: string, excludePaths: string[]) {
-  if (excludePaths.some((path) => pathname.startsWith(path))) {
-    return false;
+function isActive(pathname: string, href: string, exact: boolean) {
+  if (exact) {
+    return pathname === href || pathname.startsWith("/dashboard/orders");
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -24,9 +45,9 @@ export function MobileNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background safe-bottom md:hidden">
-      <div className="grid grid-cols-3">
-        {items.map(({ href, label, icon: Icon, excludePaths }) => {
-          const active = isActive(pathname, href, excludePaths);
+      <div className="grid grid-cols-4">
+        {items.map(({ href, label, icon: Icon, exact }) => {
+          const active = isActive(pathname, href, exact);
 
           return (
             <Link

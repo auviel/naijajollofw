@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import type { DeliveryProviderId } from "@/lib/domain/delivery/types";
-import { DELIVERY_PROVIDER_LABELS } from "@/lib/domain/delivery/types";
+import { getDeliveryProviderLabel } from "@/lib/domain/delivery/types";
 import { getCancelReasonLabel } from "@/lib/integrations/delivery/cancel-reasons";
 import type { CancelDeliverySchema } from "@/lib/domain/delivery/validation";
 
@@ -117,7 +117,7 @@ export function CancelDeliveryButton({
               Cancel delivery
             </h3>
             <p className="mt-2 text-sm text-text-secondary">
-              This notifies {DELIVERY_PROVIDER_LABELS[providerId]} and stops the courier if
+              This notifies {getDeliveryProviderLabel(providerId)} and stops the courier if
               they have not completed dropoff yet.
             </p>
 

@@ -14,7 +14,7 @@ const SEED_USER = {
 } as const;
 
 const SEED_STORE_BASE = {
-  name: "Demo Market — Lester St",
+  name: "Naija Jollof Waterloo",
   phone: "+15195550199",
   addressLine1: "280 Lester St",
   addressLine2: "#102",
@@ -87,12 +87,146 @@ async function main() {
     },
   });
 
+  // Reset and seed a small demo menu for storefront work.
+  await prisma.cartItem.deleteMany({
+    where: { cart: { storeId: store.id } },
+  });
+  await prisma.cart.deleteMany({ where: { storeId: store.id } });
+  await prisma.menuItem.deleteMany({ where: { storeId: store.id } });
+  await prisma.menuCategory.deleteMany({ where: { storeId: store.id } });
+
+  // Weekly hours: Sun closed, Mon–Sat 11:00–22:00 (America/Toronto via STORE_TIMEZONE).
+  await prisma.storeHours.deleteMany({ where: { storeId: store.id } });
+  await prisma.storeHours.createMany({
+    data: [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
+      const closed = dayOfWeek === 0;
+      return {
+        storeId: store.id,
+        dayOfWeek,
+        closed,
+        openMinute: closed ? null : 11 * 60,
+        closeMinute: closed ? null : 22 * 60,
+      };
+    }),
+  });
+
+  const mains = await prisma.menuCategory.create({
+    data: {
+      storeId: store.id,
+      name: "Mains",
+      sortOrder: 0,
+    },
+  });
+  const sides = await prisma.menuCategory.create({
+    data: {
+      storeId: store.id,
+      name: "Sides",
+      sortOrder: 1,
+    },
+  });
+  const drinks = await prisma.menuCategory.create({
+    data: {
+      storeId: store.id,
+      name: "Drinks",
+      sortOrder: 2,
+    },
+  });
+
+  const burger = await prisma.menuItem.create({
+    data: {
+      storeId: store.id,
+      categoryId: mains.id,
+      name: "Lester Smash Burger",
+      description: "Double smash, American cheese, pickles, house sauce.",
+      priceCents: 1450,
+      sortOrder: 0,
+      available: true,
+    },
+  });
+
+  const toppings = await prisma.menuModifierGroup.create({
+    data: {
+      itemId: burger.id,
+      name: "Add-ons",
+      required: false,
+      minSelect: 0,
+      maxSelect: 3,
+      sortOrder: 0,
+    },
+  });
+
+  await prisma.menuModifier.createMany({
+    data: [
+      {
+        groupId: toppings.id,
+        name: "Bacon",
+        priceDeltaCents: 200,
+        sortOrder: 0,
+      },
+      {
+        groupId: toppings.id,
+        name: "Fried egg",
+        priceDeltaCents: 150,
+        sortOrder: 1,
+      },
+      {
+        groupId: toppings.id,
+        name: "Extra patty",
+        priceDeltaCents: 350,
+        sortOrder: 2,
+      },
+    ],
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        storeId: store.id,
+        categoryId: mains.id,
+        name: "Crispy Chicken Sandwich",
+        description: "Buttermilk fried chicken, slaw, hot honey.",
+        priceCents: 1399,
+        sortOrder: 1,
+        available: true,
+      },
+      {
+        storeId: store.id,
+        categoryId: sides.id,
+        name: "Seasoned Fries",
+        description: "Crispy fries with house seasoning.",
+        priceCents: 499,
+        sortOrder: 0,
+        available: true,
+      },
+      {
+        storeId: store.id,
+        categoryId: sides.id,
+        name: "Mac & Cheese",
+        description: "Creamy cheddar bake.",
+        priceCents: 650,
+        sortOrder: 1,
+        available: false,
+      },
+      {
+        storeId: store.id,
+        categoryId: drinks.id,
+        name: "Fountain Drink",
+        description: "Coca-Cola, Sprite, or iced tea.",
+        priceCents: 299,
+        sortOrder: 0,
+        available: true,
+      },
+    ],
+  });
+
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);
   console.log(`  DoorDash external_store_id: ${getDoorDashExternalStoreIdFromEnv() ?? store.id}`);
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
   console.log(`  User:  ${SEED_USER.email}`);
   console.log(`  Login password: ${SEED_USER.password} (dev only)`);
+  console.log("  Menu: Mains / Sides / Drinks seeded");
+  console.log("  Hours: Sun closed · Mon–Sat 11:00–22:00");
 }
 
 main()

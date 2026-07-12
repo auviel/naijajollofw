@@ -10,6 +10,8 @@ type SidebarNavLinkProps = {
   label: string;
   icon: ReactNode;
   exact?: boolean;
+  /** Extra path prefixes that should mark this link active (e.g. /dashboard/orders). */
+  matchPrefixes?: string[];
   excludePaths?: string[];
 };
 
@@ -18,15 +20,20 @@ export function SidebarNavLink({
   label,
   icon,
   exact = false,
+  matchPrefixes = [],
   excludePaths = [],
 }: SidebarNavLinkProps) {
   const pathname = usePathname();
   const excluded = excludePaths.some((path) => pathname.startsWith(path));
+  const matchedPrefix = matchPrefixes.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
   const isActive =
     !excluded &&
-    (exact
-      ? pathname === href
-      : pathname === href || pathname.startsWith(`${href}/`));
+    (matchedPrefix ||
+      (exact
+        ? pathname === href
+        : pathname === href || pathname.startsWith(`${href}/`)));
 
   return (
     <Link

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { DeliveryList } from "@/components/features/deliveries/delivery-list";
 import { ACTIVE_DELIVERY_POLL_MS, useLiveRefresh } from "@/components/hooks/use-live-refresh";
 import { shouldPollDeliveries } from "@/lib/domain/delivery/filters";
@@ -26,10 +26,12 @@ export function DeliveryListLive({
   search,
 }: DeliveryListLiveProps) {
   const [items, setItems] = useState(initialItems);
+  const [prevInitialItems, setPrevInitialItems] = useState(initialItems);
 
-  useEffect(() => {
+  if (initialItems !== prevInitialItems) {
+    setPrevInitialItems(initialItems);
     setItems(initialItems);
-  }, [initialItems]);
+  }
 
   const refresh = useCallback(async () => {
     const params = new URLSearchParams();

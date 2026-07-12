@@ -42,14 +42,6 @@ function getPrimaryPhone(customer: CustomerDetail): string | null {
   );
 }
 
-function getPrimaryAddress(customer: CustomerDetail) {
-  return (
-    customer.addresses.find((address) => address.isPrimary) ??
-    customer.addresses[0] ??
-    null
-  );
-}
-
 export async function lookupCustomerForWhatsApp(input: {
   storeId: string;
   query: string;

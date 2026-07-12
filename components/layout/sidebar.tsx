@@ -1,4 +1,4 @@
-import { Package, Store, Users } from "lucide-react";
+import { ClipboardList, Package, Store, UtensilsCrossed, Users } from "@/components/ui/icons";
 import { auth } from "@/lib/auth/index";
 import { LogoutButton } from "@/components/features/auth/logout-button";
 import { SidebarNavLink } from "@/components/layout/sidebar-nav-link";
@@ -17,6 +17,19 @@ export async function Sidebar() {
       </div>
 
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
+        <SidebarNavLink
+          href="/dashboard"
+          label="Orders"
+          icon={<ClipboardList className="h-5 w-5" />}
+          exact
+          // Treat /dashboard/orders* as Orders too (list + detail).
+          matchPrefixes={["/dashboard/orders"]}
+        />
+        <SidebarNavLink
+          href="/dashboard/menu"
+          label="Menu"
+          icon={<UtensilsCrossed className="h-5 w-5" />}
+        />
         <SidebarNavLink
           href="/dashboard/deliveries"
           label="Deliveries"

@@ -52,6 +52,8 @@ export const uberDirectAdapter: DeliveryProvider = {
     raw: unknown,
     headers: Headers,
   ): Promise<ProviderWebhookEvent | null> {
+    void headers;
+
     if (typeof raw !== "string") {
       throw new Error("Uber webhook body must be a raw string for signature verification.");
     }

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils/cn";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 
 export type ToastVariant = "success" | "error";
 

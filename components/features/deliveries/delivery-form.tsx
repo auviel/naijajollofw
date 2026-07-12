@@ -32,7 +32,7 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/domain/delivery/schedule";
 import {
-  DELIVERY_PROVIDER_LABELS,
+  getDeliveryProviderLabel,
   type DeliveryProviderId,
   type DeliveryQuote,
   type DeliveryQuoteFailure,
@@ -46,8 +46,6 @@ import {
   SCROLL_INTO_VIEW_MARGIN_CLASS,
   scrollIntoViewSmooth,
 } from "@/lib/utils/scroll-into-view";
-
-type DeliveryFormProps = Record<string, never>;
 
 type ScheduleMode = "asap" | "scheduled";
 
@@ -91,7 +89,7 @@ async function readApiError(response: Response): Promise<string> {
   return body.error ?? "Something went wrong. Please try again.";
 }
 
-export function DeliveryForm(_props: DeliveryFormProps) {
+export function DeliveryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { success, error: toastError } = useToast();
@@ -210,24 +208,28 @@ export function DeliveryForm(_props: DeliveryFormProps) {
   }, []);
 
   useEffect(() => {
-    clearQuotes();
-    quoteRequestRef.current += 1;
+    const frame = window.requestAnimationFrame(() => {
+      clearQuotes();
+      quoteRequestRef.current += 1;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [dropoffAddress, dropoffName, dropoffPhone, scheduleMode, scheduledAt, clearQuotes]);
 
   useEffect(() => {
     const query = dropoffAddress.trim();
-    if (query.length < 5) {
-      setGeocoded(null);
-      setVerifiedAddress(null);
-      setGeocodeError(null);
-      return;
-    }
-
-    setVerifiedAddress(null);
 
     const timeout = window.setTimeout(async () => {
+      if (query.length < 5) {
+        setGeocoded(null);
+        setVerifiedAddress(null);
+        setGeocodeError(null);
+        return;
+      }
+
       setIsGeocoding(true);
       setGeocodeError(null);
+      setVerifiedAddress(null);
 
       try {
         const response = await fetch("/api/geocode", {
@@ -253,7 +255,7 @@ export function DeliveryForm(_props: DeliveryFormProps) {
       } finally {
         setIsGeocoding(false);
       }
-    }, 600);
+    }, query.length < 5 ? 0 : 600);
 
     return () => window.clearTimeout(timeout);
   }, [dropoffAddress]);
@@ -393,7 +395,7 @@ export function DeliveryForm(_props: DeliveryFormProps) {
       }
 
       const body = (await response.json()) as CreateApiResponse;
-      success(`Delivery sent via ${DELIVERY_PROVIDER_LABELS[selectedQuote.providerId]}.`);
+      success(`Delivery sent via ${getDeliveryProviderLabel(selectedQuote.providerId)}.`);
       router.push(`/dashboard/deliveries/${body.data.id}`);
       router.refresh();
     } catch {

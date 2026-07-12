@@ -10,6 +10,7 @@ import {
   verifyUberWebhookSignature,
 } from "@/lib/integrations/delivery/uber/webhook";
 import { syncDeliveryFromProvider } from "@/lib/services/delivery/sync-from-provider";
+import { syncOrderFromLinkedDelivery } from "@/lib/services/order/sync-order-from-delivery";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -123,6 +124,8 @@ export async function handleUberWebhook(
   if (status === "completed") {
     updated = await syncDeliveryFromProvider(updated);
   }
+
+  await syncOrderFromLinkedDelivery(updated);
 
   await webhookEventRepository.markProcessed(event.id, updated.id);
 

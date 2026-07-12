@@ -42,6 +42,8 @@ model Store {
   enabledUberDirect       Boolean  @default(true)
   enabledDoorDashDrive    Boolean  @default(true)
   doordashExternalStoreId String?
+  /// Typical kitchen prep time shown on guest tracking (minutes).
+  prepMinutes             Int      @default(25)
   whatsappEnabled         Boolean  @default(false)
   whatsappPhoneNumberId   String?
   createdAt    DateTime @default(now())
@@ -52,6 +54,30 @@ model Store {
   customers             Customer[]
   whatsappStaffPhones   WhatsAppStaffPhone[]
   whatsappConversations WhatsAppConversation[]
+  menuCategories        MenuCategory[]
+  menuItems             MenuItem[]
+  carts                 Cart[]
+  orders                Order[]
+  hours                 StoreHours[]
+}
+
+/// Weekly open/closed schedule (store-local timezone via STORE_TIMEZONE).
+model StoreHours {
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// 0 = Sunday … 6 = Saturday (JS Date.getDay)
+  dayOfWeek   Int
+  closed      Boolean  @default(false)
+  /// Minutes from midnight (0–1439). Null when closed.
+  openMinute  Int?
+  /// Minutes from midnight (0–1439). May be less than openMinute for overnight.
+  closeMinute Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, dayOfWeek])
+  @@index([storeId])
 }
 
 model User {
@@ -162,6 +188,7 @@ model Delivery {
   updatedAt          DateTime       @updatedAt
 
   webhookEvents WebhookEvent[]
+  restaurantOrder Order?
 
   @@index([storeId, createdAt(sort: Desc)])
   @@index([customerId])
@@ -207,4 +234,193 @@ model WhatsAppConversation {
 
   @@unique([storeId, staffPhoneE164])
   @@index([storeId, staffPhoneE164])
+}
+
+// ---------------------------------------------------------------------------
+// Restaurant ordering (v3) — see RESTAURANT_IMPLEMENTATION.md
+// ---------------------------------------------------------------------------
+
+enum FulfillmentType {
+  pickup
+  delivery
+}
+
+enum FulfillmentMethod {
+  unassigned
+  delivergo
+  manual
+}
+
+enum OrderStatus {
+  pending_payment
+  pending_acceptance
+  accepted
+  preparing
+  ready
+  ready_for_pickup
+  out_for_delivery
+  completed
+  cancelled
+}
+
+model MenuCategory {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items MenuItem[]
+
+  @@index([storeId, sortOrder])
+}
+
+model MenuItem {
+  id          String       @id @default(cuid())
+  storeId     String
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceCents  Int
+  imageUrl    String?
+  available   Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  modifierGroups MenuModifierGroup[]
+  cartItems      CartItem[]
+
+  @@index([categoryId, sortOrder])
+  @@index([storeId, available])
+}
+
+model MenuModifierGroup {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name      String
+  required  Boolean  @default(false)
+  minSelect Int      @default(0)
+  maxSelect Int      @default(1)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  modifiers MenuModifier[]
+
+  @@index([itemId, sortOrder])
+}
+
+model MenuModifier {
+  id             String           @id @default(cuid())
+  groupId        String
+  group          MenuModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name           String
+  priceDeltaCents Int             @default(0)
+  available      Boolean          @default(true)
+  sortOrder      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([groupId, sortOrder])
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sessionId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items CartItem[]
+
+  @@unique([storeId, sessionId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem  MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  /// Selected modifier ids + labels/prices snapshot for display
+  modifiers Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cartId])
+  @@index([menuItemId])
+}
+
+model Order {
+  id                   String            @id @default(cuid())
+  storeId              String
+  store                Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  publicToken          String            @unique @default(cuid())
+  status               OrderStatus       @default(pending_payment)
+  fulfillmentType      FulfillmentType
+  fulfillmentMethod    FulfillmentMethod @default(unassigned)
+  customerName         String
+  customerPhone        String
+  dropoffAddress       String?
+  dropoffLat           Float?
+  dropoffLng           Float?
+  subtotalCents        Int
+  tipCents             Int               @default(0)
+  taxCents             Int               @default(0)
+  totalCents           Int
+  currency             String            @default("CAD")
+  squarePaymentId      String?           @unique
+  manualDeliveryNote   String?
+  deliveryId           String?           @unique
+  delivery             Delivery?         @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  notes                String?
+  placedAt             DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  lineItems OrderLineItem[]
+  events    OrderEvent[]
+
+  @@index([storeId, createdAt(sort: Desc)])
+  @@index([storeId, status])
+  @@index([publicToken])
+}
+
+model OrderLineItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  unitPriceCents  Int
+  quantity        Int
+  /// Snapshot of selected modifiers at purchase time
+  modifiers       Json     @default("[]")
+  lineTotalCents  Int
+  menuItemId      String?
+  createdAt       DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  actor     String
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt(sort: Asc)])
 }
