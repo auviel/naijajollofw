@@ -8,6 +8,7 @@ import { AddressAutocomplete } from "@/components/features/deliveries/address-au
 import {
   canRequestQuote,
 } from "@/components/features/deliveries/address-preview";
+import { CartLineThumbnail } from "@/components/features/storefront/cart-line-thumbnail";
 import { ScheduleOrderPicker } from "@/components/features/storefront/schedule-order-picker";
 import {
   SquareCardSlot,
@@ -45,7 +46,6 @@ type CheckoutClientProps = {
   taxRateBps: number;
   configured: boolean;
   openStatus: StoreOpenStatus;
-  storeName: string;
   scheduleDays: StoreHoursDay[];
   scheduleTimeZone: string;
   initialCustomerName?: string;
@@ -61,7 +61,6 @@ export function CheckoutClient({
   taxRateBps,
   configured,
   openStatus,
-  storeName,
   scheduleDays,
   scheduleTimeZone,
   initialCustomerName = "",
@@ -334,13 +333,41 @@ export function CheckoutClient({
         ) : null}
       </div>
 
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          Your order
+        </h2>
+        <ul className="space-y-3">
+          {initialCart.items.map((line) => (
+            <li
+              key={line.id}
+              className="flex gap-3 rounded-lg border border-border bg-surface-elevated p-3"
+            >
+              <CartLineThumbnail line={line} size="sm" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-foreground">
+                    {line.quantity > 1 ? `${line.quantity}× ` : null}
+                    {line.name}
+                  </p>
+                  <p className="shrink-0 text-sm font-medium text-foreground">
+                    {formatCadFromCents(line.lineTotalCents)}
+                  </p>
+                </div>
+                {line.modifiers.length > 0 ? (
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {line.modifiers.map((modifier) => modifier.name).join(", ")}
+                  </p>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {!configured ? (
         <div className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
-          Square payments are not configured. Set{" "}
-          <code className="text-foreground">SQUARE_ACCESS_TOKEN</code>,{" "}
-          <code className="text-foreground">SQUARE_LOCATION_ID</code>, and{" "}
-          <code className="text-foreground">NEXT_PUBLIC_SQUARE_APPLICATION_ID</code>{" "}
-          in your environment.
+          Square payments is not set up.
         </div>
       ) : null}
 
@@ -611,15 +638,9 @@ export function CheckoutClient({
           setSchedulePickerOpen(false);
           setFormError(null);
         }}
-        storeName={storeName}
         fulfillmentType={fulfillmentType}
         days={scheduleDays}
         timeZone={scheduleTimeZone}
-        opensHint={
-          openStatus.nextOpenLabel
-            ? `opens ${openStatus.nextOpenLabel}`
-            : null
-        }
         initialScheduledFor={scheduledFor}
       />
     </div>

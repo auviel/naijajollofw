@@ -50,6 +50,7 @@ function mapLine(item: CartItemWithMenu) {
     menuItemId: item.menuItemId,
     name: item.menuItem.name,
     description: item.menuItem.description,
+    imageUrl: item.menuItem.imageUrl,
     unitPriceCents,
     quantity: item.quantity,
     available: item.menuItem.available,

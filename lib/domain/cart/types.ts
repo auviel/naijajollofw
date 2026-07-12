@@ -14,6 +14,7 @@ export type CartLineView = {
   menuItemId: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   unitPriceCents: number;
   quantity: number;
   available: boolean;

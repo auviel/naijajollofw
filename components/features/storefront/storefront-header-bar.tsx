@@ -207,12 +207,14 @@ export function StorefrontHeaderBar({
 }
 
 function CartLink({ count }: { count: number }) {
+  const { openCart } = useStorefrontUi();
   const label = count === 1 ? "Cart, 1 item" : `Cart, ${count} items`;
 
   return (
-    <Link
-      href="/cart"
-      className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-surface"
+    <button
+      type="button"
+      onClick={openCart}
+      className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface"
       aria-label={label}
     >
       <ShoppingBag className="h-5 w-5" aria-hidden />
@@ -221,6 +223,6 @@ function CartLink({ count }: { count: number }) {
           {count > 99 ? "99+" : count}
         </span>
       ) : null}
-    </Link>
+    </button>
   );
 }

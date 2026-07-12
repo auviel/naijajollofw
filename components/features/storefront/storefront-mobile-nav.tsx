@@ -12,6 +12,7 @@ type StorefrontMobileNavProps = {
 };
 
 const HIDDEN_PREFIXES = [
+  "/cart",
   "/checkout",
   "/item",
   "/forgot-password",
@@ -28,9 +29,9 @@ export function StorefrontMobileNav({ cartItemCount }: StorefrontMobileNavProps)
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { openMobileSearch } = useStorefrontUi();
+  const { openMobileSearch, openCart, cartOpen } = useStorefrontUi();
 
-  if (shouldHideNav(pathname)) {
+  if (cartOpen || shouldHideNav(pathname)) {
     return null;
   }
 
@@ -42,13 +43,14 @@ export function StorefrontMobileNav({ cartItemCount }: StorefrontMobileNavProps)
       : "/account"
     : "/signup";
 
-  const menuActive = pathname === "/";
-  const cartActive = pathname === "/cart" || pathname.startsWith("/cart/");
+  const menuActive = pathname === "/" && !cartOpen;
+  const cartActive = cartOpen || pathname === "/cart" || pathname.startsWith("/cart/");
   const accountActive =
-    pathname === "/account" ||
-    pathname.startsWith("/account/") ||
-    pathname === "/signin" ||
-    pathname === "/signup";
+    !cartOpen &&
+    (pathname === "/account" ||
+      pathname.startsWith("/account/") ||
+      pathname === "/signin" ||
+      pathname === "/signup");
 
   function handleSearch() {
     openMobileSearch();
@@ -80,13 +82,25 @@ export function StorefrontMobileNav({ cartItemCount }: StorefrontMobileNavProps)
           <Search className="h-5 w-5" aria-hidden />
           Search
         </button>
-        <NavLink
-          href="/cart"
-          label="Cart"
-          active={cartActive}
-          icon={<ShoppingBag className="h-5 w-5" aria-hidden />}
-          badge={cartItemCount > 0 ? cartItemCount : null}
-        />
+        <button
+          type="button"
+          onClick={openCart}
+          className={cn(
+            "relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
+            cartActive ? "text-foreground" : "text-text-tertiary",
+          )}
+          aria-current={cartActive ? "page" : undefined}
+        >
+          <span className="relative inline-flex">
+            <ShoppingBag className="h-5 w-5" aria-hidden />
+            {cartItemCount > 0 ? (
+              <span className="absolute -top-1.5 -right-2.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-success px-1 text-[10px] font-semibold leading-none text-white">
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </span>
+            ) : null}
+          </span>
+          Cart
+        </button>
         <NavLink
           href={accountHref}
           label="Account"
@@ -103,13 +117,11 @@ function NavLink({
   label,
   active,
   icon,
-  badge = null,
 }: {
   href: string;
   label: string;
   active: boolean;
   icon: React.ReactNode;
-  badge?: number | null;
 }) {
   return (
     <Link
@@ -120,14 +132,7 @@ function NavLink({
       )}
       aria-current={active ? "page" : undefined}
     >
-      <span className="relative inline-flex">
-        {icon}
-        {badge != null ? (
-          <span className="absolute -top-1.5 -right-2.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-success px-1 text-[10px] font-semibold leading-none text-white">
-            {badge > 99 ? "99+" : badge}
-          </span>
-        ) : null}
-      </span>
+      {icon}
       {label}
     </Link>
   );

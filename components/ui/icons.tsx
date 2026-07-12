@@ -8,6 +8,7 @@ import {
   Cancel01Icon,
   ClipboardListIcon,
   Clock01Icon,
+  Delete02Icon,
   Facebook01Icon,
   Home01Icon,
   IceCubesIcon,
@@ -108,6 +109,7 @@ export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");
 export const ShoppingBag = createIcon(ShoppingCart01Icon, "ShoppingBag");
 export const Store = createIcon(Store01Icon, "Store");
+export const Trash = createIcon(Delete02Icon, "Trash");
 export const User = createIcon(UserIcon, "User");
 export const Users = createIcon(UserMultipleIcon, "Users");
 export const UtensilsCrossed = createIcon(SpoonAndForkIcon, "UtensilsCrossed");

@@ -1,4 +1,5 @@
 import { StorefrontFooter } from "@/components/features/storefront/storefront-footer";
+import { StorefrontFooterGate } from "@/components/features/storefront/storefront-footer-gate";
 import { StorefrontHeader } from "@/components/features/storefront/storefront-header";
 import { StorefrontProviders } from "@/components/providers/storefront-providers";
 import { Outfit } from "next/font/google";
@@ -27,7 +28,9 @@ export default function StorefrontLayout({
         >
           {children}
         </main>
-        <StorefrontFooter />
+        <StorefrontFooterGate>
+          <StorefrontFooter />
+        </StorefrontFooterGate>
       </div>
     </StorefrontProviders>
   );

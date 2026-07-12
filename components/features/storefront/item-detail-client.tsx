@@ -29,7 +29,6 @@ export function ItemDetailClient({
         variant="page"
         scheduleLabel={scheduleLabel}
         onAdded={() => {
-          router.push("/cart");
           router.refresh();
         }}
       />

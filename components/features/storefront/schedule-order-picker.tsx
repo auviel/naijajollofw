@@ -15,12 +15,9 @@ type ScheduleOrderPickerProps = {
   open: boolean;
   onClose: () => void;
   onConfirm: (scheduledForIso: string) => void;
-  storeName: string;
   fulfillmentType: "pickup" | "delivery";
   days: StoreHoursDay[];
   timeZone: string;
-  /** e.g. "opens at 11:00" for subtitle */
-  opensHint?: string | null;
   initialScheduledFor?: string | null;
 };
 
@@ -81,11 +78,9 @@ function resolveInitialSelection(
 function ScheduleOrderPickerBody({
   onClose,
   onConfirm,
-  storeName,
   fulfillmentType,
   days,
   timeZone,
-  opensHint = null,
   initialScheduledFor = null,
 }: ScheduleOrderPickerProps) {
   const dayOptions = useMemo(
@@ -149,30 +144,25 @@ function ScheduleOrderPickerBody({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
+        className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative border-b border-border px-5 pt-4 pb-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-3 left-3 inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-surface"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-          <div className="pt-8">
+        <div className="border-b border-border px-5 pt-4 pb-4">
+          <div className="flex items-center justify-between gap-3">
             <h2
               id="schedule-picker-title"
               className="font-display text-2xl font-semibold text-foreground"
             >
               {title}
             </h2>
-            <p className="mt-1 text-sm text-text-secondary">
-              {opensHint
-                ? `${storeName} ${opensHint}`
-                : `${storeName} — choose a time`}
-            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground hover:bg-surface"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
           </div>
         </div>
 

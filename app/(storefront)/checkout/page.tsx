@@ -10,7 +10,6 @@ import {
   isSquareConfigured,
 } from "@/lib/integrations/payments/square/config";
 import { getCart } from "@/lib/services/cart/cart-actions";
-import { storeRepository } from "@/lib/db/repositories/store.repository";
 import {
   getPublicStoreHoursSchedule,
   getPublicStoreOpenStatus,
@@ -19,11 +18,10 @@ import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-s
 
 export default async function CheckoutPage() {
   const storeId = await resolvePublicStoreId();
-  const [cart, openStatus, hours, store, sessionUser] = await Promise.all([
+  const [cart, openStatus, hours, sessionUser] = await Promise.all([
     getCart(),
     getPublicStoreOpenStatus(storeId),
     getPublicStoreHoursSchedule(storeId),
-    storeRepository.getProfileById(storeId),
     getOptionalSessionUser(),
   ]);
   const configured = isSquareConfigured();
@@ -46,7 +44,6 @@ export default async function CheckoutPage() {
         environment={getSquareEnvironment()}
         taxRateBps={taxRateBps}
         openStatus={openStatus}
-        storeName={store?.name ?? "Restaurant"}
         scheduleDays={hours.days}
         scheduleTimeZone={hours.timezone}
         initialCustomerName={diner?.name ?? ""}
