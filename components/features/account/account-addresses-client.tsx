@@ -7,7 +7,7 @@ import { canRequestQuote } from "@/components/features/deliveries/address-previe
 import { Button } from "@/components/ui/button";
 import { Trash } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
-import type { UserAddressRecord } from "@/lib/db/repositories/user-address.repository";
+import type { CustomerAddressView } from "@/lib/services/diner/addresses";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 
 async function readApiError(response: Response): Promise<string> {
@@ -18,7 +18,7 @@ async function readApiError(response: Response): Promise<string> {
 export function AccountAddressesClient({
   initialAddresses,
 }: {
-  initialAddresses: UserAddressRecord[];
+  initialAddresses: CustomerAddressView[];
 }) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
@@ -100,7 +100,7 @@ export function AccountAddressesClient({
       if (!response.ok) {
         throw new Error(await readApiError(response));
       }
-      const body = (await response.json()) as { data: UserAddressRecord };
+      const body = (await response.json()) as { data: CustomerAddressView };
       setAddresses((current) => [body.data, ...current]);
       setQuery("");
       setLabel("");

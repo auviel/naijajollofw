@@ -227,6 +227,8 @@ const listInclude = {
 export type CreateOrderInput = {
   storeId: string;
   userId?: string | null;
+  customerId?: string | null;
+  source?: "storefront" | "dashboard" | "whatsapp";
   fulfillmentType: "pickup" | "delivery";
   customerName: string;
   customerPhone: string;
@@ -331,6 +333,8 @@ export const orderRepository = {
       data: {
         storeId: input.storeId,
         userId: input.userId ?? null,
+        customerId: input.customerId ?? null,
+        source: input.source ?? "storefront",
         status: "pending_acceptance",
         fulfillmentType: input.fulfillmentType,
         fulfillmentMethod: "unassigned",
@@ -496,6 +500,78 @@ export const orderRepository = {
         where: { id: existing.id },
         include: orderInclude,
       });
+    });
+  },
+
+  /**
+   * Courier-only job (dashboard / WhatsApp): Order with no menu lines,
+   * already linked to a Delivery and out for delivery (or terminal).
+   */
+  async createCourierOrder(input: {
+    storeId: string;
+    customerId: string;
+    source: "dashboard" | "whatsapp";
+    customerName: string;
+    customerPhone: string;
+    dropoffAddress: string;
+    dropoffLat: number;
+    dropoffLng: number;
+    deliveryId: string;
+    deliveryStatus: string;
+    actor: string;
+  }) {
+    const status: OrderStatus =
+      input.deliveryStatus === "completed"
+        ? "completed"
+        : input.deliveryStatus === "cancelled" ||
+            input.deliveryStatus === "failed"
+          ? "cancelled"
+          : "out_for_delivery";
+    const now = new Date();
+
+    return prisma.order.create({
+      data: {
+        storeId: input.storeId,
+        customerId: input.customerId,
+        source: input.source,
+        status,
+        fulfillmentType: "delivery",
+        fulfillmentMethod: "delivergo",
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        dropoffAddress: input.dropoffAddress,
+        dropoffLat: input.dropoffLat,
+        dropoffLng: input.dropoffLng,
+        subtotalCents: 0,
+        tipCents: 0,
+        taxCents: 0,
+        totalCents: 0,
+        currency: "CAD",
+        squarePaymentId: null,
+        deliveryId: input.deliveryId,
+        placedAt: now,
+        events: {
+          create: [
+            {
+              status,
+              actor: input.actor,
+              note: "Courier job created",
+            },
+          ],
+        },
+      },
+      include: orderInclude,
+    });
+  },
+
+  async findByDeliveryId(deliveryId: string) {
+    return prisma.order.findFirst({
+      where: { deliveryId },
+      include: {
+        ...orderInclude,
+        user: { select: { email: true } },
+        store: { select: { name: true, prepMinutes: true } },
+      },
     });
   },
 

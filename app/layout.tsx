@@ -21,11 +21,16 @@ export const metadata: Metadata = {
   },
 };
 
-/** viewport-fit=cover so env(safe-area-inset-*) is non-zero on notched iPhones. */
+/**
+ * viewport-fit=cover → env(safe-area-inset-*) works for iOS home indicator
+ * and Android Chrome gesture/nav bars. interactiveWidget keeps focused
+ * fields visible above the Android keyboard.
+ */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

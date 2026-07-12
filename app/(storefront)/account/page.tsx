@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireDiner } from "@/lib/auth/session";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
-import { userAddressRepository } from "@/lib/db/repositories/user-address.repository";
+import { listDinerAddresses } from "@/lib/services/diner/addresses";
 import {
   mapOrderToPublicView,
   orderRepository,
@@ -19,7 +19,7 @@ export default async function AccountOverviewPage() {
   const user = await requireDiner();
   const [orders, addresses] = await Promise.all([
     orderRepository.findManyForUser(user.id, 5),
-    userAddressRepository.listForUser(user.id),
+    listDinerAddresses(),
   ]);
   const views = orders.map((order) => mapOrderToPublicView(order));
   const cardsAvailable = canManageSquareCards();

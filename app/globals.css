@@ -82,6 +82,21 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Detect Chrome Autofill so controlled inputs can sync DOM → React state. */
+  @keyframes onAutoFillStart {
+    from {
+      /**/
+    }
+    to {
+      /**/
+    }
+  }
+
+  input:-webkit-autofill {
+    animation-name: onAutoFillStart;
+    animation-duration: 0.001s;
+  }
+
   a {
     @apply text-link;
   }

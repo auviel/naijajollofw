@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { ZodError } from "zod";
 
 export type AppErrorCode =
@@ -51,6 +52,7 @@ export function handleApiError(error: unknown): Response {
   }
 
   console.error("[api] unhandled error", error);
+  Sentry.captureException(error);
   return Response.json(
     { error: "Internal server error", code: "INTERNAL_ERROR" },
     { status: 500 },

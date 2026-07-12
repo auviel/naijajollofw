@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type {
   SquareCard,
   SquareVerificationDetails,
 } from "@/lib/integrations/payments/square/web-sdk.types";
+
+const SDK_WAIT_MS = 12_000;
+const SDK_POLL_MS = 200;
+
+const BLOCKED_MESSAGE =
+  "Card form couldn’t load. Firefox tracking protection or an ad blocker may be blocking Square — allow squarecdn.com, then try again.";
 
 type SquareCardFormProps = {
   applicationId: string;
@@ -17,6 +23,23 @@ export type SquareCardFormHandle = {
   tokenize: (details: SquareVerificationDetails) => Promise<string>;
 };
 
+async function waitForSquare(signal: { cancelled: boolean }): Promise<boolean> {
+  if (window.Square) {
+    return true;
+  }
+  const started = Date.now();
+  while (Date.now() - started < SDK_WAIT_MS) {
+    if (signal.cancelled) {
+      return false;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, SDK_POLL_MS));
+    if (window.Square) {
+      return true;
+    }
+  }
+  return Boolean(window.Square);
+}
+
 export function useSquareCardForm({
   applicationId,
   locationId,
@@ -25,43 +48,57 @@ export function useSquareCardForm({
 }: SquareCardFormProps) {
   const containerId = useId().replace(/:/g, "");
   const cardRef = useRef<SquareCard | null>(null);
+  const onReadyChangeRef = useRef(onReadyChange);
+  onReadyChangeRef.current = onReadyChange;
+
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
+
+  const setReadySafe = useCallback((next: boolean) => {
+    setReady(next);
+    onReadyChangeRef.current?.(next);
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const signal = { cancelled: false };
 
     async function mount() {
-      setReady(false);
-      onReadyChange?.(false);
+      setReadySafe(false);
       setError(null);
 
       if (disabled || !applicationId || !locationId) {
         return;
       }
 
-      if (!window.Square) {
-        setError("Square payment form failed to load. Refresh and try again.");
+      const loaded = await waitForSquare(signal);
+      if (signal.cancelled) {
+        return;
+      }
+
+      if (!loaded || !window.Square) {
+        setError(BLOCKED_MESSAGE);
         return;
       }
 
       try {
         const payments = window.Square.payments(applicationId, locationId);
         const card = await payments.card();
-        if (cancelled) {
+        if (signal.cancelled) {
           await card.destroy();
           return;
         }
         await card.attach(`#${containerId}`);
         cardRef.current = card;
-        setReady(true);
-        onReadyChange?.(true);
+        setReadySafe(true);
       } catch (err) {
-        if (!cancelled) {
+        if (!signal.cancelled) {
+          const message =
+            err instanceof Error ? err.message : "Unable to load the card form.";
           setError(
-            err instanceof Error
-              ? err.message
-              : "Unable to load the card form.",
+            /load|network|script|blocked|csp|failed/i.test(message)
+              ? BLOCKED_MESSAGE
+              : message,
           );
         }
       }
@@ -70,14 +107,20 @@ export function useSquareCardForm({
     void mount();
 
     return () => {
-      cancelled = true;
+      signal.cancelled = true;
       const card = cardRef.current;
       cardRef.current = null;
       void card?.destroy();
-      setReady(false);
-      onReadyChange?.(false);
+      setReadySafe(false);
     };
-  }, [applicationId, locationId, disabled, containerId, onReadyChange]);
+  }, [
+    applicationId,
+    locationId,
+    disabled,
+    containerId,
+    retryToken,
+    setReadySafe,
+  ]);
 
   async function tokenize(details: SquareVerificationDetails): Promise<string> {
     const card = cardRef.current;
@@ -96,20 +139,32 @@ export function useSquareCardForm({
     throw new Error(message);
   }
 
+  function retry() {
+    setError(null);
+    setReadySafe(false);
+    setRetryToken((token) => token + 1);
+  }
+
   return {
     containerId,
     ready,
     error,
     tokenize,
+    retry,
   };
 }
 
 type SquareCardSlotProps = {
   containerId: string;
   error: string | null;
+  onRetry?: () => void;
 };
 
-export function SquareCardSlot({ containerId, error }: SquareCardSlotProps) {
+export function SquareCardSlot({
+  containerId,
+  error,
+  onRetry,
+}: SquareCardSlotProps) {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-foreground" htmlFor={containerId}>
@@ -119,7 +174,22 @@ export function SquareCardSlot({ containerId, error }: SquareCardSlotProps) {
         id={containerId}
         className="min-h-[56px] rounded-md border border-border bg-surface-elevated px-3 py-2"
       />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div className="space-y-2">
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="text-sm font-medium text-foreground underline underline-offset-2"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

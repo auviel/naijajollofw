@@ -68,6 +68,7 @@ export function CheckoutClient({
   const router = useRouter();
   const { error: toastError } = useToast();
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [scriptFailed, setScriptFailed] = useState(false);
   const [customerName, setCustomerName] = useState(initialCustomerName);
   const [customerPhone, setCustomerPhone] = useState(initialCustomerPhone);
   const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
@@ -114,6 +115,21 @@ export function CheckoutClient({
       initialCart.items.length === 0 ||
       (mustSchedule && !scheduledFor),
   });
+
+  useEffect(() => {
+    if (!configured || simulatePayments || scriptLoaded || scriptFailed) {
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      if (!window.Square) {
+        setScriptFailed(true);
+        setFormError(
+          "Could not load Square. Firefox tracking protection or an ad blocker may be blocking it — allow squarecdn.com and refresh.",
+        );
+      }
+    }, 12_000);
+    return () => window.clearTimeout(timeout);
+  }, [configured, simulatePayments, scriptLoaded, scriptFailed]);
 
   useEffect(() => {
     if (fulfillmentType !== "delivery") {
@@ -320,10 +336,17 @@ export function CheckoutClient({
         <Script
           src={squareSrc}
           strategy="afterInteractive"
-          onLoad={() => setScriptLoaded(true)}
-          onError={() =>
-            setFormError("Could not load Square. Check your connection.")
-          }
+          onLoad={() => {
+            setScriptLoaded(true);
+            setScriptFailed(false);
+          }}
+          onError={() => {
+            setScriptLoaded(false);
+            setScriptFailed(true);
+            setFormError(
+              "Could not load Square. Firefox tracking protection or an ad blocker may be blocking it — allow squarecdn.com and refresh.",
+            );
+          }}
         />
       ) : null}
 
@@ -634,6 +657,7 @@ export function CheckoutClient({
               <AddressAutocomplete
                 value={address}
                 onChange={setAddress}
+                autoComplete="shipping street-address"
                 placeholder="Start typing your address"
                 verified={addressVerified && fulfillmentType === "delivery"}
                 isVerifying={isGeocoding}
@@ -650,7 +674,7 @@ export function CheckoutClient({
                 type="text"
                 value={addressUnit}
                 onChange={(e) => setAddressUnit(e.target.value)}
-                autoComplete="address-line2"
+                autoComplete="shipping address-line2"
                 maxLength={40}
                 placeholder="e.g. Apt 4, Unit 12"
                 className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
@@ -683,7 +707,11 @@ export function CheckoutClient({
             No card required in test mode.
           </p>
         ) : configured ? (
-          <SquareCardSlot containerId={cardForm.containerId} error={cardForm.error} />
+          <SquareCardSlot
+            containerId={cardForm.containerId}
+            error={cardForm.error}
+            onRetry={cardForm.retry}
+          />
         ) : null}
       </section>
 

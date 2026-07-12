@@ -21,7 +21,7 @@ import type {
 type CustomerWithRelations = Customer & {
   phones: CustomerPhone[];
   addresses: CustomerAddress[];
-  _count: { deliveries: number };
+  _count: { deliveries: number; orders: number };
 };
 
 const customerInclude = {
@@ -29,9 +29,9 @@ const customerInclude = {
     orderBy: [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }],
   },
   addresses: {
-    orderBy: [{ isPrimary: "desc" as const }, { createdAt: "desc" as const }],
+    orderBy: [{ isPrimary: "desc" as const }, { updatedAt: "desc" as const }],
   },
-  _count: { select: { deliveries: true } },
+  _count: { select: { deliveries: true, orders: true } },
 } satisfies Prisma.CustomerInclude;
 
 function pickPrimaryPhone(phones: CustomerPhone[]): CustomerPhone | null {
@@ -54,6 +54,7 @@ export function mapCustomerToListItem(customer: CustomerWithRelations): Customer
     phoneCount: customer.phones.length,
     addressCount: customer.addresses.length,
     deliveryCount: customer._count.deliveries,
+    orderCount: customer._count.orders,
     updatedAt: customer.updatedAt,
   };
 }
@@ -86,6 +87,7 @@ export function mapCustomerToDetail(customer: CustomerWithRelations): CustomerDe
       createdAt: address.createdAt,
     })),
     deliveryCount: customer._count.deliveries,
+    orderCount: customer._count.orders,
     createdAt: customer.createdAt,
     updatedAt: customer.updatedAt,
   };
@@ -381,5 +383,157 @@ export const customerRepository = {
       data,
       include: customerInclude,
     });
+  },
+
+  async createFromContact(input: {
+    storeId: string;
+    name: string;
+    phoneE164: string;
+  }): Promise<CustomerWithRelations> {
+    return prisma.customer.create({
+      data: {
+        storeId: input.storeId,
+        name: input.name.trim(),
+        phones: {
+          create: {
+            storeId: input.storeId,
+            phoneE164: input.phoneE164,
+            isPrimary: true,
+          },
+        },
+      },
+      include: customerInclude,
+    });
+  },
+
+  async listAddresses(customerId: string) {
+    return prisma.customerAddress.findMany({
+      where: { customerId },
+      orderBy: [{ isPrimary: "desc" }, { updatedAt: "desc" }],
+    });
+  },
+
+  async findAddressForCustomer(id: string, customerId: string) {
+    return prisma.customerAddress.findFirst({
+      where: { id, customerId },
+    });
+  },
+
+  async createAddress(
+    customerId: string,
+    data: {
+      line1: string;
+      line2?: string | null;
+      city: string;
+      province: string;
+      postalCode: string;
+      country?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+      formatted: string;
+      label?: string | null;
+      isPrimary?: boolean;
+    },
+  ) {
+    const makePrimary = Boolean(data.isPrimary);
+    return prisma.$transaction(async (tx) => {
+      if (makePrimary) {
+        await tx.customerAddress.updateMany({
+          where: { customerId, isPrimary: true },
+          data: { isPrimary: false },
+        });
+      }
+      const count = await tx.customerAddress.count({ where: { customerId } });
+      return tx.customerAddress.create({
+        data: {
+          customerId,
+          line1: data.line1,
+          line2: data.line2 ?? null,
+          city: data.city,
+          province: data.province,
+          postalCode: data.postalCode,
+          country: data.country ?? "CA",
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
+          formatted: data.formatted,
+          label: data.label ?? null,
+          isPrimary: makePrimary || count === 0,
+        },
+      });
+    });
+  },
+
+  async updateAddress(
+    id: string,
+    customerId: string,
+    data: {
+      line1?: string;
+      line2?: string | null;
+      city?: string;
+      province?: string;
+      postalCode?: string;
+      country?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+      formatted?: string;
+      label?: string | null;
+      isPrimary?: boolean;
+    },
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.customerAddress.findFirst({
+        where: { id, customerId },
+      });
+      if (!existing) {
+        return null;
+      }
+      if (data.isPrimary) {
+        await tx.customerAddress.updateMany({
+          where: { customerId, isPrimary: true, NOT: { id } },
+          data: { isPrimary: false },
+        });
+      }
+      return tx.customerAddress.update({
+        where: { id },
+        data: {
+          ...(data.line1 !== undefined ? { line1: data.line1 } : {}),
+          ...(data.line2 !== undefined ? { line2: data.line2 } : {}),
+          ...(data.city !== undefined ? { city: data.city } : {}),
+          ...(data.province !== undefined ? { province: data.province } : {}),
+          ...(data.postalCode !== undefined
+            ? { postalCode: data.postalCode }
+            : {}),
+          ...(data.country !== undefined ? { country: data.country } : {}),
+          ...(data.latitude !== undefined ? { latitude: data.latitude } : {}),
+          ...(data.longitude !== undefined ? { longitude: data.longitude } : {}),
+          ...(data.formatted !== undefined ? { formatted: data.formatted } : {}),
+          ...(data.label !== undefined ? { label: data.label } : {}),
+          ...(data.isPrimary !== undefined ? { isPrimary: data.isPrimary } : {}),
+        },
+      });
+    });
+  },
+
+  async deleteAddress(id: string, customerId: string) {
+    const existing = await prisma.customerAddress.findFirst({
+      where: { id, customerId },
+    });
+    if (!existing) {
+      return null;
+    }
+    await prisma.customerAddress.delete({ where: { id } });
+    if (existing.isPrimary) {
+      const next = await prisma.customerAddress.findFirst({
+        where: { customerId },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (next) {
+        await prisma.customerAddress.update({
+          where: { id: next.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
+    return existing;
   },
 };

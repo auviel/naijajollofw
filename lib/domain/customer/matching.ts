@@ -33,14 +33,29 @@ export function namesMatch(left: string, right: string): boolean {
 }
 
 export function addressesMatch(
-  left: Pick<NormalizedAddress, "line1" | "postalCode" | "latitude" | "longitude">,
-  right: Pick<NormalizedAddress, "line1" | "postalCode" | "latitude" | "longitude">,
+  left: Pick<NormalizedAddress, "line1" | "postalCode" | "latitude" | "longitude"> & {
+    latitude?: number | null;
+    longitude?: number | null;
+  },
+  right: Pick<NormalizedAddress, "line1" | "postalCode" | "latitude" | "longitude"> & {
+    latitude?: number | null;
+    longitude?: number | null;
+  },
 ): boolean {
   if (
     normalizePostalCode(left.postalCode) === normalizePostalCode(right.postalCode) &&
     normalizeAddressLine1(left.line1) === normalizeAddressLine1(right.line1)
   ) {
     return true;
+  }
+
+  if (
+    left.latitude == null ||
+    left.longitude == null ||
+    right.latitude == null ||
+    right.longitude == null
+  ) {
+    return false;
   }
 
   const distanceMeters = haversineMeters(

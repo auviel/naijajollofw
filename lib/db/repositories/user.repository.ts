@@ -22,6 +22,7 @@ export const userRepository = {
     name: string;
     passwordHash: string;
     phoneE164: string;
+    customerId?: string | null;
   }) {
     return prisma.user.create({
       data: {
@@ -31,8 +32,22 @@ export const userRepository = {
         passwordHash: input.passwordHash,
         phoneE164: input.phoneE164,
         role: "DINER",
+        customerId: input.customerId ?? null,
       },
       include: { store: true },
+    });
+  },
+
+  async findByCustomerId(customerId: string) {
+    return prisma.user.findUnique({
+      where: { customerId },
+    });
+  },
+
+  async linkCustomer(userId: string, customerId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { customerId },
     });
   },
 

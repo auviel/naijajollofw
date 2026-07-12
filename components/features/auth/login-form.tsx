@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { validateLoginFields } from "@/lib/domain/delivery/form-validation";
+import { safeCallbackUrl } from "@/lib/utils/safe-callback-url";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -20,14 +21,14 @@ type ChallengeResponse = {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawCallback = searchParams.get("callbackUrl") ?? "/dashboard";
-  const callbackUrl =
-    rawCallback.startsWith("/") && !rawCallback.startsWith("//")
-      ? rawCallback
-      : "/dashboard";
+  const callbackUrl = safeCallbackUrl(
+    searchParams.get("callbackUrl"),
+    "/dashboard",
+  );
 
   const [email, setEmail] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [requiresTurnstile, setRequiresTurnstile] = useState(false);
   const [ipBlocked, setIpBlocked] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
@@ -115,6 +116,7 @@ export function LoginForm() {
         "Invalid email or password. Check your credentials and try again.",
       );
       setTurnstileToken(null);
+      setTurnstileResetKey((key) => key + 1);
       await refreshChallenge(emailValue);
       return;
     }
@@ -156,6 +158,7 @@ export function LoginForm() {
         <TurnstileField
           key={`login-turnstile-${email}`}
           siteKey={turnstileSiteKey}
+          resetKey={turnstileResetKey}
           onToken={setTurnstileToken}
         />
       ) : null}

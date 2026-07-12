@@ -11,6 +11,7 @@ type AddressAutocompleteProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /** HTML autocomplete token(s). Defaults to street-address so Chrome/Safari Autofill works. */
   autoComplete?: string;
   disabled?: boolean;
   verified?: boolean;
@@ -29,7 +30,7 @@ export function AddressAutocomplete({
   value,
   onChange,
   placeholder,
-  autoComplete = "off",
+  autoComplete = "street-address",
   disabled,
   verified = false,
   isVerifying = false,
@@ -37,14 +38,49 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const skipNextSuggestRef = useRef(false);
   const userEditedRef = useRef(false);
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  valueRef.current = value;
+  onChangeRef.current = onChange;
 
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  function applyValue(nextValue: string, options?: { fromSuggestion?: boolean }) {
+    if (options?.fromSuggestion) {
+      skipNextSuggestRef.current = true;
+    }
+    userEditedRef.current = true;
+    onChange(nextValue);
+    if (nextValue.trim().length < 3) {
+      setSuggestions([]);
+      setIsOpen(false);
+      setActiveIndex(-1);
+      setSuggestError(null);
+    }
+  }
+
+  /** Chrome Autofill often writes the DOM without a React change event. */
+  function syncDomValue() {
+    const el = inputRef.current;
+    if (!el || el.value === valueRef.current) {
+      return;
+    }
+    userEditedRef.current = true;
+    onChangeRef.current(el.value);
+    if (el.value.trim().length < 3) {
+      setSuggestions([]);
+      setIsOpen(false);
+      setActiveIndex(-1);
+      setSuggestError(null);
+    }
+  }
 
   useEffect(() => {
     if (!userEditedRef.current) {
@@ -108,9 +144,33 @@ export function AddressAutocomplete({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) {
+      return;
+    }
+
+    // Chrome fires `change` / `animationstart` on autofill when React `onChange` does not.
+    const onNativeChange = () => syncDomValue();
+    const onAnimationStart = (event: AnimationEvent) => {
+      if (
+        event.animationName === "onAutoFillStart" ||
+        event.animationName.toLowerCase().includes("autofill")
+      ) {
+        syncDomValue();
+      }
+    };
+
+    el.addEventListener("change", onNativeChange);
+    el.addEventListener("animationstart", onAnimationStart);
+    return () => {
+      el.removeEventListener("change", onNativeChange);
+      el.removeEventListener("animationstart", onAnimationStart);
+    };
+  }, []);
+
   function selectSuggestion(suggestion: AddressSuggestion) {
-    skipNextSuggestRef.current = true;
-    onChange(suggestion.label);
+    applyValue(suggestion.label, { fromSuggestion: true });
     setSuggestions([]);
     setIsOpen(false);
     setActiveIndex(-1);
@@ -167,6 +227,7 @@ export function AddressAutocomplete({
         )}
       >
         <input
+          ref={inputRef}
           id={id}
           name={name}
           value={value}
@@ -180,18 +241,9 @@ export function AddressAutocomplete({
           aria-activedescendant={
             activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
           }
-          className="min-w-0 flex-1 bg-transparent px-4 text-base text-foreground placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed"
-          onChange={(event) => {
-            userEditedRef.current = true;
-            const nextValue = event.target.value;
-            onChange(nextValue);
-            if (nextValue.trim().length < 3) {
-              setSuggestions([]);
-              setIsOpen(false);
-              setActiveIndex(-1);
-              setSuggestError(null);
-            }
-          }}
+          className="min-w-0 flex-1 bg-transparent px-4 text-base text-foreground placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed autofill:shadow-[inset_0_0_0_1000px_var(--background)]"
+          onChange={(event) => applyValue(event.target.value)}
+          onBlur={syncDomValue}
           onFocus={() => {
             if (suggestions.length > 0) {
               setIsOpen(true);

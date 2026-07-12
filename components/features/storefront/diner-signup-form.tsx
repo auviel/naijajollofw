@@ -19,6 +19,7 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -64,6 +65,7 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
       if (!response.ok) {
         setError(body.error ?? "Could not create your account.");
         setTurnstileToken(null);
+        setTurnstileResetKey((key) => key + 1);
         setIsLoading(false);
         return;
       }
@@ -137,6 +139,7 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
       {turnstileSiteKey ? (
         <TurnstileField
           siteKey={turnstileSiteKey}
+          resetKey={turnstileResetKey}
           onToken={setTurnstileToken}
         />
       ) : null}

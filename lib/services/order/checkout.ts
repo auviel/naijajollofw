@@ -21,6 +21,7 @@ import { createSquarePayment } from "@/lib/integrations/payments/square/client";
 import {
   isCheckoutSimulatePayments,
 } from "@/lib/integrations/payments/square/config";
+import { resolveCustomerForOrder } from "@/lib/services/customer/ensure-customer-for-diner";
 import { readCartSessionId } from "@/lib/services/cart/session";
 import {
   getPublicStoreHoursSchedule,
@@ -211,9 +212,18 @@ export async function checkoutWithSquare(
   }
 
   try {
+    const customerId = await resolveCustomerForOrder({
+      storeId,
+      name: customerName,
+      phoneE164: phone,
+      dinerUserId: diner?.id ?? null,
+    });
+
     const order = await orderRepository.createPaidOrder({
       storeId,
       userId: diner?.id ?? null,
+      customerId,
+      source: "storefront",
       fulfillmentType: parsed.fulfillmentType,
       customerName,
       customerPhone: phone,

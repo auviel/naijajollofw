@@ -14,8 +14,8 @@ export type CustomerAddressRecord = {
   province: string;
   postalCode: string;
   country: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   formatted: string;
   label: string | null;
   isPrimary: boolean;
@@ -30,6 +30,7 @@ export type CustomerListItem = {
   phoneCount: number;
   addressCount: number;
   deliveryCount: number;
+  orderCount: number;
   updatedAt: Date;
 };
 
@@ -52,6 +53,7 @@ export type CustomerDetail = {
   phones: CustomerPhoneRecord[];
   addresses: CustomerAddressRecord[];
   deliveryCount: number;
+  orderCount: number;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -8,6 +8,7 @@ import { TurnstileField } from "@/components/features/storefront/turnstile-field
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { safeCallbackUrl } from "@/lib/utils/safe-callback-url";
 
 type ChallengeResponse = {
   data?: {
@@ -20,10 +21,14 @@ type ChallengeResponse = {
 export function DinerSigninForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/account";
+  const callbackUrl = safeCallbackUrl(
+    searchParams.get("callbackUrl"),
+    "/account",
+  );
 
   const [email, setEmail] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [requiresTurnstile, setRequiresTurnstile] = useState(false);
   const [ipBlocked, setIpBlocked] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
@@ -104,11 +109,12 @@ export function DinerSigninForm() {
     if (result?.error) {
       setError("Invalid email or password.");
       setTurnstileToken(null);
+      setTurnstileResetKey((key) => key + 1);
       await refreshChallenge(emailValue);
       return;
     }
 
-    router.push(callbackUrl.startsWith("/") ? callbackUrl : "/account");
+    router.push(callbackUrl);
     router.refresh();
   }
 
@@ -149,6 +155,7 @@ export function DinerSigninForm() {
         <TurnstileField
           key={`signin-turnstile-${email}`}
           siteKey={turnstileSiteKey}
+          resetKey={turnstileResetKey}
           onToken={setTurnstileToken}
         />
       ) : null}

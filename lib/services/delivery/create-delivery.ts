@@ -18,15 +18,18 @@ import type { ProviderDelivery, ProviderQuoteRequest } from "@/lib/integrations/
 import { upsertCustomerFromDropoff } from "@/lib/services/customer/upsert-from-dropoff";
 import { buildProofUpdate } from "@/lib/services/delivery/sync-from-provider";
 import { geocodeAddress } from "@/lib/services/geocoding/geocode-address";
+import { orderRepository } from "@/lib/db/repositories/order.repository";
 import { AppError, isAppError } from "@/lib/utils/errors";
 import { generateDeliveryExternalId } from "@/lib/utils/id";
 import { logger } from "@/lib/utils/logger";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
+import type { OrderSource } from "@prisma/client";
 
 export type CreateDeliveryResult = {
   id: string;
   externalId: string;
   trackingUrl?: string;
+  orderId?: string;
 };
 
 export async function createDeliveryForStore(
@@ -44,7 +47,7 @@ export async function createDeliveryForStore(
 
 export async function createDelivery(input: unknown): Promise<CreateDeliveryResult> {
   const { store } = await requireSessionContext();
-  return createDeliveryWithStore(store, input);
+  return createDeliveryWithStore(store, input, { source: "dashboard" });
 }
 
 async function createDeliveryWithStore(
@@ -198,9 +201,33 @@ async function createDeliveryWithStore(
     liveMode: delivery.liveMode,
   });
 
+  // Standalone courier jobs always own an Order. Restaurant fulfill path
+  // (source "order") already has an Order and links separately.
+  let orderId: string | undefined;
+  const source = options?.source ?? "dashboard";
+  if (source !== "order") {
+    const orderSource: OrderSource =
+      source === "whatsapp" ? "whatsapp" : "dashboard";
+    const order = await orderRepository.createCourierOrder({
+      storeId: store.id,
+      customerId,
+      source: orderSource,
+      customerName: parsed.dropoffName.trim(),
+      customerPhone: dropoffPhone,
+      dropoffAddress: geocoded.address.formatted,
+      dropoffLat: geocoded.address.latitude,
+      dropoffLng: geocoded.address.longitude,
+      deliveryId: delivery.id,
+      deliveryStatus: delivery.status,
+      actor: source === "whatsapp" ? "whatsapp" : "staff",
+    });
+    orderId = order.id;
+  }
+
   return {
     id: delivery.id,
     externalId: delivery.externalId,
     trackingUrl: delivery.trackingUrl ?? undefined,
+    orderId,
   };
 }
