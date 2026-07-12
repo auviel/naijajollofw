@@ -19,11 +19,11 @@ export async function changeDinerPassword(input: unknown): Promise<void> {
   const diner = await requireVerifiedDiner();
   const parsed = dinerChangePasswordSchema.parse(input);
 
-  if (!passwordsMatch(parsed.password, parsed.confirmPassword)) {
+  if (!passwordsMatch(parsed.newPassword, parsed.confirmPassword)) {
     throw new AppError("VALIDATION_ERROR", "Passwords do not match.", 400);
   }
 
-  await assertPasswordNotPwned(parsed.password);
+  await assertPasswordNotPwned(parsed.newPassword);
 
   const user = await userRepository.findById(diner.id);
   if (!user || user.role !== "DINER") {
@@ -42,7 +42,7 @@ export async function changeDinerPassword(input: unknown): Promise<void> {
     );
   }
 
-  const passwordHash = await bcrypt.hash(parsed.password, 12);
+  const passwordHash = await bcrypt.hash(parsed.newPassword, 12);
   // sessionVersion increments inside updatePasswordHash
   await userRepository.updatePasswordHash(user.id, passwordHash);
 }

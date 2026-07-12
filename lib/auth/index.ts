@@ -17,19 +17,14 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(1),
   turnstileToken: z.string().optional(),
 });
 
-/**
- * Not a credential for any account. Missing-user login paths still run
- * bcrypt.compare against this so timing doesn't leak whether an email exists.
- */
-const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
-  "delivergo-timing-oracle-dummy",
-  12,
-);
+/** Precomputed bcrypt hash so missing-user paths still pay compare cost. */
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -41,29 +36,29 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         turnstileToken: { label: "Turnstile", type: "text" },
       },
       authorize: async (credentials) => {
-        const parsed = credentialsSchema.safeParse(credentials);
-        if (!parsed.success) {
-          return null;
-        }
+        try {
+          const parsed = credentialsSchema.safeParse(credentials);
+          if (!parsed.success) {
+            return null;
+          }
 
-        const email = parsed.data.email.toLowerCase();
-        const ip = await getRequestIp();
-        const challenge = await getLoginChallengeState(email, ip);
+          const email = parsed.data.email.toLowerCase();
+          const ip = await getRequestIp();
+          const challenge = await getLoginChallengeState(email, ip);
 
-        if (challenge.ipBlocked) {
-          logger.info("auth.login_ip_blocked");
-          return null;
-        }
+          if (challenge.ipBlocked) {
+            logger.info("auth.login_ip_blocked");
+            return null;
+          }
 
-        if (challenge.requiresTurnstile) {
-          if (!isTurnstileEnabled()) {
-            if (process.env.NODE_ENV === "production") {
-              logger.error("auth.turnstile_required_but_misconfigured");
-              return null;
-            }
-          } else {
+          // Only enforce Turnstile when Siteverify is actually configured.
+          // Never lock out users when the secret/site key is missing.
+          if (challenge.requiresTurnstile && isTurnstileEnabled()) {
             try {
-              await verifyTurnstileToken(parsed.data.turnstileToken, ip);
+              await verifyTurnstileToken(
+                parsed.data.turnstileToken || undefined,
+                ip,
+              );
             } catch (error) {
               if (!isAppError(error) || error.code !== "VALIDATION_ERROR") {
                 logger.info("auth.turnstile_failed_on_login");
@@ -72,31 +67,34 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
               return null;
             }
           }
-        }
 
-        const user = await userRepository.findByEmail(email);
-        const passwordValid = await bcrypt.compare(
-          parsed.data.password,
-          user?.passwordHash ?? DUMMY_PASSWORD_HASH,
-        );
+          const user = await userRepository.findByEmail(email);
+          const passwordValid = await bcrypt.compare(
+            parsed.data.password,
+            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+          );
 
-        if (!user || !passwordValid) {
-          await recordLoginFailure(email, ip);
+          if (!user || !passwordValid) {
+            await recordLoginFailure(email, ip);
+            return null;
+          }
+
+          await clearLoginFailures(email, ip);
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            storeId: user.storeId,
+            storeName: user.store?.name ?? "Store",
+            role: user.role as UserRole,
+            phoneE164: user.phoneE164 ?? null,
+            sessionVersion: user.sessionVersion ?? 0,
+          };
+        } catch (error) {
+          logger.error("auth.authorize_unexpected", { error });
           return null;
         }
-
-        await clearLoginFailures(email, ip);
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          storeId: user.storeId,
-          storeName: user.store.name,
-          role: user.role as UserRole,
-          phoneE164: user.phoneE164 ?? null,
-          sessionVersion: user.sessionVersion ?? 0,
-        };
       },
     }),
   ],

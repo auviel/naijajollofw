@@ -23,9 +23,9 @@ export function DinerSigninForm() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/account";
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [requiresTurnstile, setRequiresTurnstile] = useState(false);
+  const [ipBlocked, setIpBlocked] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +34,7 @@ export function DinerSigninForm() {
     const trimmed = nextEmail.trim();
     if (!trimmed.includes("@")) {
       setRequiresTurnstile(false);
+      setIpBlocked(false);
       return;
     }
     try {
@@ -47,6 +48,7 @@ export function DinerSigninForm() {
         return;
       }
       setRequiresTurnstile(Boolean(body.data?.requiresTurnstile));
+      setIpBlocked(Boolean(body.data?.ipBlocked));
       setTurnstileSiteKey(body.data?.turnstileSiteKey ?? null);
       if (!body.data?.requiresTurnstile) {
         setTurnstileToken(null);
@@ -67,6 +69,22 @@ export function DinerSigninForm() {
     event.preventDefault();
     setError(null);
 
+    // Read from the DOM so Safari/Chrome autofill is included (controlled
+    // React state often stays empty when the browser fills the fields).
+    const formData = new FormData(event.currentTarget);
+    const emailValue = String(formData.get("email") ?? "").trim();
+    const passwordValue = String(formData.get("password") ?? "");
+
+    if (!emailValue || !passwordValue) {
+      setError("Enter your email and password.");
+      return;
+    }
+
+    if (ipBlocked) {
+      setError("Too many sign-in attempts. Try again in about 15 minutes.");
+      return;
+    }
+
     if (requiresTurnstile && turnstileSiteKey && !turnstileToken) {
       setError("Complete the security check and try again.");
       return;
@@ -75,9 +93,9 @@ export function DinerSigninForm() {
     setIsLoading(true);
 
     const result = await signIn("credentials", {
-      email,
-      password,
-      turnstileToken: turnstileToken ?? undefined,
+      email: emailValue,
+      password: passwordValue,
+      turnstileToken: turnstileToken ?? "",
       redirect: false,
     });
 
@@ -86,7 +104,7 @@ export function DinerSigninForm() {
     if (result?.error) {
       setError("Invalid email or password.");
       setTurnstileToken(null);
-      await refreshChallenge(email);
+      await refreshChallenge(emailValue);
       return;
     }
 
@@ -114,8 +132,7 @@ export function DinerSigninForm() {
           name="password"
           type="password"
           autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          defaultValue=""
           required
         />
       </FormField>

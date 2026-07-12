@@ -44,6 +44,8 @@ type CheckoutClientProps = {
   initialCustomerName?: string;
   initialCustomerPhone?: string;
   initialCustomerEmail?: string;
+  initialDeliveryAddress?: string;
+  initialDeliveryUnit?: string;
 };
 
 export function CheckoutClient({
@@ -60,6 +62,8 @@ export function CheckoutClient({
   initialCustomerName = "",
   initialCustomerPhone = "",
   initialCustomerEmail = "",
+  initialDeliveryAddress = "",
+  initialDeliveryUnit = "",
 }: CheckoutClientProps) {
   const router = useRouter();
   const { error: toastError } = useToast();
@@ -71,8 +75,8 @@ export function CheckoutClient({
     "pickup",
   );
   const [notes, setNotes] = useState("");
-  const [address, setAddress] = useState("");
-  const [addressUnit, setAddressUnit] = useState("");
+  const [address, setAddress] = useState(initialDeliveryAddress);
+  const [addressUnit, setAddressUnit] = useState(initialDeliveryUnit);
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(null);
   const [verifiedAddress, setVerifiedAddress] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);

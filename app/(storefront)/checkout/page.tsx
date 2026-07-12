@@ -2,6 +2,7 @@ import { CheckoutClient } from "@/components/features/storefront/checkout-client
 import { getOptionalSessionUser } from "@/lib/auth/session";
 import { phoneE164ToFormValue } from "@/lib/domain/customer/format";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
+import { userAddressRepository } from "@/lib/db/repositories/user-address.repository";
 import {
   getSquareApplicationId,
   getSquareEnvironment,
@@ -36,6 +37,12 @@ export default async function CheckoutPage() {
       ? sessionUser
       : null;
 
+  const addresses = diner
+    ? await userAddressRepository.listForUser(diner.id)
+    : [];
+  const defaultAddress =
+    addresses.find((item) => item.isDefault) ?? addresses[0] ?? null;
+
   return (
     <div className="mx-auto w-full max-w-3xl">
       <CheckoutClient
@@ -54,6 +61,8 @@ export default async function CheckoutPage() {
           diner?.phoneE164 ? phoneE164ToFormValue(diner.phoneE164) : ""
         }
         initialCustomerEmail={diner?.email ?? ""}
+        initialDeliveryAddress={defaultAddress?.formatted ?? ""}
+        initialDeliveryUnit={defaultAddress?.line2 ?? ""}
       />
     </div>
   );

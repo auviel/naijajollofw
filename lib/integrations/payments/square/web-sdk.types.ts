@@ -11,9 +11,9 @@ export type SquareCard = {
 };
 
 export type SquareVerificationDetails = {
-  amount: string;
-  currencyCode: string;
-  intent: "CHARGE";
+  amount?: string;
+  currencyCode?: string;
+  intent: "CHARGE" | "STORE";
   customerInitiated: boolean;
   sellerKeyedIn: boolean;
   billingContact?: {

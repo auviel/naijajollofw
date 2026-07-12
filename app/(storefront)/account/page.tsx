@@ -1,88 +1,81 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DinerChangePasswordForm } from "@/components/features/storefront/diner-change-password-form";
-import { DinerSignOutButton } from "@/components/features/storefront/diner-sign-out-button";
-import { EmailVerifyBanner } from "@/components/features/storefront/email-verify-banner";
 import { requireDiner } from "@/lib/auth/session";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
+import { userAddressRepository } from "@/lib/db/repositories/user-address.repository";
 import {
   mapOrderToPublicView,
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
-import { userRepository } from "@/lib/db/repositories/user.repository";
+import { canManageSquareCards } from "@/lib/integrations/payments/square/cards";
 import { formatCadFromCents } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
   title: "Account",
-  description: "Your Naija Jollof Waterloo account and orders.",
+  description: "Your Naija Jollof Waterloo account overview.",
 };
 
-export default async function AccountPage() {
-  const sessionUser = await requireDiner();
-  const [dbUser, orders] = await Promise.all([
-    userRepository.findById(sessionUser.id),
-    orderRepository.findManyForUser(sessionUser.id, 20),
+export default async function AccountOverviewPage() {
+  const user = await requireDiner();
+  const [orders, addresses] = await Promise.all([
+    orderRepository.findManyForUser(user.id, 5),
+    userAddressRepository.listForUser(user.id),
   ]);
   const views = orders.map((order) => mapOrderToPublicView(order));
-  const emailVerified = Boolean(dbUser?.emailVerifiedAt);
+  const cardsAvailable = canManageSquareCards();
 
   return (
-    <section className="mx-auto w-full max-w-2xl py-8 sm:py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-            Account
-          </h1>
-          <p className="mt-2 text-sm text-text-secondary">
-            {sessionUser.name}
-            <span aria-hidden className="mx-2 text-border-strong">
-              ·
-            </span>
-            {sessionUser.email}
-            {sessionUser.phoneE164 ? (
-              <>
-                <span aria-hidden className="mx-2 text-border-strong">
-                  ·
-                </span>
-                {formatPhoneForDisplay(sessionUser.phoneE164)}
-              </>
-            ) : null}
-          </p>
-        </div>
-        <DinerSignOutButton />
+    <section className="space-y-8">
+      <div>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+          Overview
+        </h1>
+        <p className="mt-2 text-sm text-text-secondary">
+          {user.email}
+          {user.phoneE164 ? (
+            <>
+              <span aria-hidden className="mx-2 text-border-strong">
+                ·
+              </span>
+              {formatPhoneForDisplay(user.phoneE164)}
+            </>
+          ) : null}
+        </p>
       </div>
 
-      {!emailVerified ? (
-        <EmailVerifyBanner email={sessionUser.email} />
-      ) : null}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewStat label="Recent orders" value={String(views.length)} href="/account/orders" />
+        <OverviewStat
+          label="Saved addresses"
+          value={String(addresses.length)}
+          href="/account/address"
+        />
+        <OverviewStat
+          label="Payment"
+          value={cardsAvailable ? "Manage cards" : "Unavailable"}
+          href="/account/payment"
+        />
+      </div>
 
-      <section className="mt-10" aria-labelledby="security-heading">
-        <h2
-          id="security-heading"
-          className="font-display text-xl font-semibold text-foreground"
-        >
-          Security
-        </h2>
-        <div className="mt-4 rounded-2xl border border-border bg-background p-5 sm:p-6">
-          <DinerChangePasswordForm emailVerified={emailVerified} />
+      <section aria-labelledby="recent-orders-heading">
+        <div className="flex items-center justify-between gap-3">
+          <h2
+            id="recent-orders-heading"
+            className="font-display text-xl font-semibold text-foreground"
+          >
+            Recent orders
+          </h2>
+          <Link
+            href="/account/orders"
+            className="text-sm font-medium text-accent no-underline hover:underline"
+          >
+            View all
+          </Link>
         </div>
-      </section>
-
-      <section className="mt-10" aria-labelledby="orders-heading">
-        <h2
-          id="orders-heading"
-          className="font-display text-xl font-semibold text-foreground"
-        >
-          Your orders
-        </h2>
-
         {views.length === 0 ? (
           <p className="mt-4 text-sm text-text-secondary">
             No orders yet.{" "}
-            <Link
-              href="/#menu"
-              className="font-medium text-accent no-underline hover:underline"
-            >
+            <Link href="/#menu" className="font-medium text-accent no-underline hover:underline">
               Browse the menu
             </Link>
           </p>
@@ -105,12 +98,6 @@ export default async function AccountPage() {
                             timeStyle: "short",
                           })
                         : "Placed recently"}
-                      <span aria-hidden className="mx-1.5">
-                        ·
-                      </span>
-                      {order.fulfillmentType === "delivery"
-                        ? "Delivery"
-                        : "Pickup"}
                     </p>
                   </div>
                   <p className="text-sm font-medium text-foreground tabular-nums">
@@ -123,5 +110,27 @@ export default async function AccountPage() {
         )}
       </section>
     </section>
+  );
+}
+
+function OverviewStat({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-xl border border-border bg-surface-elevated px-4 py-3 no-underline transition-colors hover:border-border-strong"
+    >
+      <p className="text-xs font-medium tracking-wide text-text-tertiary uppercase">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
+    </Link>
   );
 }

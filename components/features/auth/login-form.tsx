@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 type ChallengeResponse = {
   data?: {
     requiresTurnstile?: boolean;
+    ipBlocked?: boolean;
     turnstileSiteKey?: string | null;
   };
 };
@@ -26,9 +27,9 @@ export function LoginForm() {
       : "/dashboard";
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [requiresTurnstile, setRequiresTurnstile] = useState(false);
+  const [ipBlocked, setIpBlocked] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<"email" | "password", string>>
@@ -40,6 +41,7 @@ export function LoginForm() {
     const trimmed = nextEmail.trim();
     if (!trimmed.includes("@")) {
       setRequiresTurnstile(false);
+      setIpBlocked(false);
       return;
     }
     try {
@@ -53,6 +55,7 @@ export function LoginForm() {
         return;
       }
       setRequiresTurnstile(Boolean(body.data?.requiresTurnstile));
+      setIpBlocked(Boolean(body.data?.ipBlocked));
       setTurnstileSiteKey(body.data?.turnstileSiteKey ?? null);
       if (!body.data?.requiresTurnstile) {
         setTurnstileToken(null);
@@ -73,9 +76,21 @@ export function LoginForm() {
     event.preventDefault();
     setError(null);
 
-    const validation = validateLoginFields({ email, password });
+    const formData = new FormData(event.currentTarget);
+    const emailValue = String(formData.get("email") ?? "").trim();
+    const passwordValue = String(formData.get("password") ?? "");
+
+    const validation = validateLoginFields({
+      email: emailValue,
+      password: passwordValue,
+    });
     setFieldErrors(validation);
     if (Object.keys(validation).length > 0) {
+      return;
+    }
+
+    if (ipBlocked) {
+      setError("Too many sign-in attempts. Try again in about 15 minutes.");
       return;
     }
 
@@ -87,18 +102,20 @@ export function LoginForm() {
     setIsLoading(true);
 
     const result = await signIn("credentials", {
-      email,
-      password,
-      turnstileToken: turnstileToken ?? undefined,
+      email: emailValue,
+      password: passwordValue,
+      turnstileToken: turnstileToken ?? "",
       redirect: false,
     });
 
     setIsLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password. Check your credentials and try again.");
+      setError(
+        "Invalid email or password. Check your credentials and try again.",
+      );
       setTurnstileToken(null);
-      await refreshChallenge(email);
+      await refreshChallenge(emailValue);
       return;
     }
 
@@ -131,16 +148,7 @@ export function LoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value);
-            if (fieldErrors.password) {
-              setFieldErrors((current) => ({
-                ...current,
-                password: undefined,
-              }));
-            }
-          }}
+          defaultValue=""
         />
       </FormField>
 
