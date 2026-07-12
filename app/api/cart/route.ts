@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { addCartItemSchema } from "@/lib/domain/cart/validation";
 import { addCartItem, getCart } from "@/lib/services/cart/cart-actions";
+import {
+  CART_ADD_LIMIT,
+  CART_ADD_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { AppError, handleApiError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { handleApiError } from "@/lib/utils/errors";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 
 export async function GET() {
   try {
@@ -16,14 +21,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const rateLimit = checkRateLimit("cart-add:public", 60, 60_000);
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many requests. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "cart-add",
+      ip: getRequestIpFromRequest(request),
+      limit: CART_ADD_LIMIT,
+      windowMs: CART_ADD_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, addCartItemSchema);
     const cart = await addCartItem(body);

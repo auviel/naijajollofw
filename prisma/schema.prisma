@@ -82,21 +82,52 @@ model StoreHours {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  phoneE164    String?
-  role         UserRole @default(STORE_MANAGER)
-  storeId      String
-  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  orders       Order[]
-  passwordResetTokens PasswordResetToken[]
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  phoneE164       String?
+  role            UserRole  @default(STORE_MANAGER)
+  storeId         String
+  store           Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// Set when the diner confirms ownership of their email.
+  emailVerifiedAt DateTime?
+  /// Bumped on password reset to invalidate existing JWTs.
+  sessionVersion  Int       @default(0)
+  /// Square Customer id for vaulted cards (diners only).
+  squareCustomerId String?  @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  orders          Order[]
+  addresses       UserAddress[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@index([storeId])
   @@index([storeId, role])
+}
+
+/// Diner-owned saved delivery addresses (account dashboard).
+model UserAddress {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  line1      String
+  line2      String?
+  city       String
+  province   String
+  postalCode String
+  country    String   @default("CA")
+  latitude   Float?
+  longitude  Float?
+  formatted  String
+  label      String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, isDefault])
 }
 
 model PasswordResetToken {
@@ -110,6 +141,31 @@ model PasswordResetToken {
 
   @@index([tokenHash])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tokenHash])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+/// Durable counters for login friction + auth API rate limits (keyed hashes).
+model AuthChallenge {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  failCount       Int      @default(0)
+  windowStartedAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([updatedAt])
 }
 
 model Customer {

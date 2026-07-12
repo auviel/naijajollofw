@@ -5,9 +5,12 @@ import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
 import { sendEmailInBackground } from "@/lib/integrations/email/send";
 import { buildWelcomeEmail } from "@/lib/integrations/email/templates";
 import { verifyTurnstileToken } from "@/lib/integrations/turnstile/verify";
+import { assertPasswordNotPwned } from "@/lib/integrations/hibp/pwned-passwords";
+import { sendDinerEmailVerification } from "@/lib/services/diner/email-verification";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
+import { logger } from "@/lib/utils/logger";
 
 export type RegisteredDiner = {
   id: string;
@@ -26,6 +29,7 @@ export async function registerDiner(
 ): Promise<RegisteredDiner> {
   const parsed = dinerRegisterSchema.parse(input);
   await verifyTurnstileToken(parsed.turnstileToken, options.remoteIp);
+  await assertPasswordNotPwned(parsed.password);
 
   const phoneE164 = normalizeCanadianPhone(parsed.phone);
   if (!phoneE164) {
@@ -41,7 +45,7 @@ export async function registerDiner(
   if (existing) {
     throw new AppError(
       "CONFLICT",
-      "An account with that email already exists. Sign in instead.",
+      "Could not create this account. If you already have one, sign in instead.",
       409,
     );
   }
@@ -67,6 +71,19 @@ export async function registerDiner(
     text: welcome.text,
     idempotencyKey: `welcome/${user.id}`,
   });
+
+  try {
+    await sendDinerEmailVerification({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    });
+  } catch (error) {
+    logger.error("email_verify.send_on_register_failed", {
+      userId: user.id,
+      error,
+    });
+  }
 
   return {
     id: user.id,

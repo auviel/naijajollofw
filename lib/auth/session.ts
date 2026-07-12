@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth/index";
 import { storeRepository, mapStoreToProfile } from "@/lib/db/repositories/store.repository";
+import { userRepository } from "@/lib/db/repositories/user.repository";
 import { AppError } from "@/lib/utils/errors";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import type { UserRole } from "@/lib/domain/auth/types";
@@ -13,6 +14,8 @@ export type SessionUser = {
   storeName: string;
   role: UserRole;
   phoneE164?: string | null;
+  sessionVersion: number;
+  emailVerifiedAt?: Date | null;
 };
 
 export type SessionContext = {
@@ -33,12 +36,30 @@ function mapSessionUser(session: Session | null | undefined): SessionUser | null
     storeName: session.user.storeName,
     role: session.user.role,
     phoneE164: session.user.phoneE164 ?? null,
+    sessionVersion: session.user.sessionVersion ?? 0,
   };
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const session = (await auth()) as Session | null;
-  return mapSessionUser(session);
+  const mapped = mapSessionUser(session);
+  if (!mapped) {
+    return null;
+  }
+
+  const dbUser = await userRepository.findById(mapped.id);
+  if (!dbUser) {
+    return null;
+  }
+  if (dbUser.sessionVersion !== mapped.sessionVersion) {
+    return null;
+  }
+
+  return {
+    ...mapped,
+    emailVerifiedAt: dbUser.emailVerifiedAt,
+    phoneE164: dbUser.phoneE164 ?? mapped.phoneE164,
+  };
 }
 
 /** Alias for clarity at call sites that treat auth as optional. */
@@ -62,6 +83,19 @@ export async function requireDiner(): Promise<SessionUser> {
   }
   if (user.role !== "DINER") {
     throw new AppError("FORBIDDEN", "Diner account required", 403);
+  }
+  return user;
+}
+
+/** Diner with a verified email — for password/phone and other sensitive actions. */
+export async function requireVerifiedDiner(): Promise<SessionUser> {
+  const user = await requireDiner();
+  if (!user.emailVerifiedAt) {
+    throw new AppError(
+      "FORBIDDEN",
+      "Verify your email before changing account security settings.",
+      403,
+    );
   }
   return user;
 }

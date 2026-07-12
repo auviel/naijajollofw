@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
 import { checkoutRequestSchema } from "@/lib/domain/order/validation";
+import {
+  CHECKOUT_LIMIT,
+  CHECKOUT_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { checkoutWithSquare } from "@/lib/services/order/checkout";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { AppError, handleApiError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { handleApiError } from "@/lib/utils/errors";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 
 export async function POST(request: Request) {
   try {
-    const rateLimit = checkRateLimit("checkout:public", 20, 60_000);
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many requests. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "checkout",
+      ip: getRequestIpFromRequest(request),
+      limit: CHECKOUT_LIMIT,
+      windowMs: CHECKOUT_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, checkoutRequestSchema);
     const result = await checkoutWithSquare(body);

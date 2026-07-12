@@ -15,6 +15,7 @@ function showStorefrontFooter(pathname: string): boolean {
     pathname === "/signup" ||
     pathname === "/forgot-password" ||
     pathname === "/reset-password" ||
+    pathname === "/verify-email" ||
     pathname === "/account" ||
     pathname.startsWith("/account/") ||
     pathname.startsWith("/orders/") ||

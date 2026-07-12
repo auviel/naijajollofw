@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DinerChangePasswordForm } from "@/components/features/storefront/diner-change-password-form";
 import { DinerSignOutButton } from "@/components/features/storefront/diner-sign-out-button";
+import { EmailVerifyBanner } from "@/components/features/storefront/email-verify-banner";
 import { requireDiner } from "@/lib/auth/session";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
 import {
   mapOrderToPublicView,
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
+import { userRepository } from "@/lib/db/repositories/user.repository";
 import { formatCadFromCents } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
@@ -15,9 +18,13 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
-  const user = await requireDiner();
-  const orders = await orderRepository.findManyForUser(user.id, 20);
+  const sessionUser = await requireDiner();
+  const [dbUser, orders] = await Promise.all([
+    userRepository.findById(sessionUser.id),
+    orderRepository.findManyForUser(sessionUser.id, 20),
+  ]);
   const views = orders.map((order) => mapOrderToPublicView(order));
+  const emailVerified = Boolean(dbUser?.emailVerifiedAt);
 
   return (
     <section className="mx-auto w-full max-w-2xl py-8 sm:py-12">
@@ -27,23 +34,39 @@ export default async function AccountPage() {
             Account
           </h1>
           <p className="mt-2 text-sm text-text-secondary">
-            {user.name}
+            {sessionUser.name}
             <span aria-hidden className="mx-2 text-border-strong">
               ·
             </span>
-            {user.email}
-            {user.phoneE164 ? (
+            {sessionUser.email}
+            {sessionUser.phoneE164 ? (
               <>
                 <span aria-hidden className="mx-2 text-border-strong">
                   ·
                 </span>
-                {formatPhoneForDisplay(user.phoneE164)}
+                {formatPhoneForDisplay(sessionUser.phoneE164)}
               </>
             ) : null}
           </p>
         </div>
         <DinerSignOutButton />
       </div>
+
+      {!emailVerified ? (
+        <EmailVerifyBanner email={sessionUser.email} />
+      ) : null}
+
+      <section className="mt-10" aria-labelledby="security-heading">
+        <h2
+          id="security-heading"
+          className="font-display text-xl font-semibold text-foreground"
+        >
+          Security
+        </h2>
+        <div className="mt-4 rounded-2xl border border-border bg-background p-5 sm:p-6">
+          <DinerChangePasswordForm emailVerified={emailVerified} />
+        </div>
+      </section>
 
       <section className="mt-10" aria-labelledby="orders-heading">
         <h2

@@ -179,6 +179,27 @@ export function buildPasswordResetEmail(input: {
   return { subject, html, text };
 }
 
+export function buildEmailVerificationEmail(input: {
+  name: string;
+  verifyUrl: string;
+}): { subject: string; html: string; text: string } {
+  const first = input.name.trim().split(/\s+/)[0] || "there";
+  const subject = "Verify your email";
+  const reason =
+    "You’re receiving this because you created an account at Naija Jollof Waterloo.";
+  const html = layout({
+    title: subject,
+    reason,
+    bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Confirm your email so we know it’s really you. This link expires in 48 hours.</p>
+     <p style="margin:24px 0 0;">
+       <a href="${escapeHtml(input.verifyUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Verify email</a>
+     </p>`,
+  });
+  const text = `Hi ${first},\n\nVerify your email (expires in 48 hours):\n${input.verifyUrl}\n\n${footerText(reason)}`;
+  return { subject, html, text };
+}
+
 type OrderStatusEmailStatus =
   | "accepted"
   | "ready"

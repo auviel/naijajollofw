@@ -39,8 +39,57 @@ export const userRepository = {
   async updatePasswordHash(userId: string, passwordHash: string) {
     return prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        sessionVersion: { increment: 1 },
+      },
     });
+  },
+
+  async updateSquareCustomerId(userId: string, squareCustomerId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { squareCustomerId },
+    });
+  },
+
+  async updateEmail(userId: string, email: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: email.toLowerCase(),
+        emailVerifiedAt: null,
+        sessionVersion: { increment: 1 },
+      },
+    });
+  },
+
+  async updateProfile(
+    userId: string,
+    data: { name?: string; phoneE164?: string | null },
+  ) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.phoneE164 !== undefined ? { phoneE164: data.phoneE164 } : {}),
+      },
+    });
+  },
+
+  async markEmailVerified(userId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: new Date() },
+    });
+  },
+
+  async getSessionVersion(userId: string): Promise<number | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { sessionVersion: true },
+    });
+    return user?.sessionVersion ?? null;
   },
 };
 

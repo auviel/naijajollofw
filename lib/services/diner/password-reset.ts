@@ -13,6 +13,7 @@ import {
 import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
 import { sendEmailInBackground } from "@/lib/integrations/email/send";
 import { buildPasswordResetEmail } from "@/lib/integrations/email/templates";
+import { assertPasswordNotPwned } from "@/lib/integrations/hibp/pwned-passwords";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -34,7 +35,7 @@ export async function requestDinerPasswordReset(input: unknown): Promise<void> {
   const user = await userRepository.findByEmail(email);
 
   if (!user || user.role !== "DINER") {
-    logger.info("password_reset.skipped_unknown_or_non_diner", { email });
+    logger.info("password_reset.skipped_unknown_or_non_diner");
     return;
   }
 
@@ -68,6 +69,7 @@ export async function resetDinerPassword(input: unknown): Promise<void> {
   if (!passwordsMatch(parsed.password, parsed.confirmPassword)) {
     throw new AppError("VALIDATION_ERROR", "Passwords do not match.", 400);
   }
+  await assertPasswordNotPwned(parsed.password);
 
   const tokenHash = hashPasswordResetToken(parsed.token);
   const record =

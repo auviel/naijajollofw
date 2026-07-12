@@ -23,6 +23,7 @@ const HIDDEN_PREFIXES = [
   "/signup",
   "/forgot-password",
   "/reset-password",
+  "/verify-email",
 ] as const;
 
 function shouldHideNav(pathname: string) {

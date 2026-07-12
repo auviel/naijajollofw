@@ -18,6 +18,7 @@ export const authConfig = {
         token.storeName = user.storeName;
         token.role = user.role;
         token.phoneE164 = user.phoneE164 ?? null;
+        token.sessionVersion = user.sessionVersion ?? 0;
       }
 
       if (trigger === "update" && session?.storeName) {
@@ -32,7 +33,10 @@ export const authConfig = {
         session.user.storeId = token.storeId as string;
         session.user.storeName = token.storeName as string;
         session.user.role = token.role as UserRole;
-        session.user.phoneE164 = (token.phoneE164 as string | null | undefined) ?? null;
+        session.user.phoneE164 =
+          (token.phoneE164 as string | null | undefined) ?? null;
+        session.user.sessionVersion =
+          typeof token.sessionVersion === "number" ? token.sessionVersion : 0;
       }
       return session;
     },
