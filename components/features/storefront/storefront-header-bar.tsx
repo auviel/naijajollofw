@@ -138,7 +138,7 @@ export function StorefrontHeaderBar({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search in ${storeName}`}
-              className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-9 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-foreground/20"
+              className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-9 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
             />
           </label>
         </div>
@@ -169,7 +169,7 @@ export function StorefrontHeaderBar({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search in ${storeName}`}
-              className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-10 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-foreground/20"
+              className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-10 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
             />
           </label>
 

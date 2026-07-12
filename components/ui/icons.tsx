@@ -1,5 +1,6 @@
 import {
   Add01Icon,
+  ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Calendar01Icon,
@@ -7,14 +8,18 @@ import {
   Cancel01Icon,
   ClipboardListIcon,
   Clock01Icon,
+  CookingPotIcon,
   LeftToRightListDashIcon,
   LinkSquare01Icon,
   Location01Icon,
   Package01Icon,
+  RiceBowl01Icon,
   Search01Icon,
   SearchRemoveIcon,
   ShoppingCart01Icon,
+  SoftDrink01Icon,
   SpoonAndForkIcon,
+  StarIcon,
   Store01Icon,
   Tick02Icon,
   UserIcon,
@@ -55,8 +60,31 @@ function createIcon(icon: IconSvgElement, displayName: string) {
   return Icon;
 }
 
+/** Filled (solid) look — free pack is stroke-only; fill the closed paths. */
+function createFilledIcon(icon: IconSvgElement, displayName: string) {
+  function Icon({ className, size, strokeWidth = 0, ...props }: IconProps) {
+    const resolvedSize = size ?? inferSizeFromClassName(className) ?? 24;
+
+    return (
+      <HugeiconsIcon
+        icon={icon}
+        size={resolvedSize}
+        strokeWidth={strokeWidth}
+        color="currentColor"
+        fill="currentColor"
+        className={className}
+        {...props}
+      />
+    );
+  }
+
+  Icon.displayName = displayName;
+  return Icon;
+}
+
 /** Stroke Rounded icons via Hugeicons — Lucide-compatible names for app usage. */
 export const Plus = createIcon(Add01Icon, "Plus");
+export const ArrowDown = createIcon(ArrowDown01Icon, "ArrowDown");
 export const ArrowLeft = createIcon(ArrowLeft01Icon, "ArrowLeft");
 export const Calendar = createIcon(Calendar01Icon, "Calendar");
 export const Call = createIcon(CallIcon, "Call");
@@ -77,3 +105,12 @@ export const User = createIcon(UserIcon, "User");
 export const Users = createIcon(UserMultipleIcon, "Users");
 export const UtensilsCrossed = createIcon(SpoonAndForkIcon, "UtensilsCrossed");
 export const X = createIcon(Cancel01Icon, "X");
+
+/** Menu category icons (filled) */
+export const StarFill = createFilledIcon(StarIcon, "StarFill");
+export const RiceBowlFill = createFilledIcon(RiceBowl01Icon, "RiceBowlFill");
+export const CookingPotFill = createFilledIcon(CookingPotIcon, "CookingPotFill");
+export const SpoonAndForkFill = createFilledIcon(SpoonAndForkIcon, "SpoonAndForkFill");
+export const PackageFill = createFilledIcon(Package01Icon, "PackageFill");
+export const SoftDrinkFill = createFilledIcon(SoftDrink01Icon, "SoftDrinkFill");
+export const CalendarFill = createFilledIcon(Calendar01Icon, "CalendarFill");

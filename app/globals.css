@@ -11,14 +11,15 @@
   --text-secondary: #545454;
   --text-tertiary: #757575;
   --text-inverse: #ffffff;
-  --accent: #000000;
-  --accent-hover: #333333;
-  --accent-subtle: #f6f6f6;
-  --link: #276ef1;
-  --success: #05944f;
+  /* Naija Jollof brand */
+  --accent: #cc5400;
+  --accent-hover: #ad4700;
+  --accent-subtle: #fff1e8;
+  --link: #04542e;
+  --success: #04542e;
   --warning: #f5a623;
   --error: #e11900;
-  --info: #276ef1;
+  --info: #04542e;
   --sandbox-banner: #fff8e6;
   --sandbox-text: #7a5b00;
   --duration-fast: 150ms;
@@ -72,7 +73,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--foreground);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
@@ -80,7 +81,7 @@
   select:focus-visible,
   textarea:focus-visible,
   button:focus-visible {
-    outline: 2px solid var(--foreground);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { displayCategoryName } from "@/components/features/storefront/category-icon";
 import { CategoryRail } from "@/components/features/storefront/category-rail";
 import { ItemDetailModal } from "@/components/features/storefront/item-detail-modal";
 import { ChevronLeft, ChevronRight, Plus } from "@/components/ui/icons";
@@ -48,7 +49,7 @@ export function MenuCatalogBrowse({
                 className="scroll-mt-32 space-y-3"
               >
                 <h2 className="font-display text-lg font-semibold text-foreground lg:text-xl">
-                  {category.name}
+                  {displayCategoryName(category.name)}
                 </h2>
                 {featured ? (
                   <FeaturedCarousel

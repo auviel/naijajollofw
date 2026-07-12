@@ -114,9 +114,9 @@ async function main() {
 
   const categoryDefs = [
     { key: "featured", name: "Featured items", sortOrder: 0 },
-    { key: "popular", name: "⭐ Popular Picks", sortOrder: 1 },
-    { key: "rice", name: "🍛 Rice & Combos", sortOrder: 2 },
-    { key: "soups", name: "🍲 Soups & Stews", sortOrder: 3 },
+    { key: "popular", name: "Popular Picks", sortOrder: 1 },
+    { key: "rice", name: "Rice & Combos", sortOrder: 2 },
+    { key: "soups", name: "Soups & Stews", sortOrder: 3 },
     { key: "sides", name: "Add-Ons & Sides", sortOrder: 4 },
     { key: "family", name: "Family Trays & Bulk Orders", sortOrder: 5 },
     { key: "drinks", name: "Drinks", sortOrder: 6 },

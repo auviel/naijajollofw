@@ -98,6 +98,7 @@ export async function StorefrontFooter() {
                   Call the restaurant
                 </a>
               ) : null}
+              <FooterLink href="/#faq">FAQ</FooterLink>
               <FooterLink href="/cart">View your cart</FooterLink>
               <FooterLink href="/#menu">Hours &amp; ordering</FooterLink>
             </FooterColumn>

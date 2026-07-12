@@ -1,5 +1,6 @@
 import { MenuCatalogBrowse } from "@/components/features/storefront/menu-catalog-browse";
 import { StickyCartBar } from "@/components/features/storefront/sticky-cart-bar";
+import { StorefrontFaq } from "@/components/features/storefront/storefront-faq";
 import { StorefrontHero } from "@/components/features/storefront/storefront-hero";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UtensilsCrossed } from "@/components/ui/icons";
@@ -62,6 +63,11 @@ export function StorefrontMenu({
           title="Menu unavailable"
           description="This restaurant has not published a menu yet. Check back soon."
         />
+        <StorefrontFaq
+          store={store}
+          prepMinutes={prepMinutes}
+          todayLabel={openStatus.todayLabel}
+        />
       </div>
     );
   }
@@ -93,6 +99,12 @@ export function StorefrontMenu({
           />
         )}
       </div>
+
+      <StorefrontFaq
+        store={store}
+        prepMinutes={prepMinutes}
+        todayLabel={openStatus.todayLabel}
+      />
 
       {canOrder ? (
         <StickyCartBar

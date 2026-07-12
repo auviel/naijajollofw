@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import {
+  categoryIconFor,
+  displayCategoryName,
+} from "@/components/features/storefront/category-icon";
 import { List, X } from "@/components/ui/icons";
 import type { MenuCategoryView } from "@/lib/domain/menu/types";
 import { cn } from "@/lib/utils/cn";
@@ -104,6 +108,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
           >
             {categories.map((category) => {
               const isActive = activeId === category.id;
+              const label = displayCategoryName(category.name);
               return (
                 <Link
                   key={category.id}
@@ -119,11 +124,11 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
                       : "font-medium text-text-secondary",
                   )}
                 >
-                  {category.name}
+                  {label}
                   {isActive ? (
                     <span
                       aria-hidden
-                      className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground"
+                      className="absolute inset-x-0 bottom-0 h-0.5 bg-accent"
                     />
                   ) : null}
                 </Link>
@@ -177,19 +182,24 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
             <nav className="flex flex-col px-2 py-2" aria-label="All categories">
               {categories.map((category) => {
                 const isActive = activeId === category.id;
+                const label = displayCategoryName(category.name);
+                const Icon = categoryIconFor(category.name);
                 return (
                   <Link
                     key={category.id}
                     href={`#category-${category.id}`}
                     onClick={() => selectCategory(category.id)}
                     className={cn(
-                      "rounded-lg px-3 py-3.5 text-sm no-underline transition-colors",
+                      "flex items-center gap-3 rounded-lg px-3 py-3.5 text-sm no-underline transition-colors",
                       isActive
                         ? "bg-surface font-semibold text-foreground"
                         : "font-medium text-text-secondary",
                     )}
                   >
-                    {category.name}
+                    {Icon ? (
+                      <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                    ) : null}
+                    {label}
                   </Link>
                 );
               })}
@@ -215,13 +225,15 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
         <nav className="mt-3 flex flex-col gap-0.5" aria-label="Categories">
           {categories.map((category) => {
             const isActive = activeId === category.id;
+            const label = displayCategoryName(category.name);
+            const Icon = categoryIconFor(category.name);
             return (
               <Link
                 key={category.id}
                 href={`#category-${category.id}`}
                 onClick={() => setActiveId(category.id)}
                 className={cn(
-                  "relative rounded-md py-2.5 pr-3 pl-3.5 text-sm no-underline transition-colors",
+                  "relative flex items-center gap-2.5 rounded-md py-2.5 pr-3 pl-3.5 text-sm no-underline transition-colors",
                   isActive
                     ? "bg-surface font-semibold text-foreground"
                     : "font-medium text-text-secondary hover:bg-surface/70 hover:text-foreground",
@@ -230,10 +242,13 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
                 {isActive ? (
                   <span
                     aria-hidden
-                    className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full bg-foreground"
+                    className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full bg-accent"
                   />
                 ) : null}
-                {category.name}
+                {Icon ? (
+                  <Icon className="shrink-0" size={18} aria-hidden />
+                ) : null}
+                {label}
               </Link>
             );
           })}

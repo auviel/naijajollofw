@@ -68,11 +68,13 @@ Implement these in `app/globals.css` (Tailwind v4 `@theme`) or a `tokens.css` fi
 --color-gray-500:     #757575;
 --color-gray-600:     #545454;
 --color-gray-700:      #333333;
---color-green-500:    #05944F;   /* Uber success / positive */
---color-green-600:    #047857;
---color-blue-500:     #276EF1;   /* Links, info */
+--color-green-500:    #04542E;   /* Brand secondary / success */
+--color-green-600:    #034024;
+--color-blue-500:     #04542E;   /* Align info/links with brand green */
 --color-red-500:      #E11900;   /* Errors, cancel */
 --color-amber-500:    #F5A623;   /* Warnings, scheduled */
+--color-orange-500:   #CC5400;   /* Brand primary */
+--color-orange-600:   #AD4700;
 ```
 
 #### Semantic tokens (use these in components)
@@ -89,14 +91,14 @@ Implement these in `app/globals.css` (Tailwind v4 `@theme`) or a `tokens.css` fi
 | `--text-secondary` | `#545454` | Labels, meta |
 | `--text-tertiary` | `#757575` | Placeholders, timestamps |
 | `--text-inverse` | `#FFFFFF` | Text on dark buttons |
-| `--accent` | `#000000` | Primary buttons (Uber uses black CTAs) |
-| `--accent-hover` | `#333333` | Primary button hover |
-| `--accent-subtle` | `#F6F6F6` | Secondary button background |
-| `--link` | `#276EF1` | Links, tracking URL |
-| `--success` | `#05944F` | Completed status |
+| `--accent` | `#CC5400` | Primary brand / CTAs (Naija Jollof) |
+| `--accent-hover` | `#AD4700` | Primary button hover |
+| `--accent-subtle` | `#FFF1E8` | Soft accent wash / secondary surfaces |
+| `--link` | `#04542E` | Links (secondary brand green) |
+| `--success` | `#04542E` | Open / positive / secondary brand |
 | `--warning` | `#F5A623` | Scheduled, pending |
 | `--error` | `#E11900` | Failed, cancel, validation |
-| `--info` | `#276EF1` | En route, informational badges |
+| `--info` | `#04542E` | Informational accents |
 | `--sandbox-banner` | `#FFF8E6` | Test mode banner background |
 | `--sandbox-text` | `#7A5B00` | Test mode banner text |
 
