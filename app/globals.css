@@ -28,6 +28,17 @@
   --duration-panel: 280ms;
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Fixed storefront chrome — stable vs Safari URL-bar show/hide */
+  --storefront-header-height: 3.5rem;
+  --storefront-header-offset: calc(
+    env(safe-area-inset-top, 0px) + var(--storefront-header-height)
+  );
+}
+
+@media (min-width: 640px) {
+  :root {
+    --storefront-header-height: 4rem;
+  }
 }
 
 @theme inline {

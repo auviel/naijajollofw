@@ -7,6 +7,7 @@ import {
   categoryIconFor,
   displayCategoryName,
 } from "@/components/features/storefront/category-icon";
+import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { List, X } from "@/components/ui/icons";
 import type { MenuCategoryView } from "@/lib/domain/menu/types";
 import { easeOut, motionDuration, softSpring } from "@/lib/motion/tokens";
@@ -73,6 +74,8 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
     }
   }, [activeId]);
 
+  useBodyScrollLock(sheetOpen);
+
   useEffect(() => {
     if (!sheetOpen) {
       return;
@@ -83,11 +86,8 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
       }
     };
     document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
     };
   }, [sheetOpen]);
 
@@ -103,7 +103,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
   return (
     <>
       {/* Mobile / tablet: underline tabs + list sheet trigger */}
-      <div className="sticky top-14 z-10 -mx-4 border-b border-border bg-background/95 sm:top-16 sm:-mx-6 lg:hidden">
+      <div className="sticky top-[var(--storefront-header-offset)] z-10 -mx-4 border-b border-border bg-background/95 sm:-mx-6 lg:hidden">
         <div className="relative flex items-stretch">
           <div
             ref={railRef}
@@ -244,7 +244,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
       {/* Desktop: sticky vertical sidebar */}
       <aside
         aria-label="Menu categories"
-        className="sticky top-20 z-10 hidden w-56 shrink-0 self-start lg:block xl:w-60"
+        className="sticky top-[var(--storefront-header-offset)] z-10 hidden w-56 shrink-0 self-start lg:block xl:w-60"
       >
         <div className="border-b border-border pb-4">
           <p className="font-display text-lg font-semibold text-foreground">

@@ -18,7 +18,6 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +25,19 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    // Read from the DOM so Safari autofill is included (controlled React
+    // state often stays empty when the browser fills password fields).
+    const formData = new FormData(event.currentTarget);
+    const nameValue = String(formData.get("name") ?? "").trim();
+    const emailValue = String(formData.get("email") ?? "").trim();
+    const phoneValue = String(formData.get("phone") ?? "").trim();
+    const passwordValue = String(formData.get("password") ?? "");
+
+    if (!nameValue || !emailValue || !phoneValue || !passwordValue) {
+      setError("Fill in all fields to continue.");
+      return;
+    }
 
     if (turnstileSiteKey && !turnstileToken) {
       setError("Complete the security check and try again.");
@@ -39,10 +51,10 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          phone,
-          password,
+          name: nameValue,
+          email: emailValue,
+          phone: phoneValue,
+          password: passwordValue,
           turnstileToken: turnstileToken ?? undefined,
         }),
       });
@@ -57,8 +69,8 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
       }
 
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: emailValue,
+        password: passwordValue,
         redirect: false,
       });
       if (result?.error) {
@@ -115,8 +127,7 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
           name="password"
           type="password"
           autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          defaultValue=""
           placeholder="At least 8 characters"
           required
           minLength={8}

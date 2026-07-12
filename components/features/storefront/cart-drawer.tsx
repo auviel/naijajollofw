@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CartPanel } from "@/components/features/storefront/cart-panel";
+import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { MotionSheet } from "@/components/motion/primitives";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { X } from "@/components/ui/icons";
@@ -67,6 +68,8 @@ export function CartDrawer() {
     };
   }, [cartOpen]);
 
+  useBodyScrollLock(cartOpen);
+
   useEffect(() => {
     if (!cartOpen) {
       return;
@@ -77,11 +80,8 @@ export function CartDrawer() {
       }
     };
     document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
     };
   }, [cartOpen, closeCart]);
 

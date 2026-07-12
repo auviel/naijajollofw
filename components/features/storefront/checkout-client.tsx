@@ -595,7 +595,7 @@ export function CheckoutClient({
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             autoComplete="name"
-            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
           />
         </div>
         <div className="space-y-1.5">
@@ -609,7 +609,7 @@ export function CheckoutClient({
             autoComplete="tel"
             inputMode="tel"
             placeholder="(519) 555-0100"
-            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
           />
         </div>
         <div className="space-y-1.5">
@@ -624,7 +624,7 @@ export function CheckoutClient({
             onChange={(e) => setCustomerEmail(e.target.value)}
             autoComplete="email"
             placeholder="you@example.com"
-            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
           />
         </div>
         {fulfillmentType === "delivery" ? (
@@ -653,7 +653,7 @@ export function CheckoutClient({
                 autoComplete="address-line2"
                 maxLength={40}
                 placeholder="e.g. Apt 4, Unit 12"
-                className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+                className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
               />
             </div>
           </>
@@ -668,7 +668,7 @@ export function CheckoutClient({
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             maxLength={500}
-            className="w-full rounded-md border border-border bg-surface-elevated px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border bg-surface-elevated px-3 py-2 text-base"
             placeholder="Allergies, gate code, …"
           />
         </div>

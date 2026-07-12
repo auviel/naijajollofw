@@ -13,7 +13,7 @@ export async function StorefrontHeader() {
   return (
     <Suspense
       fallback={
-        <header className="sticky top-0 z-20 h-14 border-b border-transparent bg-background/90 sm:h-16" />
+        <header className="h-[var(--storefront-header-offset)] shrink-0" />
       }
     >
       <StorefrontHeaderBar

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, X } from "@/components/ui/icons";
 import type { StoreHoursDay } from "@/lib/domain/store/hours";
@@ -106,6 +107,8 @@ function ScheduleOrderPickerBody({
   const [selectedSlot, setSelectedSlot] = useState(initial.slot);
   const [dayScrollIndex, setDayScrollIndex] = useState(0);
 
+  useBodyScrollLock(true);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -113,11 +116,8 @@ function ScheduleOrderPickerBody({
       }
     };
     document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
     };
   }, [onClose]);
 

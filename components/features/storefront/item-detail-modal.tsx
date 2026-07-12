@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ItemCustomizePanel } from "@/components/features/storefront/item-customize-panel";
+import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { MotionModal } from "@/components/motion/primitives";
 import { X } from "@/components/ui/icons";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
@@ -27,6 +28,8 @@ export function ItemDetailModal({
     setActiveId(itemId);
   }
 
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -37,11 +40,8 @@ export function ItemDetailModal({
       }
     };
     document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
     };
   }, [open, onClose]);
 

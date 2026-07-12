@@ -100,104 +100,114 @@ export function StorefrontHeaderBar({
   );
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-20 border-b bg-background/90 backdrop-blur-md transition-[border-color,box-shadow] duration-normal ease-out",
-        scrolled
-          ? "border-border shadow-[0_1px_0_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)]"
-          : "border-transparent",
-      )}
-    >
-      <div className="flex h-14 w-full items-center gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6 lg:px-8 xl:px-10">
-        <div
-          className={cn(
-            "min-w-0 flex-1 items-center gap-1 sm:hidden",
-            mobileSearchOpen ? "flex" : "hidden",
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => setMobileSearchOpen(false)}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface"
-            aria-label="Close search"
+    <>
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-20 border-b bg-background/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md transition-[border-color,box-shadow] duration-normal ease-out",
+          scrolled
+            ? "border-border shadow-[0_1px_0_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)]"
+            : "border-transparent",
+        )}
+      >
+        <div className="flex h-[var(--storefront-header-height)] w-full items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-8 xl:px-10">
+          <div
+            className={cn(
+              "min-w-0 flex-1 items-center gap-1 sm:hidden",
+              mobileSearchOpen ? "flex" : "hidden",
+            )}
           >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-          <label className="relative block min-w-0 flex-1">
-            <span className="sr-only">Search menu</span>
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-tertiary"
-              aria-hidden
-            />
-            <input
-              ref={mobileSearchRef}
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search in ${storeName}`}
-              className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-9 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
-            />
-          </label>
-        </div>
-
-        <div
-          className={cn(
-            "min-w-0 flex-1 items-center justify-between gap-3 sm:gap-6 lg:gap-8",
-            mobileSearchOpen ? "hidden sm:flex" : "flex",
-          )}
-        >
-          <Link
-            href="/"
-            className="flex min-w-0 shrink-0 items-center text-foreground no-underline"
-            aria-label={storeName}
-          >
-            <StoreBrandLogo alt={storeName} variant="header" priority />
-          </Link>
-
-          <div className="hidden min-w-0 flex-1 justify-center px-2 sm:flex lg:px-6">
-            <label className="relative w-full max-w-2xl lg:max-w-3xl">
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(false)}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface"
+              aria-label="Close search"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+            <label className="relative block min-w-0 flex-1">
               <span className="sr-only">Search menu</span>
               <Search
-                className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-tertiary"
                 aria-hidden
               />
               <input
+                ref={mobileSearchRef}
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search in ${storeName}`}
-                className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-10 text-sm text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
+                className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-9 text-base text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
               />
             </label>
           </div>
 
-          <nav className="hidden shrink-0 items-center gap-1 sm:flex sm:gap-2">
-            <CartLink count={cartItemCount} />
-
-            {status === "loading" ? (
-              <span className="h-9 w-16 rounded-full bg-surface sm:w-24" aria-hidden />
-            ) : isLoggedIn ? (
-              accountControl
-            ) : (
-              <>
-                <Link
-                  href="/signin"
-                  className="px-2 text-sm font-medium text-foreground no-underline transition-opacity hover:opacity-70"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/signup"
-                  className="inline-flex h-9 items-center rounded-full bg-surface px-3.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-border sm:px-4"
-                >
-                  Sign up
-                </Link>
-              </>
+          <div
+            className={cn(
+              "min-w-0 flex-1 items-center justify-between gap-3 sm:gap-6 lg:gap-8",
+              mobileSearchOpen ? "hidden sm:flex" : "flex",
             )}
-          </nav>
+          >
+            <Link
+              href="/"
+              className="flex min-w-0 shrink-0 items-center text-foreground no-underline"
+              aria-label={storeName}
+            >
+              <StoreBrandLogo alt={storeName} variant="header" priority />
+            </Link>
+
+            <div className="hidden min-w-0 flex-1 justify-center px-2 sm:flex lg:px-6">
+              <label className="relative w-full max-w-2xl lg:max-w-3xl">
+                <span className="sr-only">Search menu</span>
+                <Search
+                  className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={`Search in ${storeName}`}
+                  className="h-10 w-full rounded-full border-0 bg-surface pr-4 pl-10 text-base text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25"
+                />
+              </label>
+            </div>
+
+            <nav className="hidden shrink-0 items-center gap-1 sm:flex sm:gap-2">
+              <CartLink count={cartItemCount} />
+
+              {status === "loading" ? (
+                <span
+                  className="h-9 w-16 rounded-full bg-surface sm:w-24"
+                  aria-hidden
+                />
+              ) : isLoggedIn ? (
+                accountControl
+              ) : (
+                <>
+                  <Link
+                    href="/signin"
+                    className="px-2 text-sm font-medium text-foreground no-underline transition-opacity hover:opacity-70"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="inline-flex h-9 items-center rounded-full bg-surface px-3.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-border sm:px-4"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </nav>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <div
+        className="shrink-0"
+        style={{ height: "var(--storefront-header-offset)" }}
+        aria-hidden
+      />
+    </>
   );
 }
 

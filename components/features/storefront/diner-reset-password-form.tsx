@@ -12,8 +12,6 @@ export function DinerResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
 
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,6 +36,16 @@ export function DinerResetPasswordForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const password = String(formData.get("password") ?? "");
+    const confirmPassword = String(formData.get("confirm") ?? "");
+
+    if (!password || !confirmPassword) {
+      setError("Enter and confirm your new password.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -47,7 +55,7 @@ export function DinerResetPasswordForm() {
         body: JSON.stringify({
           token,
           password,
-          confirmPassword: confirm,
+          confirmPassword,
         }),
       });
       const body = (await response.json().catch(() => ({}))) as {
@@ -73,8 +81,7 @@ export function DinerResetPasswordForm() {
           name="password"
           type="password"
           autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          defaultValue=""
           minLength={8}
           required
         />
@@ -84,8 +91,7 @@ export function DinerResetPasswordForm() {
           name="confirm"
           type="password"
           autoComplete="new-password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          defaultValue=""
           minLength={8}
           required
         />
