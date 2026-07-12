@@ -4,10 +4,20 @@ const MARKETPLACE_LINKS = [
   {
     name: "Uber Eats",
     href: "https://www.ubereats.com/ca/store/naija-jollof-waterloo/",
+    eyebrow: "Order with",
+    brand: "Uber Eats",
+    className:
+      "border-transparent bg-[#06C167] text-black hover:brightness-[0.97]",
+    eyebrowClassName: "text-black/70",
   },
   {
     name: "DoorDash",
     href: "https://www.doordash.com/store/naija-jollof-waterloo-waterloo-24719789/35249748/",
+    eyebrow: "Order online with",
+    brand: "DoorDash",
+    className:
+      "border-transparent bg-[#FF3008] text-white hover:brightness-[0.97]",
+    eyebrowClassName: "text-white/85",
   },
 ] as const;
 
@@ -37,13 +47,21 @@ export function StorefrontMarketplaceLinks() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-14 items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 text-[15px] font-medium text-foreground transition-colors hover:border-border-strong hover:bg-surface"
+                aria-label={`${link.eyebrow} ${link.brand}`}
+                className={`group flex flex-col items-center justify-center gap-0.5 rounded-xl border px-4 py-2.5 text-center transition-[filter] ${link.className}`}
               >
-                <span>Order on {link.name}</span>
-                <ExternalLink
-                  className="h-4 w-4 shrink-0 text-text-tertiary transition-colors group-hover:text-foreground"
-                  aria-hidden
-                />
+                <span
+                  className={`text-[10px] font-semibold tracking-[0.08em] uppercase ${link.eyebrowClassName}`}
+                >
+                  {link.eyebrow}
+                </span>
+                <span className="flex items-center gap-1.5 text-base font-bold tracking-tight">
+                  {link.brand}
+                  <ExternalLink
+                    className="h-3.5 w-3.5 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                    aria-hidden
+                  />
+                </span>
               </a>
             </li>
           ))}

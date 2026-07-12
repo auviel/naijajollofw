@@ -3,7 +3,7 @@ import { canadianPhoneSchema } from "@/lib/domain/delivery/validation";
 
 export const checkoutRequestSchema = z
   .object({
-    sourceId: z.string().min(1, "Payment token is required"),
+    sourceId: z.string().min(1, "Payment token is required").optional(),
     idempotencyKey: z.string().uuid("Idempotency key must be a UUID"),
     customerName: z.string().trim().min(1, "Name is required").max(120),
     customerPhone: canadianPhoneSchema,

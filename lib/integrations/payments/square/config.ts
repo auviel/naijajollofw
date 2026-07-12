@@ -96,3 +96,13 @@ export function isSquareConfigured(): boolean {
       process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID?.trim(),
   );
 }
+
+/**
+ * Skip Square and create paid orders when Square is not configured.
+ * Ignored whenever Square credentials are present (live/sandbox).
+ */
+export function isCheckoutSimulatePayments(): boolean {
+  const flag =
+    process.env.CHECKOUT_SIMULATE_PAYMENTS?.trim().toLowerCase() === "true";
+  return flag && !isSquareConfigured();
+}

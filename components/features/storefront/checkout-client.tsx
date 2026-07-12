@@ -37,6 +37,7 @@ type CheckoutClientProps = {
   environment: "sandbox" | "production";
   taxRateBps: number;
   configured: boolean;
+  simulatePayments: boolean;
   openStatus: StoreOpenStatus;
   scheduleDays: StoreHoursDay[];
   scheduleTimeZone: string;
@@ -52,6 +53,7 @@ export function CheckoutClient({
   environment,
   taxRateBps,
   configured,
+  simulatePayments,
   openStatus,
   scheduleDays,
   scheduleTimeZone,
@@ -95,11 +97,14 @@ export function CheckoutClient({
       ? "https://web.squarecdn.com/v1/square.js"
       : "https://sandbox.web.squarecdn.com/v1/square.js";
 
+  const canCheckout = configured || simulatePayments;
+
   const cardForm = useSquareCardForm({
     applicationId: applicationId ?? "",
     locationId: locationId ?? "",
     disabled:
       !configured ||
+      simulatePayments ||
       !scriptLoaded ||
       initialCart.items.length === 0 ||
       (mustSchedule && !scheduledFor),
@@ -213,35 +218,44 @@ export function CheckoutClient({
       setFormError("Confirm a valid delivery address.");
       return;
     }
-    if (!configured || !applicationId || !locationId) {
+    if (!canCheckout) {
       setFormError("Payments are not configured yet.");
-      return;
-    }
-    if (!cardForm.ready) {
-      setFormError("Card form is still loading.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const amount = (totals.totalCents / 100).toFixed(2);
-      const nameParts = customerName.trim().split(/\s+/);
-      const givenName = nameParts[0] ?? customerName.trim();
-      const familyName = nameParts.slice(1).join(" ") || givenName;
+      let sourceId: string | undefined;
 
-      const sourceId = await cardForm.tokenize({
-        amount,
-        currencyCode: "CAD",
-        intent: "CHARGE",
-        customerInitiated: true,
-        sellerKeyedIn: false,
-        billingContact: {
-          givenName,
-          familyName,
-          phone: customerPhone.trim(),
-        },
-      });
+      if (!simulatePayments) {
+        if (!configured || !applicationId || !locationId) {
+          setFormError("Payments are not configured yet.");
+          return;
+        }
+        if (!cardForm.ready) {
+          setFormError("Card form is still loading.");
+          return;
+        }
+
+        const amount = (totals.totalCents / 100).toFixed(2);
+        const nameParts = customerName.trim().split(/\s+/);
+        const givenName = nameParts[0] ?? customerName.trim();
+        const familyName = nameParts.slice(1).join(" ") || givenName;
+
+        sourceId = await cardForm.tokenize({
+          amount,
+          currencyCode: "CAD",
+          intent: "CHARGE",
+          customerInitiated: true,
+          sellerKeyedIn: false,
+          billingContact: {
+            givenName,
+            familyName,
+            phone: customerPhone.trim(),
+          },
+        });
+      }
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -293,7 +307,7 @@ export function CheckoutClient({
 
   return (
     <div className="space-y-8">
-      {configured ? (
+      {configured && !simulatePayments ? (
         <Script
           src={squareSrc}
           strategy="afterInteractive"
@@ -428,9 +442,15 @@ export function CheckoutClient({
         </div>
       ) : null}
 
-      {!configured ? (
+      {!configured && !simulatePayments ? (
         <div className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
           Square payments is not set up.
+        </div>
+      ) : null}
+
+      {simulatePayments ? (
+        <div className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+          Test checkout — orders are created without charging a card.
         </div>
       ) : null}
 
@@ -631,7 +651,11 @@ export function CheckoutClient({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Payment
         </h2>
-        {configured ? (
+        {simulatePayments ? (
+          <p className="text-sm text-text-secondary">
+            No card required in test mode.
+          </p>
+        ) : configured ? (
           <SquareCardSlot containerId={cardForm.containerId} error={cardForm.error} />
         ) : null}
       </section>
@@ -656,17 +680,25 @@ export function CheckoutClient({
       <button
         type="button"
         onClick={() => void handlePay()}
-        disabled={isSubmitting || !configured || (mustSchedule && !scheduledFor)}
+        disabled={
+          isSubmitting || !canCheckout || (mustSchedule && !scheduledFor)
+        }
         className="flex h-12 w-full items-center justify-center rounded-md bg-accent text-sm font-semibold text-text-inverse transition-opacity disabled:opacity-50"
       >
         {isSubmitting
-          ? "Processing…"
+          ? simulatePayments
+            ? "Placing order…"
+            : "Processing…"
           : mustSchedule && !scheduledFor
             ? "Choose a time to continue"
-            : `Pay ${formatCadFromCents(totals.totalCents)}`}
+            : simulatePayments
+              ? `Place order (test) · ${formatCadFromCents(totals.totalCents)}`
+              : `Pay ${formatCadFromCents(totals.totalCents)}`}
       </button>
       <p className="text-center text-xs text-text-tertiary">
-        Payments secured by Square
+        {simulatePayments
+          ? "Test mode — no charge"
+          : "Payments secured by Square"}
       </p>
 
       <ScheduleOrderPicker

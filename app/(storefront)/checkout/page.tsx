@@ -7,6 +7,7 @@ import {
   getSquareEnvironment,
   getSquareLocationId,
   getTaxRateBps,
+  isCheckoutSimulatePayments,
   isSquareConfigured,
 } from "@/lib/integrations/payments/square/config";
 import { getCart } from "@/lib/services/cart/cart-actions";
@@ -25,6 +26,7 @@ export default async function CheckoutPage() {
     getOptionalSessionUser(),
   ]);
   const configured = isSquareConfigured();
+  const simulatePayments = isCheckoutSimulatePayments();
   const taxRateBps = getTaxRateBps();
 
   computeOrderTotals(cart.subtotalCents, 0, taxRateBps);
@@ -39,6 +41,7 @@ export default async function CheckoutPage() {
       <CheckoutClient
         initialCart={cart}
         configured={configured}
+        simulatePayments={simulatePayments}
         applicationId={configured ? getSquareApplicationId() : null}
         locationId={configured ? getSquareLocationId() : null}
         environment={getSquareEnvironment()}

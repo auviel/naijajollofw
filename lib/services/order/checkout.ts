@@ -17,6 +17,9 @@ import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
 import { sendEmailInBackground } from "@/lib/integrations/email/send";
 import { buildOrderConfirmationEmail } from "@/lib/integrations/email/templates";
 import { createSquarePayment } from "@/lib/integrations/payments/square/client";
+import {
+  isCheckoutSimulatePayments,
+} from "@/lib/integrations/payments/square/config";
 import { readCartSessionId } from "@/lib/services/cart/session";
 import {
   getPublicStoreHoursSchedule,
@@ -158,21 +161,41 @@ export async function checkoutWithSquare(
     );
   }
 
-  const payment = await createSquarePayment({
-    sourceId: parsed.sourceId,
-    amountCents: totals.totalCents,
-    currency: totals.currency,
-    idempotencyKey: parsed.idempotencyKey,
-    note: `deliverGO ${parsed.fulfillmentType} order`,
-    referenceId: sessionId.slice(0, 40),
-  });
+  const simulate = isCheckoutSimulatePayments();
+  let paymentId: string;
+
+  if (simulate) {
+    paymentId = `sim_pay_${parsed.idempotencyKey}`;
+    logger.info("checkout.simulate_payment", {
+      paymentId,
+      totalCents: totals.totalCents,
+    });
+  } else {
+    if (!parsed.sourceId) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "Payment token is required.",
+        400,
+      );
+    }
+
+    const payment = await createSquarePayment({
+      sourceId: parsed.sourceId,
+      amountCents: totals.totalCents,
+      currency: totals.currency,
+      idempotencyKey: parsed.idempotencyKey,
+      note: `deliverGO ${parsed.fulfillmentType} order`,
+      referenceId: sessionId.slice(0, 40),
+    });
+    paymentId = payment.paymentId;
+  }
 
   const receiptEmail = resolveReceiptEmail(
     parsed.customerEmail || undefined,
     diner?.email,
   );
 
-  const existing = await orderRepository.findBySquarePaymentId(payment.paymentId);
+  const existing = await orderRepository.findBySquarePaymentId(paymentId);
   if (existing) {
     await cartRepository.clearCart(cart.id);
     const existingView = mapOrderToPublicView(existing);
@@ -209,7 +232,7 @@ export async function checkoutWithSquare(
       taxCents: totals.taxCents,
       totalCents: totals.totalCents,
       currency: totals.currency,
-      squarePaymentId: payment.paymentId,
+      squarePaymentId: paymentId,
       lineItems: cartView.items.map((line) => ({
         name: line.name,
         description: line.description,
@@ -235,14 +258,17 @@ export async function checkoutWithSquare(
     return { order: orderView };
   } catch (error) {
     logger.error("checkout.order_create_failed", {
-      paymentId: payment.paymentId,
+      paymentId,
+      simulated: simulate,
       error: error instanceof Error ? error.message : String(error),
     });
     throw new AppError(
       "INTERNAL_ERROR",
-      "Payment succeeded but we could not save your order. Contact the restaurant with your payment receipt.",
+      simulate
+        ? "Could not save your order. Please try again."
+        : "Payment succeeded but we could not save your order. Contact the restaurant with your payment receipt.",
       500,
-      { paymentId: payment.paymentId },
+      { paymentId },
     );
   }
 }
