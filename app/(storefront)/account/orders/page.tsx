@@ -5,6 +5,7 @@ import {
   mapOrderToPublicView,
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
+import { syncDinerOrderHistory } from "@/lib/services/diner/sync-order-history";
 import { formatCadFromCents } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 
 export default async function AccountOrdersPage() {
   const user = await requireDiner();
+  await syncDinerOrderHistory(user.id);
   const orders = await orderRepository.findManyForUser(user.id, 50);
   const views = orders.map((order) => mapOrderToPublicView(order));
 

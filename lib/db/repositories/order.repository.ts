@@ -16,6 +16,7 @@ import {
   buildGuestOrderTimeline,
   buildGuestStatusMessage,
 } from "@/lib/domain/order/guest-timeline";
+import { buildClaimGuestOrdersWhere } from "@/lib/domain/order/claim-guest-orders";
 import type {
   PublicOrderView,
   StaffOrderDetail,
@@ -282,6 +283,28 @@ export const orderRepository = {
       orderBy: [{ placedAt: "desc" }, { createdAt: "desc" }],
       take: limit,
     });
+  },
+
+  /**
+   * Attach guest (userId-null) orders to a diner by shared Customer and/or
+   * receipt email so they appear in Account → Orders.
+   */
+  async claimGuestOrdersForUser(input: {
+    userId: string;
+    storeId: string;
+    customerId?: string | null;
+    email?: string | null;
+  }) {
+    const where = buildClaimGuestOrdersWhere(input);
+    if (!where) {
+      return { count: 0 };
+    }
+
+    const result = await prisma.order.updateMany({
+      where,
+      data: { userId: input.userId },
+    });
+    return { count: result.count };
   },
 
   async findManyForCustomer(customerId: string, storeId: string, limit = 20) {

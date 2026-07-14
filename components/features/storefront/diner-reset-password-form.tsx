@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function DinerResetPasswordForm() {
   const router = useRouter();
@@ -77,9 +77,8 @@ export function DinerResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <FormField id="password" label="New password">
-        <Input
+        <PasswordInput
           name="password"
-          type="password"
           autoComplete="new-password"
           defaultValue=""
           minLength={8}
@@ -87,9 +86,8 @@ export function DinerResetPasswordForm() {
         />
       </FormField>
       <FormField id="confirm" label="Confirm password">
-        <Input
+        <PasswordInput
           name="confirm"
-          type="password"
           autoComplete="new-password"
           defaultValue=""
           minLength={8}

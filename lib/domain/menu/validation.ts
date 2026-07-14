@@ -29,14 +29,22 @@ const modifierGroupInputSchema = z.object({
   modifiers: z.array(modifierInputSchema).max(30).optional(),
 });
 
+/** Absolute https URL (R2/CDN) or site-relative path (legacy `/brand/...`). */
+const imageUrlSchema = z
+  .union([
+    z.string().url(),
+    z.string().regex(/^\/[\w./-]+$/, "Invalid image path"),
+    z.literal(""),
+    z.null(),
+  ])
+  .optional();
+
 export const createMenuItemSchema = z.object({
   categoryId: z.string().cuid("Choose a category"),
   name: z.string().trim().min(1, "Item name is required").max(120),
   description: z.string().trim().max(500).nullable().optional(),
   priceCents: z.number().int().min(0, "Price must be zero or more").max(1_000_000),
-  imageUrl: z
-    .union([z.string().url(), z.literal(""), z.null()])
-    .optional(),
+  imageUrl: imageUrlSchema,
   available: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
   modifierGroups: z.array(modifierGroupInputSchema).max(10).optional(),
@@ -47,9 +55,7 @@ export const updateMenuItemSchema = z.object({
   name: z.string().trim().min(1, "Item name is required").max(120).optional(),
   description: z.string().trim().max(500).nullable().optional(),
   priceCents: z.number().int().min(0).max(1_000_000).optional(),
-  imageUrl: z
-    .union([z.string().url(), z.literal(""), z.null()])
-    .optional(),
+  imageUrl: imageUrlSchema,
   available: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
   modifierGroups: z.array(modifierGroupInputSchema).max(10).optional(),

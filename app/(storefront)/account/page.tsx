@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireDiner } from "@/lib/auth/session";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
 import { listDinerAddresses } from "@/lib/services/diner/addresses";
+import { syncDinerOrderHistory } from "@/lib/services/diner/sync-order-history";
 import {
   mapOrderToPublicView,
   orderRepository,
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 
 export default async function AccountOverviewPage() {
   const user = await requireDiner();
+  await syncDinerOrderHistory(user.id);
   const [orders, addresses] = await Promise.all([
     orderRepository.findManyForUser(user.id, 5),
     listDinerAddresses(),

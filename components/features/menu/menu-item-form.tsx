@@ -12,7 +12,13 @@ import {
   formatCentsAsDollarsInput,
   parseDollarsToCents,
 } from "@/lib/domain/menu/format";
-import type { MenuItemDetail } from "@/lib/domain/menu/types";
+import {
+  MENU_IMAGE_ACCEPT,
+  MENU_IMAGE_ALLOWED_TYPES,
+  MENU_IMAGE_MAX_BYTES,
+  MENU_IMAGE_MAX_COUNT,
+} from "@/lib/domain/menu/media";
+import type { MenuItemDetail, MenuItemImageView } from "@/lib/domain/menu/types";
 
 async function readApiError(response: Response): Promise<string> {
   const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -82,11 +88,20 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
     item ? formatCentsAsDollarsInput(item.priceCents) : "",
   );
   const [available, setAvailable] = useState(item?.available ?? true);
+  const [savedImages, setSavedImages] = useState<MenuItemImageView[]>(
+    () => item?.images ?? [],
+  );
+  const [pendingFiles, setPendingFiles] = useState<
+    Array<{ key: string; file: File; previewUrl: string }>
+  >([]);
+  const [clearAllImages, setClearAllImages] = useState(false);
   const [groups, setGroups] = useState<ModifierGroupDraft[]>(() => groupsFromItem(item));
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activeCategories = categories.filter((category) => category.active || category.id === categoryId);
+  const totalPhotoCount =
+    (clearAllImages ? 0 : savedImages.length) + pendingFiles.length;
 
   function updateGroup(key: string, patch: Partial<ModifierGroupDraft>) {
     setGroups((current) =>
@@ -169,8 +184,69 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
       description: description.trim() ? description.trim() : null,
       priceCents,
       available,
+      ...(clearAllImages && pendingFiles.length === 0 ? { imageUrl: null } : {}),
       modifierGroups,
     };
+  }
+
+  function addPendingFiles(fileList: FileList | null) {
+    if (!fileList?.length) return;
+    const room = MENU_IMAGE_MAX_COUNT - totalPhotoCount;
+    if (room <= 0) {
+      toastError(`At most ${MENU_IMAGE_MAX_COUNT} photos per item.`);
+      return;
+    }
+
+    const next: Array<{ key: string; file: File; previewUrl: string }> = [];
+    for (const file of Array.from(fileList)) {
+      if (next.length >= room) break;
+      const type = (file.type || "").toLowerCase();
+      if (!MENU_IMAGE_ALLOWED_TYPES.has(type)) {
+        toastError("Use JPEG, PNG, WebP, or GIF only.");
+        continue;
+      }
+      if (file.size <= 0 || file.size > MENU_IMAGE_MAX_BYTES) {
+        toastError(
+          `Each photo must be at most ${Math.floor(MENU_IMAGE_MAX_BYTES / (1024 * 1024))} MB.`,
+        );
+        continue;
+      }
+      next.push({
+        key: newKey(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    }
+    if (next.length === 0) return;
+    setClearAllImages(false);
+    setPendingFiles((current) => [...current, ...next]);
+  }
+
+  async function removeSavedImage(imageId: string) {
+    if (mode !== "edit" || !item) {
+      setSavedImages((current) => current.filter((image) => image.id !== imageId));
+      return;
+    }
+    const response = await fetch(
+      `/api/menu/items/${item.id}/images/${imageId}`,
+      { method: "DELETE" },
+    );
+    if (!response.ok) {
+      toastError(await readApiError(response));
+      return;
+    }
+    setSavedImages((current) => current.filter((image) => image.id !== imageId));
+    success("Photo removed");
+  }
+
+  function removePendingFile(key: string) {
+    setPendingFiles((current) => {
+      const target = current.find((row) => row.key === key);
+      if (target?.previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return current.filter((row) => row.key !== key);
+    });
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -196,9 +272,42 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
         return;
       }
 
-      const body = (await response.json()) as { data: { id: string } };
+      const body = (await response.json()) as {
+        data: { id: string; imageUrl?: string | null; images?: MenuItemImageView[] };
+      };
+      const itemId = body.data.id;
+
+      if (pendingFiles.length > 0) {
+        for (const pending of pendingFiles) {
+          const formData = new FormData();
+          formData.set("file", pending.file);
+          const uploadResponse = await fetch(`/api/menu/items/${itemId}/image`, {
+            method: "POST",
+            body: formData,
+          });
+          if (!uploadResponse.ok) {
+            const message = await readApiError(uploadResponse);
+            setFormError(
+              mode === "create"
+                ? `Item saved, but a photo failed to upload: ${message}`
+                : message,
+            );
+            toastError(message);
+            router.push(`/dashboard/menu/${itemId}`);
+            router.refresh();
+            return;
+          }
+        }
+        for (const pending of pendingFiles) {
+          if (pending.previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(pending.previewUrl);
+          }
+        }
+        setPendingFiles([]);
+      }
+
       success(mode === "create" ? "Item created." : "Item saved.");
-      router.push(`/dashboard/menu/${body.data.id}`);
+      router.push(`/dashboard/menu/${itemId}`);
       router.refresh();
     } catch (error) {
       const message =
@@ -263,6 +372,94 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
               inputMode="decimal"
               placeholder="14.50"
             />
+          </FormField>
+
+          <FormField
+            id="itemImages"
+            label="Photos"
+            hint={`Up to ${MENU_IMAGE_MAX_COUNT} images · JPEG/PNG/WebP/GIF · max ${Math.floor(MENU_IMAGE_MAX_BYTES / (1024 * 1024))} MB each`}
+          >
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {!clearAllImages
+                  ? savedImages.map((image) => (
+                      <div
+                        key={image.id}
+                        className="relative h-24 w-24 overflow-hidden rounded-2xl bg-surface"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={image.url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void removeSavedImage(image.id)}
+                          className="absolute top-1 right-1 rounded-full bg-background/90 px-1.5 text-xs font-medium text-foreground"
+                          aria-label="Remove photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  : null}
+                {pendingFiles.map((pending) => (
+                  <div
+                    key={pending.key}
+                    className="relative h-24 w-24 overflow-hidden rounded-2xl bg-surface ring-2 ring-accent/40"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={pending.previewUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePendingFile(pending.key)}
+                      className="absolute top-1 right-1 rounded-full bg-background/90 px-1.5 text-xs font-medium text-foreground"
+                      aria-label="Remove pending photo"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {totalPhotoCount === 0 ? (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-surface text-center text-xs text-text-tertiary">
+                    No photos
+                  </div>
+                ) : null}
+              </div>
+              <Input
+                type="file"
+                accept={MENU_IMAGE_ACCEPT}
+                multiple
+                disabled={totalPhotoCount >= MENU_IMAGE_MAX_COUNT}
+                onChange={(event) => {
+                  addPendingFiles(event.target.files);
+                  event.target.value = "";
+                }}
+              />
+              {totalPhotoCount > 0 ? (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-text-secondary underline-offset-2 hover:underline"
+                  onClick={() => {
+                    for (const pending of pendingFiles) {
+                      if (pending.previewUrl.startsWith("blob:")) {
+                        URL.revokeObjectURL(pending.previewUrl);
+                      }
+                    }
+                    setPendingFiles([]);
+                    setSavedImages([]);
+                    setClearAllImages(true);
+                  }}
+                >
+                  Remove all photos
+                </button>
+              ) : null}
+            </div>
           </FormField>
 
           <label className="flex items-center gap-2 text-sm text-foreground">

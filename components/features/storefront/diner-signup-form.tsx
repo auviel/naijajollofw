@@ -8,6 +8,7 @@ import { TurnstileField } from "@/components/features/storefront/turnstile-field
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 
 type DinerSignupFormProps = {
   turnstileSiteKey: string | null;
@@ -125,9 +126,8 @@ export function DinerSignupForm({ turnstileSiteKey }: DinerSignupFormProps) {
         />
       </FormField>
       <FormField id="password" label="Password">
-        <Input
+        <PasswordInput
           name="password"
-          type="password"
           autoComplete="new-password"
           defaultValue=""
           placeholder="At least 8 characters"

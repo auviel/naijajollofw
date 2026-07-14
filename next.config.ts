@@ -90,7 +90,32 @@ const securityHeaders = [
   },
 ];
 
+function r2RemotePatterns(): NonNullable<
+  NonNullable<NextConfig["images"]>["remotePatterns"]
+> {
+  const base = process.env.R2_PUBLIC_BASE_URL?.trim();
+  if (!base) {
+    return [];
+  }
+  try {
+    const url = new URL(base);
+    return [
+      {
+        protocol: url.protocol.replace(":", "") as "http" | "https",
+        hostname: url.hostname,
+        port: url.port || "",
+        pathname: "/**",
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: r2RemotePatterns(),
+  },
   async headers() {
     return [
       {

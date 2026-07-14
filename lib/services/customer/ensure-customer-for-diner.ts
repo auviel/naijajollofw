@@ -1,11 +1,12 @@
 import { customerRepository } from "@/lib/db/repositories/customer.repository";
+import { orderRepository } from "@/lib/db/repositories/order.repository";
 import { userRepository } from "@/lib/db/repositories/user.repository";
 import { AppError } from "@/lib/utils/errors";
 
 /**
  * Ensure a diner User is linked to a store Customer (phone-keyed).
  * Creates the Customer if missing; refuses to steal a Customer already linked
- * to a different User.
+ * to a different User. Claims prior guest orders onto the diner account.
  */
 export async function ensureCustomerForDiner(input: {
   userId: string;
@@ -18,35 +19,46 @@ export async function ensureCustomerForDiner(input: {
     throw new AppError("FORBIDDEN", "Diner account required", 403);
   }
 
+  let customerId: string;
+
   if (user.customerId) {
-    return user.customerId;
-  }
+    customerId = user.customerId;
+  } else {
+    const existing = await customerRepository.findByPhone(
+      input.storeId,
+      input.phoneE164,
+    );
 
-  const existing = await customerRepository.findByPhone(
-    input.storeId,
-    input.phoneE164,
-  );
-
-  if (existing) {
-    const linked = await userRepository.findByCustomerId(existing.id);
-    if (linked && linked.id !== input.userId) {
-      throw new AppError(
-        "CONFLICT",
-        "This phone number is already linked to another account.",
-        409,
-      );
+    if (existing) {
+      const linked = await userRepository.findByCustomerId(existing.id);
+      if (linked && linked.id !== input.userId) {
+        throw new AppError(
+          "CONFLICT",
+          "This phone number is already linked to another account.",
+          409,
+        );
+      }
+      await userRepository.linkCustomer(input.userId, existing.id);
+      customerId = existing.id;
+    } else {
+      const created = await customerRepository.createFromContact({
+        storeId: input.storeId,
+        name: input.name,
+        phoneE164: input.phoneE164,
+      });
+      await userRepository.linkCustomer(input.userId, created.id);
+      customerId = created.id;
     }
-    await userRepository.linkCustomer(input.userId, existing.id);
-    return existing.id;
   }
 
-  const created = await customerRepository.createFromContact({
+  await orderRepository.claimGuestOrdersForUser({
+    userId: input.userId,
     storeId: input.storeId,
-    name: input.name,
-    phoneE164: input.phoneE164,
+    customerId,
+    email: user.email,
   });
-  await userRepository.linkCustomer(input.userId, created.id);
-  return created.id;
+
+  return customerId;
 }
 
 /**

@@ -196,9 +196,7 @@ export function TurnstileField({
             Try again
           </button>
         </div>
-      ) : (
-        <p className="text-xs text-text-tertiary">Protected by Cloudflare</p>
-      )}
+      ) : null}
     </div>
   );
 }

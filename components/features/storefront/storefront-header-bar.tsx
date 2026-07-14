@@ -19,6 +19,7 @@ import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { ArrowLeft, Search, ShoppingBag, User, X } from "@/components/ui/icons";
 import type { MenuSearchIndex, MenuSearchItem } from "@/lib/domain/menu/search";
 import { cn } from "@/lib/utils/cn";
+import { saveMenuScroll } from "@/lib/utils/menu-scroll";
 
 type StorefrontHeaderBarProps = {
   storeName: string;
@@ -36,7 +37,8 @@ export function StorefrontHeaderBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
-  const { mobileSearchOpen, setMobileSearchOpen } = useStorefrontUi();
+  const { mobileSearchOpen, setMobileSearchOpen, setMenuSearchQuery } =
+    useStorefrontUi();
   const [scrolled, setScrolled] = useState(false);
   const urlQuery = searchParams.get("q") ?? "";
   const [draftQuery, setDraftQuery] = useState<string | null>(null);
@@ -46,7 +48,10 @@ export function StorefrontHeaderBar({
     setDraftQuery(null);
   }
   const query = draftQuery ?? urlQuery;
-  const setQuery = (value: string) => setDraftQuery(value);
+  const setQuery = (value: string) => {
+    setDraftQuery(value);
+    setMenuSearchQuery(value);
+  };
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const desktopSearchRef = useRef<HTMLInputElement>(null);
   const [desktopSuggestOpen, setDesktopSuggestOpen] = useState(false);
@@ -62,47 +67,78 @@ export function StorefrontHeaderBar({
   const applySearchQuery = useCallback(
     (next: string, options?: { scrollToMenu?: boolean }) => {
       const trimmed = next.trim();
+      const current = (searchParams.get("q") ?? "").trim();
       setDraftQuery(trimmed);
+      setMenuSearchQuery(trimmed);
       setDesktopSuggestOpen(false);
-      startTransition(() => {
-        if (!trimmed) {
-          if (pathname === "/") {
-            router.replace("/", { scroll: false });
-          }
-          return;
-        }
-        const params = new URLSearchParams();
-        params.set("q", trimmed);
-        router.replace(`/?${params.toString()}`, { scroll: false });
-        if (pathname === "/" && options?.scrollToMenu !== false) {
+
+      // Avoid replace/push when URL already matches — soft nav refetches the page.
+      if (trimmed === current && (pathname === "/" || !trimmed)) {
+        if (pathname === "/" && trimmed && options?.scrollToMenu !== false) {
           requestAnimationFrame(() => {
             document.getElementById("menu")?.scrollIntoView({
               behavior: "smooth",
               block: "start",
             });
           });
-        } else if (pathname !== "/") {
+        }
+        return;
+      }
+
+      startTransition(() => {
+        if (!trimmed) {
+          if (pathname === "/" && current) {
+            router.replace("/", { scroll: false });
+          }
+          return;
+        }
+        const params = new URLSearchParams();
+        params.set("q", trimmed);
+        if (pathname === "/") {
+          router.replace(`/?${params.toString()}`, { scroll: false });
+          if (options?.scrollToMenu !== false) {
+            requestAnimationFrame(() => {
+              document.getElementById("menu")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            });
+          }
+        } else {
           router.push(`/?${params.toString()}`);
         }
       });
     },
-    [pathname, router, startTransition],
+    [pathname, router, searchParams, setMenuSearchQuery, startTransition],
   );
 
   const closeMobileSearch = useCallback(() => {
     setMobileSearchOpen(false);
     setDraftQuery("");
+    setMenuSearchQuery("");
     if ((searchParams.get("q") ?? "").trim()) {
       startTransition(() => {
         router.replace("/", { scroll: false });
       });
     }
-  }, [router, searchParams, setMobileSearchOpen, startTransition]);
+  }, [
+    router,
+    searchParams,
+    setMenuSearchQuery,
+    setMobileSearchOpen,
+    startTransition,
+  ]);
 
   useEffect(() => {
     if (!mobileSearchOpen) return;
     mobileSearchRef.current?.focus();
   }, [mobileSearchOpen]);
+
+  // When the URL wins over local draft, mirror it into shared search state.
+  useEffect(() => {
+    if (draftQuery !== null) return;
+    setMenuSearchQuery(urlQuery);
+  }, [draftQuery, urlQuery, setMenuSearchQuery]);
 
   // Auto-open mobile search when landing with ?q= on small viewports.
   useEffect(() => {
@@ -121,52 +157,6 @@ export function StorefrontHeaderBar({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Debounced URL sync while typing (mobile always; desktop when suggest closed / applied).
-  useEffect(() => {
-    const trimmed = query.trim();
-    const current = (searchParams.get("q") ?? "").trim();
-    if (trimmed === current && (pathname === "/" || trimmed === "")) {
-      return;
-    }
-    // Desktop: don't push URL on every keystroke while the suggest panel is open —
-    // selecting a row or pressing Enter applies immediately.
-    if (desktopSuggestOpen && !mobileSearchOpen) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      startTransition(() => {
-        if (!trimmed) {
-          if (pathname === "/" && current) {
-            router.replace("/", { scroll: false });
-          }
-          return;
-        }
-        const params = new URLSearchParams();
-        params.set("q", trimmed);
-        if (pathname === "/") {
-          router.replace(`/?${params.toString()}`, { scroll: false });
-          document.getElementById("menu")?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        } else {
-          router.push(`/?${params.toString()}`);
-        }
-      });
-    }, 280);
-
-    return () => window.clearTimeout(timeout);
-  }, [
-    query,
-    pathname,
-    router,
-    searchParams,
-    startTransition,
-    desktopSuggestOpen,
-    mobileSearchOpen,
-  ]);
-
   const accountControl = (
     <Link
       href={accountHref}
@@ -183,6 +173,7 @@ export function StorefrontHeaderBar({
       setOpenItemId(item.id);
       return;
     }
+    saveMenuScroll();
     router.push(`/item/${item.id}`);
   }
 
@@ -233,9 +224,11 @@ export function StorefrontHeaderBar({
                   type="button"
                   onClick={() => {
                     setQuery("");
-                    startTransition(() => {
-                      router.replace("/", { scroll: false });
-                    });
+                    if ((searchParams.get("q") ?? "").trim()) {
+                      startTransition(() => {
+                        router.replace("/", { scroll: false });
+                      });
+                    }
                     mobileSearchRef.current?.focus();
                   }}
                   className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-border/80 text-foreground"
@@ -313,9 +306,11 @@ export function StorefrontHeaderBar({
                     onClick={() => {
                       setQuery("");
                       setDesktopSuggestOpen(false);
-                      startTransition(() => {
-                        router.replace("/", { scroll: false });
-                      });
+                      if ((searchParams.get("q") ?? "").trim()) {
+                        startTransition(() => {
+                          router.replace("/", { scroll: false });
+                        });
+                      }
                       desktopSearchRef.current?.focus();
                     }}
                     className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-border/80 text-foreground"

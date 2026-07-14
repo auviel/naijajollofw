@@ -206,9 +206,28 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
     <div className="flex items-stretch gap-2 rounded-2xl border border-border bg-surface-elevated">
       <Link
         href={`/dashboard/menu/${item.id}`}
-        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface"
+        className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 transition-colors hover:bg-surface sm:px-4"
       >
-        <div className="min-w-0">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface">
+          {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[10px] text-text-tertiary">
+              No photo
+            </div>
+          )}
+          {item.imageCount > 1 ? (
+            <span className="absolute right-1 bottom-1 rounded bg-background/90 px-1 text-[10px] font-semibold text-foreground">
+              +{item.imageCount - 1}
+            </span>
+          ) : null}
+        </div>
+        <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-foreground">{item.name}</p>
           <p className="mt-0.5 text-sm text-text-secondary">
             {formatCadFromCents(item.priceCents)}

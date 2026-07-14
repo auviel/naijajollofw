@@ -10,6 +10,7 @@ import {
   Clock01Icon,
   Delete02Icon,
   DrinkIcon,
+  EyeIcon,
   Facebook01Icon,
   Home01Icon,
   IceCubesIcon,
@@ -31,6 +32,7 @@ import {
   Tick02Icon,
   UserIcon,
   UserMultipleIcon,
+  ViewOffIcon,
   WhatsappIcon,
   YoutubeIcon,
 } from "@hugeicons/core-free-icons";
@@ -80,6 +82,8 @@ export const ChevronLeft = createIcon(ArrowLeft01Icon, "ChevronLeft");
 export const ChevronRight = createIcon(ArrowRight01Icon, "ChevronRight");
 export const ClipboardList = createIcon(ClipboardListIcon, "ClipboardList");
 export const Clock = createIcon(Clock01Icon, "Clock");
+export const Eye = createIcon(EyeIcon, "Eye");
+export const EyeOff = createIcon(ViewOffIcon, "EyeOff");
 export const ExternalLink = createIcon(LinkSquare01Icon, "ExternalLink");
 export const Home = createIcon(Home01Icon, "Home");
 export const List = createIcon(LeftToRightListDashIcon, "List");

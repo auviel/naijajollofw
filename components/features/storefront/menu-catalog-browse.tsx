@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { displayCategoryName } from "@/components/features/storefront/category-icon";
 import { CategoryRail } from "@/components/features/storefront/category-rail";
 import { ItemDetailModal } from "@/components/features/storefront/item-detail-modal";
@@ -10,6 +10,10 @@ import { ChevronLeft, ChevronRight, Plus } from "@/components/ui/icons";
 import type { MenuCategoryView, MenuItemListItem } from "@/lib/domain/menu/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
+import {
+  restoreMenuScrollOnMount,
+  saveMenuScroll,
+} from "@/lib/utils/menu-scroll";
 
 type MenuCatalogBrowseProps = {
   categories: MenuCategoryView[];
@@ -38,6 +42,10 @@ export function MenuCatalogBrowse({
 }: MenuCatalogBrowseProps) {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const isSearch = Boolean(searchQuery?.trim());
+
+  useEffect(() => {
+    restoreMenuScrollOnMount();
+  }, []);
 
   return (
     <>
@@ -228,10 +236,7 @@ function FeaturedItemCard({
           onOpenDesktop();
           return;
         }
-        sessionStorage.setItem(
-          "storefront-menu-scroll",
-          String(window.scrollY),
-        );
+        saveMenuScroll();
       }}
       onMouseEnter={() => {
         if (isDesktopViewport()) {
@@ -321,10 +326,7 @@ function MenuItemCard({
           onOpenDesktop();
           return;
         }
-        sessionStorage.setItem(
-          "storefront-menu-scroll",
-          String(window.scrollY),
-        );
+        saveMenuScroll();
       }}
       onMouseEnter={() => {
         if (isDesktopViewport()) {

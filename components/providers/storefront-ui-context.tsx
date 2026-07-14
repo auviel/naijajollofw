@@ -19,6 +19,11 @@ type StorefrontUiContextValue = {
   mobileSearchOpen: boolean;
   setMobileSearchOpen: (open: boolean) => void;
   openMobileSearch: () => void;
+  /** Live header search draft (may lead URL `?q=` by a debounce). */
+  menuSearchQuery: string;
+  setMenuSearchQuery: (query: string) => void;
+  /** Mobile search UI open, or non-empty search query — focus menu only. */
+  menuSearchFocused: boolean;
   cartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
@@ -35,9 +40,12 @@ const ADDED_POPOVER_MS = 6000;
 
 export function StorefrontUiProvider({ children }: { children: ReactNode }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [menuSearchQuery, setMenuSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [addedToCart, setAddedToCart] = useState<AddedToCartItem | null>(null);
   const dismissTimerRef = useRef<number | null>(null);
+  const menuSearchFocused =
+    mobileSearchOpen || Boolean(menuSearchQuery.trim());
 
   const dismissAddedToCart = useCallback(() => {
     if (dismissTimerRef.current != null) {
@@ -86,6 +94,9 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       mobileSearchOpen,
       setMobileSearchOpen,
       openMobileSearch,
+      menuSearchQuery,
+      setMenuSearchQuery,
+      menuSearchFocused,
       cartOpen,
       openCart,
       closeCart,
@@ -96,6 +107,8 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
     [
       mobileSearchOpen,
       openMobileSearch,
+      menuSearchQuery,
+      menuSearchFocused,
       cartOpen,
       openCart,
       closeCart,

@@ -1,6 +1,7 @@
 import type {
   MenuCategory,
   MenuItem,
+  MenuItemImage,
   MenuModifier,
   MenuModifierGroup,
   Prisma,
@@ -10,6 +11,7 @@ import type {
   MenuCatalog,
   MenuCategoryView,
   MenuItemDetail,
+  MenuItemImageView,
   MenuItemListItem,
   MenuModifierGroupView,
 } from "@/lib/domain/menu/types";
@@ -21,18 +23,25 @@ type ModifierGroupWithModifiers = MenuModifierGroup & {
 type ItemWithRelations = MenuItem & {
   category: MenuCategory;
   modifierGroups: ModifierGroupWithModifiers[];
+  images: MenuItemImage[];
 };
 
 type CategoryWithItems = MenuCategory & {
   items: Array<
     MenuItem & {
       modifierGroups: Array<{ id: string }>;
+      images: Array<{ id: string }>;
     }
   >;
 };
 
+const itemImagesInclude = {
+  orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
+} satisfies Prisma.MenuItem$imagesArgs;
+
 const itemDetailInclude = {
   category: true,
+  images: itemImagesInclude,
   modifierGroups: {
     orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
     include: {
@@ -42,6 +51,23 @@ const itemDetailInclude = {
     },
   },
 } satisfies Prisma.MenuItemInclude;
+
+function mapImages(
+  images: MenuItemImage[],
+  fallbackUrl: string | null,
+): MenuItemImageView[] {
+  if (images.length > 0) {
+    return images.map((image) => ({
+      id: image.id,
+      url: image.url,
+      sortOrder: image.sortOrder,
+    }));
+  }
+  if (fallbackUrl) {
+    return [{ id: "legacy", url: fallbackUrl, sortOrder: 0 }];
+  }
+  return [];
+}
 
 function mapModifierGroup(group: ModifierGroupWithModifiers): MenuModifierGroupView {
   return {
@@ -65,6 +91,7 @@ export function mapMenuItemToListItem(
   item: MenuItem & {
     category: MenuCategory;
     modifierGroups: Array<{ id: string }>;
+    images: Array<{ id: string }>;
   },
 ): MenuItemListItem {
   return {
@@ -78,6 +105,7 @@ export function mapMenuItemToListItem(
     available: item.available,
     sortOrder: item.sortOrder,
     modifierGroupCount: item.modifierGroups.length,
+    imageCount: item.images.length > 0 ? item.images.length : item.imageUrl ? 1 : 0,
   };
 }
 
@@ -91,6 +119,7 @@ export function mapMenuItemToDetail(item: ItemWithRelations): MenuItemDetail {
     description: item.description,
     priceCents: item.priceCents,
     imageUrl: item.imageUrl,
+    images: mapImages(item.images, item.imageUrl),
     available: item.available,
     sortOrder: item.sortOrder,
     modifierGroups: item.modifierGroups.map(mapModifierGroup),
@@ -140,6 +169,7 @@ export const menuRepository = {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           include: {
             modifierGroups: { select: { id: true } },
+            images: { select: { id: true } },
           },
         },
       },
@@ -160,6 +190,7 @@ export const menuRepository = {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           include: {
             modifierGroups: { select: { id: true } },
+            images: { select: { id: true } },
           },
         },
       },
@@ -324,6 +355,110 @@ export const menuRepository = {
       data: { available },
       include: itemDetailInclude,
     });
+  },
+
+  async countImagesForItem(itemId: string) {
+    return prisma.menuItemImage.count({ where: { itemId } });
+  },
+
+  async listImagesForItem(itemId: string) {
+    return prisma.menuItemImage.findMany({
+      where: { itemId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+  },
+
+  async addItemImage(input: {
+    itemId: string;
+    storeId: string;
+    url: string;
+    objectKey: string;
+  }) {
+    const item = await prisma.menuItem.findFirst({
+      where: { id: input.itemId, storeId: input.storeId },
+      include: { images: { select: { id: true, sortOrder: true } } },
+    });
+    if (!item) {
+      return null;
+    }
+
+    const nextSort =
+      item.images.reduce((max, row) => Math.max(max, row.sortOrder), -1) + 1;
+
+    return prisma.$transaction(async (tx) => {
+      const image = await tx.menuItemImage.create({
+        data: {
+          itemId: input.itemId,
+          url: input.url,
+          objectKey: input.objectKey || null,
+          sortOrder: nextSort,
+        },
+      });
+
+      // Keep denormalized cover URL as the first image.
+      if (!item.imageUrl || item.images.length === 0) {
+        await tx.menuItem.update({
+          where: { id: input.itemId },
+          data: { imageUrl: input.url },
+        });
+      }
+
+      return image;
+    });
+  },
+
+  async deleteItemImage(input: {
+    itemId: string;
+    storeId: string;
+    imageId: string;
+  }) {
+    const item = await prisma.menuItem.findFirst({
+      where: { id: input.itemId, storeId: input.storeId },
+      include: {
+        images: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
+      },
+    });
+    if (!item) {
+      return null;
+    }
+
+    const target = item.images.find((image) => image.id === input.imageId);
+    if (!target) {
+      return null;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.menuItemImage.delete({ where: { id: target.id } });
+      const remaining = item.images.filter((image) => image.id !== target.id);
+      const nextPrimary = remaining[0]?.url ?? null;
+      await tx.menuItem.update({
+        where: { id: input.itemId },
+        data: { imageUrl: nextPrimary },
+      });
+      return { deleted: target, remaining };
+    });
+  },
+
+  async clearItemImages(itemId: string, storeId: string) {
+    const item = await prisma.menuItem.findFirst({
+      where: { id: itemId, storeId },
+      include: { images: true },
+    });
+    if (!item) {
+      return null;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.menuItemImage.deleteMany({ where: { itemId } });
+      await tx.menuItem.update({
+        where: { id: itemId },
+        data: { imageUrl: null },
+      });
+    });
+
+    return item.images;
   },
 
   async nextCategorySortOrder(storeId: string) {

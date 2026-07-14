@@ -26,6 +26,7 @@ const catalog: MenuCatalog = {
           available: true,
           sortOrder: 0,
           modifierGroupCount: 0,
+          imageCount: 0,
         },
         {
           id: "2",
@@ -38,6 +39,7 @@ const catalog: MenuCatalog = {
           available: true,
           sortOrder: 1,
           modifierGroupCount: 0,
+          imageCount: 0,
         },
       ],
     },
@@ -58,6 +60,7 @@ const catalog: MenuCatalog = {
           available: true,
           sortOrder: 0,
           modifierGroupCount: 0,
+          imageCount: 0,
         },
       ],
     },

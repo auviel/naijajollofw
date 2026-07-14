@@ -351,17 +351,34 @@ model MenuItem {
   name        String
   description String?
   priceCents  Int
+  /// Primary cover image (denormalized from first MenuItemImage).
   imageUrl    String?
   available   Boolean      @default(true)
   sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  images         MenuItemImage[]
   modifierGroups MenuModifierGroup[]
   cartItems      CartItem[]
 
   @@index([categoryId, sortOrder])
   @@index([storeId, available])
+}
+
+/// Extra photos for a menu item. Keys live under stores/{storeId}/menu/{itemId}/.
+model MenuItemImage {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  url       String
+  /// R2 object key for GC (nullable for legacy /brand paths).
+  objectKey String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([itemId, sortOrder])
 }
 
 model MenuModifierGroup {

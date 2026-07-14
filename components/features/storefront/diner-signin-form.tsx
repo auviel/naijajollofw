@@ -8,6 +8,7 @@ import { TurnstileField } from "@/components/features/storefront/turnstile-field
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { safeCallbackUrl } from "@/lib/utils/safe-callback-url";
 
 type ChallengeResponse = {
@@ -134,9 +135,8 @@ export function DinerSigninForm() {
         />
       </FormField>
       <FormField id="password" label="Password">
-        <Input
+        <PasswordInput
           name="password"
-          type="password"
           autoComplete="current-password"
           defaultValue=""
           required

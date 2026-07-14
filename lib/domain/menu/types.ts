@@ -27,6 +27,13 @@ export type MenuItemListItem = {
   available: boolean;
   sortOrder: number;
   modifierGroupCount: number;
+  imageCount: number;
+};
+
+export type MenuItemImageView = {
+  id: string;
+  url: string;
+  sortOrder: number;
 };
 
 export type MenuItemDetail = {
@@ -38,6 +45,7 @@ export type MenuItemDetail = {
   description: string | null;
   priceCents: number;
   imageUrl: string | null;
+  images: MenuItemImageView[];
   available: boolean;
   sortOrder: number;
   modifierGroups: MenuModifierGroupView[];

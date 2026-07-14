@@ -37,10 +37,10 @@ function showStorefrontFooter(
 export function StorefrontFooterGate({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
-  const { mobileSearchOpen } = useStorefrontUi();
+  const { menuSearchFocused } = useStorefrontUi();
   const hasQuery = Boolean(searchParams.get("q")?.trim());
   const searching =
-    mobileSearchOpen || (pathname === "/" && hasQuery);
+    menuSearchFocused || (pathname === "/" && hasQuery);
 
   if (!showStorefrontFooter(pathname, searching)) {
     return null;
