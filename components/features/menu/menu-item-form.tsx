@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { FormField } from "@/components/ui/form-field";
 import { IconButton } from "@/components/ui/icon-button";
 import { ArrowDown, ArrowLeft, ArrowUp, Plus, X } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/select";
 import { ModifierSourcePicker } from "@/components/features/menu/modifier-source-picker";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
@@ -121,10 +122,14 @@ export function MenuItemForm({
   const { success, error: toastError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [categoryId, setCategoryId] = useState(item?.categoryId ?? categories[0]?.id ?? "");
-  const [additionalCategoryIds, setAdditionalCategoryIds] = useState<string[]>(
-    () => item?.additionalCategoryIds ?? [],
-  );
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(() => {
+    const primary = item?.categoryId ?? categories.find((c) => c.active)?.id ?? "";
+    if (!primary) return [];
+    const extras = (item?.additionalCategoryIds ?? []).filter((id) => id !== primary);
+    return [primary, ...extras];
+  });
+  const categoryId = selectedCategoryIds[0] ?? "";
+  const additionalCategoryIds = selectedCategoryIds.slice(1);
   const [name, setName] = useState(item?.name ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
   const [priceDollars, setPriceDollars] = useState(
@@ -148,10 +153,8 @@ export function MenuItemForm({
   const [destroyPending, setDestroyPending] = useState(false);
 
   const activeCategories = categories.filter(
-    (category) => category.active || category.id === categoryId,
-  );
-  const alsoShowCategories = activeCategories.filter(
-    (category) => category.id !== categoryId,
+    (category) =>
+      category.active || selectedCategoryIds.includes(category.id),
   );
   const totalPhotoCount = savedImages.length + pendingFiles.length;
 
@@ -402,7 +405,12 @@ export function MenuItemForm({
       const itemId = body.data.id;
 
       if (pendingFiles.length > 0) {
-        for (const pending of pendingFiles) {
+        const uploaded: MenuItemImageView[] = [];
+        let failedAt = -1;
+        let failMessage = "";
+
+        for (let index = 0; index < pendingFiles.length; index += 1) {
+          const pending = pendingFiles[index]!;
           const formData = new FormData();
           formData.set("file", pending.file);
           const uploadResponse = await fetch(`/api/menu/items/${itemId}/image`, {
@@ -410,24 +418,43 @@ export function MenuItemForm({
             body: formData,
           });
           if (!uploadResponse.ok) {
-            const message = await readApiError(uploadResponse);
-            setFormError(
-              mode === "create"
-                ? `Item saved, but a photo failed to upload: ${message}`
-                : message,
-            );
-            toastError(message);
-            router.push(`/dashboard/menu/${itemId}`);
-            router.refresh();
-            return;
+            failedAt = index;
+            failMessage = await readApiError(uploadResponse);
+            break;
           }
+
+          const uploadBody = (await uploadResponse.json()) as {
+            data: { imageId: string; imageUrl: string };
+          };
+          uploaded.push({
+            id: uploadBody.data.imageId,
+            url: uploadBody.data.imageUrl,
+            sortOrder: savedImages.length + uploaded.length,
+          });
         }
-        for (const pending of pendingFiles) {
+
+        for (const pending of pendingFiles.slice(0, uploaded.length)) {
           if (pending.previewUrl.startsWith("blob:")) {
             URL.revokeObjectURL(pending.previewUrl);
           }
         }
-        setPendingFiles([]);
+
+        if (uploaded.length > 0) {
+          setSavedImages((current) => [...current, ...uploaded]);
+        }
+        setPendingFiles((current) => current.slice(uploaded.length));
+
+        if (failedAt >= 0) {
+          setFormError(
+            mode === "create"
+              ? `Item saved, but a photo failed to upload: ${failMessage}`
+              : failMessage,
+          );
+          toastError(failMessage);
+          router.push(`/dashboard/menu/${itemId}`);
+          router.refresh();
+          return;
+        }
       }
 
       success(mode === "create" ? "Item created." : "Item saved.");
@@ -493,16 +520,14 @@ export function MenuItemForm({
         <CardContent className="space-y-4">
           <FormField
             id="itemCategory"
-            label="Category"
+            label="Categories"
             error={fieldErrors.categoryId}
           >
-            <Select
-              value={categoryId}
+            <MultiSelect
+              id="itemCategory"
+              values={selectedCategoryIds}
               onChange={(next) => {
-                setCategoryId(next);
-                setAdditionalCategoryIds((current) =>
-                  current.filter((id) => id !== next),
-                );
+                setSelectedCategoryIds(next);
                 if (fieldErrors.categoryId) {
                   setFieldErrors((current) => ({
                     ...current,
@@ -514,43 +539,10 @@ export function MenuItemForm({
                 value: category.id,
                 label: category.name,
               }))}
+              placeholder="Choose categories"
+              aria-invalid={fieldErrors.categoryId ? true : undefined}
             />
           </FormField>
-
-          {alsoShowCategories.length > 0 ? (
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium text-text-secondary">
-                Also show in
-              </legend>
-              <p className="text-sm text-text-tertiary">
-                Same product can appear under more than one category.
-              </p>
-              <ul className="space-y-1 rounded-2xl bg-surface-elevated p-3">
-                {alsoShowCategories.map((category) => {
-                  const checked = additionalCategoryIds.includes(category.id);
-                  return (
-                    <li key={category.id}>
-                      <label className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-sm text-foreground hover:bg-surface">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-border accent-foreground"
-                          checked={checked}
-                          onChange={() => {
-                            setAdditionalCategoryIds((current) =>
-                              checked
-                                ? current.filter((id) => id !== category.id)
-                                : [...current, category.id],
-                            );
-                          }}
-                        />
-                        <span>{category.name}</span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            </fieldset>
-          ) : null}
 
           <div className="space-y-2">
             <label
@@ -671,17 +663,18 @@ export function MenuItemForm({
                         key={image.id}
                         className="relative h-24 w-24 overflow-hidden rounded-2xl bg-surface"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                           src={image.url}
                           alt=""
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="96px"
+                          className="object-cover"
                         />
                         <IconButton
                           onClick={() =>
                             setDestroyTarget({ type: "photo", id: image.id })
                           }
-                          className="absolute top-1 right-1 h-7 w-7 bg-background/90 text-foreground hover:bg-background"
+                          className="absolute top-1 right-1 z-10 h-7 w-7 bg-background/90 text-foreground hover:bg-background"
                           aria-label="Remove photo"
                         >
                           <X className="h-3.5 w-3.5" aria-hidden />
@@ -693,6 +686,7 @@ export function MenuItemForm({
                     key={pending.key}
                     className="relative h-24 w-24 overflow-hidden rounded-2xl bg-surface ring-2 ring-accent/40"
                   >
+                    {/* Local blob: preview — next/image cannot load blob URLs */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={pending.previewUrl}

@@ -3,8 +3,11 @@ import { sentryBeforeSend } from "@/lib/observability/sentry-before-send";
 import { AppError } from "@/lib/utils/errors";
 import type { ErrorEvent, EventHint } from "@sentry/core";
 
-function event(message: string): ErrorEvent {
-  return { message } as ErrorEvent;
+function event(message: string, type = "Error"): ErrorEvent {
+  return {
+    message,
+    exception: { values: [{ type, value: message }] },
+  } as ErrorEvent;
 }
 
 function hint(error: unknown): EventHint {
@@ -17,6 +20,26 @@ describe("sentryBeforeSend", () => {
       sentryBeforeSend(
         event("Restaurant is not set up yet."),
         hint(new AppError("NOT_FOUND", "Restaurant is not set up yet.", 404)),
+      ),
+    ).toBeNull();
+  });
+
+  it("drops AppError when only exception metadata is present", () => {
+    expect(
+      sentryBeforeSend(
+        event("Authentication required", "AppError"),
+        hint(undefined),
+      ),
+    ).toBeNull();
+  });
+
+  it("drops cookie modification noise from RSC layouts", () => {
+    expect(
+      sentryBeforeSend(
+        event(
+          "Cookies can only be modified in a Server Action or Route Handler.",
+        ),
+        hint(new Error("Cookies can only be modified in a Server Action or Route Handler.")),
       ),
     ).toBeNull();
   });

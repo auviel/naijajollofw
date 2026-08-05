@@ -1,6 +1,54 @@
+import { cache } from "react";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import type { Store } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
+
+/** Short process TTL — React `cache()` alone misses across parallel RSC trees. */
+const STORE_READ_TTL_MS = 5_000;
+const storeByIdMemo = new Map<
+  string,
+  { expiresAt: number; value: Store | null; inflight?: Promise<Store | null> }
+>();
+
+export function invalidateStoreReadCache(id?: string) {
+  if (id) {
+    storeByIdMemo.delete(id);
+    return;
+  }
+  storeByIdMemo.clear();
+}
+
+async function loadStoreById(id: string): Promise<Store | null> {
+  const now = Date.now();
+  const hit = storeByIdMemo.get(id);
+  if (hit && hit.expiresAt > now && !hit.inflight) {
+    return hit.value;
+  }
+  if (hit?.inflight) {
+    return hit.inflight;
+  }
+
+  const inflight = prisma.store.findUnique({ where: { id } }).then((value) => {
+    storeByIdMemo.set(id, {
+      expiresAt: Date.now() + STORE_READ_TTL_MS,
+      value,
+    });
+    return value;
+  });
+
+  storeByIdMemo.set(id, {
+    expiresAt: now + STORE_READ_TTL_MS,
+    value: hit?.value ?? null,
+    inflight,
+  });
+
+  return inflight;
+}
+
+/** Deduplicate Store.findUnique within a single RSC/request render. */
+const findStoreByIdCached = cache(async (id: string): Promise<Store | null> => {
+  return loadStoreById(id);
+});
 
 export function mapStoreToProfile(store: Store): StoreProfile {
   return {
@@ -44,7 +92,7 @@ export type UpdateStoreData = {
 
 export const storeRepository = {
   async findById(id: string): Promise<Store | null> {
-    return prisma.store.findUnique({ where: { id } });
+    return findStoreByIdCached(id);
   },
 
   async findByIdOrThrow(id: string): Promise<Store> {
@@ -63,7 +111,7 @@ export const storeRepository = {
   async update(id: string, data: UpdateStoreData): Promise<Store> {
     const { enabledUberDirect, enabledDoorDashDrive, ...addressData } = data;
 
-    return prisma.store.update({
+    const updated = await prisma.store.update({
       where: { id },
       data: {
         ...addressData,
@@ -71,12 +119,16 @@ export const storeRepository = {
         ...(enabledDoorDashDrive !== undefined ? { enabledDoorDashDrive } : {}),
       },
     });
+    invalidateStoreReadCache(id);
+    return updated;
   },
 
   async updatePrepMinutes(id: string, prepMinutes: number): Promise<Store> {
-    return prisma.store.update({
+    const updated = await prisma.store.update({
       where: { id },
       data: { prepMinutes },
     });
+    invalidateStoreReadCache(id);
+    return updated;
   },
 };

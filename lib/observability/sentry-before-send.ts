@@ -19,28 +19,46 @@ function isExpectedClientAppError(error: unknown): boolean {
   );
 }
 
+function eventMessage(event: ErrorEvent, hint: EventHint): string {
+  const error = hint.originalException;
+  if (
+    typeof error === "object" &&
+    error &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  return (
+    event.message ??
+    event.exception?.values?.[0]?.value ??
+    ""
+  );
+}
+
 /** Drop expected / non-actionable noise so real diner/staff bugs stay visible. */
 export function sentryBeforeSend(
   event: ErrorEvent,
   hint: EventHint,
 ): ErrorEvent | null {
   const error = hint.originalException;
-  const message =
-    (typeof error === "object" &&
-    error &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-      ? (error as { message: string }).message
-      : null) ??
-    event.message ??
-    event.exception?.values?.[0]?.value ??
-    "";
+  const message = eventMessage(event, hint);
+  const exceptionType = event.exception?.values?.[0]?.type ?? "";
 
   if (isExpectedClientAppError(error)) {
     return null;
   }
 
-  if (/Restaurant is not set up yet/i.test(message)) {
+  // Next.js RSC often rethrows / serializes AppError so originalException is not AppError.
+  if (
+    exceptionType === "AppError" ||
+    /Authentication required/i.test(message) ||
+    /Store manager access required/i.test(message) ||
+    /Restaurant is not set up yet/i.test(message)
+  ) {
     return null;
   }
 
@@ -49,7 +67,18 @@ export function sentryBeforeSend(
     /Hydration failed because the server rendered text didn't match/i.test(
       message,
     ) ||
-    /The destination stream closed early/i.test(message)
+    /The destination stream closed early/i.test(message) ||
+    /Cookies can only be modified in a Server Action or Route Handler/i.test(
+      message,
+    ) ||
+    /Switched to client rendering because the server rendering errored/i.test(
+      message,
+    ) ||
+    /TypeError: Load failed/i.test(message) ||
+    /^Load failed$/i.test(message) ||
+    /Can't find variable: X/i.test(message) ||
+    /Module build failed/i.test(message) ||
+    /Unexpected end of JSON input/i.test(message)
   ) {
     return null;
   }

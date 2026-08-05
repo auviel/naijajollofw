@@ -10,6 +10,17 @@ import type { StoreProfile } from "@/lib/domain/store/types";
 import type { MobileApp, UserRole } from "@/lib/domain/auth/types";
 import type { Session } from "next-auth";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+/** Browser document navigations — redirect instead of throwing so parallel RSC pages don't spam Sentry. */
+async function shouldRedirectUnauthenticated(): Promise<boolean> {
+  const h = await headers();
+  if (h.get("next-action")) {
+    return false;
+  }
+  const accept = h.get("accept") ?? "";
+  return accept.includes("text/html");
+}
 
 export type SessionUser = {
   id: string;
@@ -119,9 +130,15 @@ export const getOptionalSessionUser = getSessionUser;
 export async function requireStoreManager(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) {
+    if (await shouldRedirectUnauthenticated()) {
+      redirect("/api/auth/clear-session?callbackUrl=/login");
+    }
     throw new AppError("UNAUTHORIZED", "Authentication required", 401);
   }
   if (user.role !== "STORE_MANAGER") {
+    if (await shouldRedirectUnauthenticated()) {
+      redirect("/api/auth/clear-session?callbackUrl=/login");
+    }
     throw new AppError("FORBIDDEN", "Store manager access required", 403);
   }
   return user;
@@ -130,6 +147,9 @@ export async function requireStoreManager(): Promise<SessionUser> {
 export async function requireDiner(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) {
+    if (await shouldRedirectUnauthenticated()) {
+      redirect("/api/auth/clear-session?callbackUrl=/login");
+    }
     throw new AppError("UNAUTHORIZED", "Authentication required", 401);
   }
   if (user.role !== "DINER") {

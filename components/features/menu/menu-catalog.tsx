@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { MenuItemThumb } from "@/components/features/storefront/menu-item-thumb";
 import { Image as ImageIcon, Search, UtensilsCrossed } from "@/components/ui/icons";
 import { filterCatalogByQuery } from "@/lib/domain/menu/search";
 import type { MenuCatalog, MenuItemListItem } from "@/lib/domain/menu/types";
@@ -222,11 +223,9 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
       >
         <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface sm:h-16 sm:w-16">
           {item.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <MenuItemThumb
               src={item.imageUrl}
-              alt=""
-              className="h-full w-full object-cover"
+              sizes="(max-width: 640px) 56px, 64px"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-text-tertiary">
@@ -234,7 +233,7 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
             </div>
           )}
           {item.imageCount > 1 ? (
-            <span className="absolute right-1 bottom-1 rounded bg-background/90 px-1 text-[10px] font-semibold text-foreground">
+            <span className="absolute right-1 bottom-1 z-10 rounded bg-background/90 px-1 text-[10px] font-semibold text-foreground">
               +{item.imageCount - 1}
             </span>
           ) : null}
