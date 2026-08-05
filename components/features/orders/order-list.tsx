@@ -7,6 +7,10 @@ import { OrderStatusBadge } from "@/components/features/orders/order-status-badg
 import { Search } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import {
+  formatKitchenScheduled,
+  formatKitchenWait,
+} from "@/lib/domain/order/kitchen-format";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import type {
   StaffOrderChannel,
@@ -112,56 +116,84 @@ export function OrderListFilters({
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search NJ-1084, #12, name, or phone"
+          placeholder="Search NJ-1084, name, or phone"
           className="pl-11"
           aria-label="Search orders"
         />
       </div>
 
-      <label className="sr-only" htmlFor="order-channel">
-        Channel
-      </label>
-      <Select
-        id="order-channel"
-        value={channel}
-        disabled={pending}
-        onChange={(next) => pushParams({ channel: next as StaffOrderChannel })}
-        options={CHANNELS.map((item) => ({
-          value: item.id,
-          label: item.label,
-        }))}
-        className="sm:w-36"
-        triggerClassName={filterTriggerClassName}
-        aria-label="Channel"
-      />
+      <div className="grid grid-cols-2 gap-2 sm:contents">
+        <label className="sr-only" htmlFor="order-channel">
+          Channel
+        </label>
+        <Select
+          id="order-channel"
+          value={channel}
+          disabled={pending}
+          onChange={(next) => pushParams({ channel: next as StaffOrderChannel })}
+          options={CHANNELS.map((item) => ({
+            value: item.id,
+            label: item.label,
+          }))}
+          className="min-w-0 sm:w-36"
+          triggerClassName={filterTriggerClassName}
+          aria-label="Channel"
+        />
 
-      <label className="sr-only" htmlFor="order-status">
-        Status
-      </label>
-      <Select
-        id="order-status"
-        value={filter}
-        disabled={pending}
-        onChange={(next) =>
-          pushParams({ filter: next as StaffOrderListFilter })
-        }
-        options={FILTERS.map((item) => ({
-          value: item.id,
-          label: item.label,
-        }))}
-        className="sm:w-40"
-        triggerClassName={filterTriggerClassName}
-        aria-label="Status"
-      />
+        <label className="sr-only" htmlFor="order-status">
+          Status
+        </label>
+        <Select
+          id="order-status"
+          value={filter}
+          disabled={pending}
+          onChange={(next) =>
+            pushParams({ filter: next as StaffOrderListFilter })
+          }
+          options={FILTERS.map((item) => ({
+            value: item.id,
+            label: item.label,
+          }))}
+          className="min-w-0 sm:w-40"
+          triggerClassName={filterTriggerClassName}
+          aria-label="Status"
+        />
+      </div>
     </div>
   );
 }
 
+const LIVE_FILTERS = new Set<StaffOrderListFilter>([
+  "active",
+  "new",
+  "preparing",
+  "ready",
+]);
+
 type OrderListProps = {
   items: StaffOrderListItem[];
+  filter: StaffOrderListFilter;
 };
 
-export function OrderList({ items }: OrderListProps) {
+function orderTitle(order: StaffOrderListItem): string {
+  return order.displayNumber || "Order";
+}
+
+function orderTimeLabel(
+  order: StaffOrderListItem,
+  filter: StaffOrderListFilter,
+): string {
+  if (order.scheduledFor) {
+    return `Scheduled ${formatKitchenScheduled(order.scheduledFor)}`;
+  }
+  const placed = order.placedAt ?? order.createdAt;
+  if (LIVE_FILTERS.has(filter)) {
+    return formatKitchenWait(placed);
+  }
+  return formatDateTime(placed);
+}
+
+export function OrderList({ items, filter }: OrderListProps) {
   return (
     <ul className="divide-y divide-border rounded-2xl border border-border bg-surface-elevated">
       {items.map((order) => (
@@ -171,24 +203,27 @@ export function OrderList({ items }: OrderListProps) {
             className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-background sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 space-y-0.5">
-              <p className="font-medium text-foreground">
-                {order.displayNumber ? `${order.displayNumber} · ` : null}
+              <p className="font-medium text-foreground">{orderTitle(order)}</p>
+              <p className="truncate text-sm text-foreground">
                 {order.customerName}
-                {order.dayTicketIsToday && order.dayTicket != null ? (
-                  <span className="ml-1.5 text-text-secondary">#{order.dayTicket}</span>
-                ) : null}
               </p>
               <p className="truncate text-sm text-text-secondary">
                 {order.itemSummary} ·{" "}
                 {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
               </p>
-              <p className="text-xs text-text-tertiary">
-                {formatDateTime(order.placedAt ?? order.createdAt)}
+              <p
+                className={
+                  order.scheduledFor
+                    ? "text-xs font-medium text-amber-800"
+                    : "text-xs text-text-tertiary"
+                }
+              >
+                {orderTimeLabel(order, filter)}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 text-sm">
               <OrderStatusBadge status={order.status} />
-              <span className="font-medium text-foreground">
+              <span className="font-medium tabular-nums text-foreground">
                 {formatCadFromCents(order.totalCents)}
               </span>
             </div>

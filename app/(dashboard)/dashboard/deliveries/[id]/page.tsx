@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DashboardPage, DashboardPageBody } from "../../layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
 import { DeliveryDetailLive } from "@/components/features/deliveries/delivery-detail-live";
 import { getDelivery } from "@/lib/services/delivery/get-delivery";
 import { isAppError } from "@/lib/utils/errors";

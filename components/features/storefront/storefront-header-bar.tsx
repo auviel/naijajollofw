@@ -296,6 +296,7 @@ export function StorefrontHeaderBar({
                   }}
                   placeholder={`Search in ${storeName}`}
                   className="h-10 w-full rounded-full border-0 bg-surface py-0 pr-10 pl-10 text-base text-foreground outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent/25 [&::-webkit-search-cancel-button]:hidden"
+                  role="combobox"
                   aria-autocomplete="list"
                   aria-controls={suggestListId}
                   aria-expanded={desktopSuggestOpen && Boolean(query.trim())}

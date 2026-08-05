@@ -19,25 +19,37 @@ export function isOrderWhatsAppUpdatesEnabled(): boolean {
   );
 }
 
-const NOTIFY_STATUSES = new Set<OrderStatus>([
-  "accepted",
-  "ready",
-  "ready_for_pickup",
-  "out_for_delivery",
-  "completed",
-  "cancelled",
-]);
-
 type EmailNotifyStatus =
   | "accepted"
   | "ready"
   | "ready_for_pickup"
   | "out_for_delivery"
-  | "completed"
   | "cancelled";
 
-function isEmailNotifyStatus(status: OrderStatus): status is EmailNotifyStatus {
-  return NOTIFY_STATUSES.has(status);
+/** Pickup: one ready ping (`ready_for_pickup`). Delivery: ping on `ready`. No completed mail. */
+export function shouldNotifyOrderStatus(
+  status: OrderStatus,
+  fulfillmentType: "pickup" | "delivery",
+): boolean {
+  switch (status) {
+    case "accepted":
+    case "out_for_delivery":
+    case "cancelled":
+      return true;
+    case "ready_for_pickup":
+      return fulfillmentType === "pickup";
+    case "ready":
+      return fulfillmentType === "delivery";
+    default:
+      return false;
+  }
+}
+
+function isEmailNotifyStatus(
+  status: OrderStatus,
+  fulfillmentType: "pickup" | "delivery",
+): status is EmailNotifyStatus {
+  return shouldNotifyOrderStatus(status, fulfillmentType);
 }
 
 function trackingUrl(orderId: string, publicToken: string): string | null {
@@ -135,7 +147,7 @@ async function sendWhatsAppUpdate(input: {
   if (!isOrderWhatsAppUpdatesEnabled()) {
     return;
   }
-  if (!NOTIFY_STATUSES.has(input.status)) {
+  if (!shouldNotifyOrderStatus(input.status, input.fulfillmentType)) {
     return;
   }
 
@@ -175,7 +187,7 @@ function sendEmailUpdate(input: {
   note?: string | null;
   displayNumber?: string | null;
 }): void {
-  if (!isEmailNotifyStatus(input.status)) {
+  if (!isEmailNotifyStatus(input.status, input.fulfillmentType)) {
     return;
   }
 

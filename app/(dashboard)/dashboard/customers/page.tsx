@@ -3,9 +3,8 @@ import { Suspense } from "react";
 import {
   DashboardPage,
   DashboardPageBody,
-  PageHeader,
-  PrimaryLink,
-} from "../layout";
+} from "@/components/layout/dashboard-page";
+import { PageHeader, PrimaryLink } from "@/components/layout/page-header";
 import { CustomerList } from "@/components/features/customers/customer-list";
 import { CustomerListEmpty } from "@/components/features/customers/customer-list";
 import { CustomerListFilters } from "@/components/features/customers/customer-list-filters";

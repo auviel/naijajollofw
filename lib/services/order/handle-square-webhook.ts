@@ -64,7 +64,6 @@ export async function handleSquareWebhook(
         itemSummary: summarizeOrderLineItems(updated.lineItems),
         note: `Square payment ${status.toLowerCase()}`,
         displayNumber: updated.displayNumber,
-        dayTicket: updated.dayTicket,
       });
     }
     return;
@@ -94,7 +93,6 @@ export async function handleSquareWebhook(
           totalCents: updated.totalCents,
           itemSummary: summarizeOrderLineItems(updated.lineItems),
           displayNumber: updated.displayNumber,
-          dayTicket: updated.dayTicket,
         });
       }
     }

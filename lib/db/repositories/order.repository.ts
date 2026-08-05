@@ -14,8 +14,6 @@ import type { CartModifierSelection } from "@/lib/domain/cart/types";
 import {
   displayNumberSearchTerms,
   isSameStoreLocalDate,
-  parseDayTicketQuery,
-  storeLocalDateKey,
 } from "@/lib/domain/order/order-numbers";
 import {
   getDeliveryProviderLabel,
@@ -352,10 +350,6 @@ export const orderRepository = {
   }) {
     const search = input.search?.trim();
     const channel = input.channel ?? "all";
-    const dayTicketQuery = search ? parseDayTicketQuery(search) : null;
-    const todayDate = new Date(
-      `${storeLocalDateKey(new Date(), getStoreTimeZone())}T00:00:00.000Z`,
-    );
     return prisma.order.findMany({
       where: {
         storeId: input.storeId,
@@ -374,9 +368,6 @@ export const orderRepository = {
                 ...displayNumberSearchTerms(search).map((term) => ({
                   displayNumber: { contains: term, mode: "insensitive" as const },
                 })),
-                ...(dayTicketQuery != null
-                  ? [{ dayTicket: dayTicketQuery, dayTicketDate: todayDate }]
-                  : []),
               ],
             }
           : {}),
@@ -410,7 +401,7 @@ export const orderRepository = {
   async createPaidOrder(input: CreateOrderInput) {
     const now = new Date();
     return prisma.$transaction(async (tx) => {
-      const numbers = await allocateOrderNumbers(tx, input.storeId, now);
+      const numbers = await allocateOrderNumbers(tx, input.storeId);
       return tx.order.create({
         data: {
           storeId: input.storeId,
@@ -619,9 +610,7 @@ export const orderRepository = {
     const now = new Date();
 
     return prisma.$transaction(async (tx) => {
-      const numbers = await allocateOrderNumbers(tx, input.storeId, now, {
-        includeDayTicket: false,
-      });
+      const numbers = await allocateOrderNumbers(tx, input.storeId);
       return tx.order.create({
         data: {
           storeId: input.storeId,

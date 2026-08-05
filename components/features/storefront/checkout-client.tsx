@@ -88,7 +88,9 @@ export function CheckoutClient({
 }: CheckoutClientProps) {
   const router = useRouter();
   const { error: toastError } = useToast();
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(
+    () => typeof window !== "undefined" && Boolean(window.Square),
+  );
   const [scriptFailed, setScriptFailed] = useState(false);
   const [customerName, setCustomerName] = useState(initialCustomerName);
   const [customerPhone, setCustomerPhone] = useState(initialCustomerPhone);
@@ -155,12 +157,6 @@ export function CheckoutClient({
     disabled:
       !configured || simulatePayments || initialCart.items.length === 0,
   });
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.Square) {
-      setScriptLoaded(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (!configured || simulatePayments || scriptLoaded || scriptFailed) {
@@ -335,7 +331,7 @@ export function CheckoutClient({
           idempotencyKey: getCheckoutIdempotencyKey(),
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
-          customerEmail: customerEmail.trim() || undefined,
+          customerEmail: customerEmail.trim(),
           fulfillmentType,
           tipCents: 0,
           notes: notes.trim() || undefined,
@@ -703,7 +699,7 @@ export function CheckoutClient({
         />
         <FormField
           id="checkout-email"
-          label="Email (optional)"
+          label="Email"
           error={fieldErrors.customerEmail}
         >
           <Input
@@ -715,6 +711,7 @@ export function CheckoutClient({
             }}
             autoComplete="email"
             placeholder="you@example.com"
+            required
           />
         </FormField>
         {fulfillmentType === "delivery" ? (

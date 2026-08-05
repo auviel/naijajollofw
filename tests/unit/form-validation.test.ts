@@ -56,7 +56,7 @@ describe("validateLoginFields", () => {
 });
 
 describe("validateCheckoutForm", () => {
-  it("requires name, phone, and a schedule when closed", () => {
+  it("requires name, phone, email, and a schedule when closed", () => {
     const errors = validateCheckoutForm({
       customerName: "",
       customerPhone: "123",
@@ -73,11 +73,25 @@ describe("validateCheckoutForm", () => {
     expect(errors.scheduledFor).toMatch(/time/i);
   });
 
+  it("requires email", () => {
+    const errors = validateCheckoutForm({
+      customerName: "Ada Okonkwo",
+      customerPhone: "5195550100",
+      customerEmail: "",
+      fulfillmentType: "pickup",
+      dropoffAddress: "",
+      mustSchedule: false,
+      scheduledFor: null,
+    });
+
+    expect(errors.customerEmail).toMatch(/required|email/i);
+  });
+
   it("requires a verified delivery address", () => {
     const errors = validateCheckoutForm({
       customerName: "Ada",
       customerPhone: "5195550100",
-      customerEmail: "",
+      customerEmail: "ada@example.com",
       fulfillmentType: "delivery",
       dropoffAddress: "12",
       mustSchedule: false,

@@ -42,13 +42,12 @@ import { normalizeCanadianPhone } from "@/lib/utils/phone";
 import { logger } from "@/lib/utils/logger";
 
 function resolveReceiptEmail(
-  parsedEmail: string | undefined,
+  parsedEmail: string,
   dinerEmail: string | undefined,
-): string | null {
-  const fromForm = parsedEmail?.trim().toLowerCase() || "";
+): string {
+  const fromForm = parsedEmail.trim().toLowerCase();
   if (fromForm) return fromForm;
-  const fromDiner = dinerEmail?.trim().toLowerCase() || "";
-  return fromDiner || null;
+  return dinerEmail?.trim().toLowerCase() || "";
 }
 
 function notifyStaffNewOrder(
@@ -71,7 +70,6 @@ function notifyStaffNewOrder(
     itemSummary: summarizeOrderLineItems(order.lineItems),
     scheduledLabel,
     displayNumber: order.displayNumber,
-    dayTicket: order.dayTicket,
   });
 }
 
@@ -221,10 +219,7 @@ export async function checkoutWithSquare(
     paymentId = payment.paymentId;
   }
 
-  const receiptEmail = resolveReceiptEmail(
-    parsed.customerEmail || undefined,
-    diner?.email,
-  );
+  const receiptEmail = resolveReceiptEmail(parsed.customerEmail, diner?.email);
 
   const existing = await orderRepository.findBySquarePaymentId(paymentId);
   if (existing) {

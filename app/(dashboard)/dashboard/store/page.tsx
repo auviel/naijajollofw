@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { DashboardPage, DashboardPageBody, PageHeader, PrimaryLink } from "../layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
+import { PageHeader, PrimaryLink } from "@/components/layout/page-header";
 import { StoreProfileForm } from "@/components/features/store/store-profile-form";
 import { requireSessionContext } from "@/lib/auth/session";
 import { isDoorDashEnabled, isUberConfigured } from "@/lib/config/environment";

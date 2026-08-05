@@ -53,7 +53,7 @@ export function validateCheckoutForm(input: {
     idempotencyKey: "00000000-0000-4000-8000-000000000000",
     customerName: input.customerName,
     customerPhone: input.customerPhone,
-    customerEmail: input.customerEmail.trim() || undefined,
+    customerEmail: input.customerEmail.trim(),
     fulfillmentType: input.fulfillmentType,
     tipCents: 0,
     dropoffAddress:

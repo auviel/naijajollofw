@@ -120,7 +120,11 @@ Open [http://localhost:3000](http://localhost:3000) for the storefront.
 | `npm run dev` | Start dev server |
 | `npm run build` | Production build |
 | `npm run test` | Run unit tests (Vitest) |
+| `npm run test:coverage` | Unit + integration tests with coverage gates |
 | `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `npm run audit` | Fail on high/critical npm advisories |
+| `npm run prepush` | Lint, typecheck, Prisma validate, coverage, audit (no e2e). Also runs automatically on `git push` via Husky. |
 | `npm run db:generate` | Generate Prisma client |
 | `npm run db:migrate` | Run migrations |
 | `npm run db:studio` | Open Prisma Studio |

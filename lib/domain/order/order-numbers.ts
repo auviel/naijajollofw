@@ -5,37 +5,16 @@ export function formatDisplayNumber(prefix: string, sequence: number): string {
   return `${cleanPrefix}-${sequence}`;
 }
 
-export function formatDayTicketLabel(dayTicket: number): string {
-  return `#${dayTicket}`;
-}
-
 export function formatOrderRef(input: {
   displayNumber?: string | null;
-  dayTicket?: number | null;
 }): string {
-  const parts: string[] = [];
-  if (input.displayNumber?.trim()) {
-    parts.push(input.displayNumber.trim());
-  }
-  if (input.dayTicket != null && input.dayTicket > 0) {
-    parts.push(formatDayTicketLabel(input.dayTicket));
-  }
-  return parts.join(" · ");
+  return input.displayNumber?.trim() || "";
 }
 
 /** YYYY-MM-DD in the store timezone. */
 export function storeLocalDateKey(at: Date, timeZone: string): string {
   const { year, month, day } = getCalendarPartsInZone(at, timeZone);
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
-/** Kitchen ticket search — requires `#` so `12` does not match every day's #12. */
-export function parseDayTicketQuery(raw: string): number | null {
-  const match = /^#(\d{1,4})$/.exec(raw.trim());
-  if (!match) return null;
-  const n = Number.parseInt(match[1] ?? "", 10);
-  if (!Number.isInteger(n) || n < 1) return null;
-  return n;
 }
 
 export function isSameStoreLocalDate(

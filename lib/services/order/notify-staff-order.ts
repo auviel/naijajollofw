@@ -25,7 +25,6 @@ export type NotifyStaffOrderInput = {
   scheduledLabel?: string | null;
   note?: string | null;
   displayNumber?: string | null;
-  dayTicket?: number | null;
 };
 
 function dashboardOrderUrl(orderId: string): string | null {
@@ -80,7 +79,6 @@ export async function notifyStaffOrder(
         dashboardUrl,
         scheduledLabel: input.scheduledLabel,
         displayNumber: input.displayNumber,
-        dayTicket: input.dayTicket,
       });
       for (const to of recipients) {
         sendEmailInBackground({

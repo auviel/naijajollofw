@@ -2,29 +2,44 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClipboardList } from "@/components/ui/icons";
-import { OrderStatusBadge } from "@/components/features/orders/order-status-badge";
-import {
-  OrderDetailLink,
-  OrderTransitionButtons,
-} from "@/components/features/orders/order-transition-buttons";
+import { OrderTransitionButtons } from "@/components/features/orders/order-transition-buttons";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   ACTIVE_DELIVERY_POLL_MS,
   useLiveRefresh,
 } from "@/components/hooks/use-live-refresh";
-import { formatDayTicketLabel } from "@/lib/domain/order/order-numbers";
+import {
+  formatKitchenScheduled,
+  formatKitchenWait,
+} from "@/lib/domain/order/kitchen-format";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import {
   getTransitionActions,
   KITCHEN_BOARD_COLUMNS,
+  type TransitionAction,
 } from "@/lib/domain/order/transitions";
 import { easeOut, listItem, motionDuration } from "@/lib/motion/tokens";
-import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
 const BOARD_POLL_MS = ACTIVE_DELIVERY_POLL_MS;
+
+const TAB_LABELS: Record<(typeof KITCHEN_BOARD_COLUMNS)[number]["id"], string> =
+  {
+    new: "New",
+    accepted: "Accepted",
+    preparing: "Preparing",
+    ready: "Ready",
+  };
+
+const BOARD_ACTION_LABELS: Partial<Record<TransitionAction["to"], string>> = {
+  preparing: "Prep",
+  ready: "Ready",
+  ready_for_pickup: "Ready",
+};
+
+type ColumnId = (typeof KITCHEN_BOARD_COLUMNS)[number]["id"];
 
 type KitchenBoardProps = {
   initialItems: StaffOrderListItem[];
@@ -38,20 +53,30 @@ type ListApiResponse = {
   };
 };
 
-function formatAge(iso: string | null): string {
-  if (!iso) {
-    return "";
+function orderTimeMs(order: StaffOrderListItem): number {
+  const iso = order.placedAt ?? order.createdAt;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function ordersForColumn(
+  items: StaffOrderListItem[],
+  column: (typeof KITCHEN_BOARD_COLUMNS)[number],
+): StaffOrderListItem[] {
+  return items
+    .filter((order) =>
+      (column.statuses as readonly string[]).includes(order.status),
+    )
+    .sort((a, b) => orderTimeMs(b) - orderTimeMs(a));
+}
+
+function firstColumnWithWork(items: StaffOrderListItem[]): ColumnId {
+  for (const column of KITCHEN_BOARD_COLUMNS) {
+    if (ordersForColumn(items, column).length > 0) {
+      return column.id;
+    }
   }
-  const ms = Date.now() - new Date(iso).getTime();
-  const minutes = Math.max(0, Math.floor(ms / 60_000));
-  if (minutes < 1) {
-    return "Just now";
-  }
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ${minutes % 60}m ago`;
+  return "new";
 }
 
 export function KitchenBoard({
@@ -61,11 +86,16 @@ export function KitchenBoard({
   const [items, setItems] = useState(initialItems);
   const [pendingCount, setPendingCount] = useState(initialPendingCount);
   const [prevInitial, setPrevInitial] = useState(initialItems);
-  const knownPendingIds = useRef(new Set(
-    initialItems
-      .filter((o) => o.status === "pending_acceptance")
-      .map((o) => o.id),
-  ));
+  const [activeColumnId, setActiveColumnId] = useState<ColumnId>(() =>
+    firstColumnWithWork(initialItems),
+  );
+  const knownPendingIds = useRef(
+    new Set(
+      initialItems
+        .filter((order) => order.status === "pending_acceptance")
+        .map((order) => order.id),
+    ),
+  );
   const [flashNew, setFlashNew] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -74,6 +104,25 @@ export function KitchenBoard({
     setItems(initialItems);
     setPendingCount(initialPendingCount);
   }
+
+  const columnCounts = useMemo(() => {
+    return Object.fromEntries(
+      KITCHEN_BOARD_COLUMNS.map((column) => [
+        column.id,
+        ordersForColumn(items, column).length,
+      ]),
+    ) as Record<ColumnId, number>;
+  }, [items]);
+
+  useEffect(() => {
+    if (columnCounts[activeColumnId] > 0) {
+      return;
+    }
+    const next = firstColumnWithWork(items);
+    if (next !== activeColumnId) {
+      setActiveColumnId(next);
+    }
+  }, [activeColumnId, columnCounts, items]);
 
   const playChime = useCallback(() => {
     try {
@@ -104,18 +153,18 @@ export function KitchenBoard({
     try {
       const response = await fetch(
         "/api/orders?filter=active&channel=kitchen&limit=80",
-        {        cache: "no-store",
-      });
+        { cache: "no-store" },
+      );
       if (!response.ok) {
         return;
       }
       const body = (await response.json()) as ListApiResponse;
       const nextItems = body.data.items;
       const nextPending = nextItems.filter(
-        (o) => o.status === "pending_acceptance",
+        (order) => order.status === "pending_acceptance",
       );
       const newIds = nextPending.filter(
-        (o) => !knownPendingIds.current.has(o.id),
+        (order) => !knownPendingIds.current.has(order.id),
       );
 
       if (newIds.length > 0 && knownPendingIds.current.size > 0) {
@@ -124,7 +173,7 @@ export function KitchenBoard({
         window.setTimeout(() => setFlashNew(false), 2500);
       }
 
-      knownPendingIds.current = new Set(nextPending.map((o) => o.id));
+      knownPendingIds.current = new Set(nextPending.map((order) => order.id));
       setItems(nextItems);
       setPendingCount(body.data.pendingAcceptanceCount);
     } catch {
@@ -148,9 +197,7 @@ export function KitchenBoard({
     };
   }, [pendingCount]);
 
-  const hasOrders = items.length > 0;
-
-  if (!hasOrders) {
+  if (items.length === 0) {
     return (
       <EmptyState
         icon={<ClipboardList className="h-6 w-6" aria-hidden />}
@@ -168,6 +215,11 @@ export function KitchenBoard({
     );
   }
 
+  const activeColumn =
+    KITCHEN_BOARD_COLUMNS.find((column) => column.id === activeColumnId) ??
+    KITCHEN_BOARD_COLUMNS[0];
+  const activeOrders = ordersForColumn(items, activeColumn);
+
   return (
     <div className="space-y-4">
       {flashNew ? (
@@ -179,11 +231,65 @@ export function KitchenBoard({
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="lg:hidden">
+        <div
+          role="tablist"
+          aria-label="Kitchen board columns"
+          className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {KITCHEN_BOARD_COLUMNS.map((column) => {
+            const count = columnCounts[column.id];
+            const selected = column.id === activeColumnId;
+            return (
+              <button
+                key={column.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveColumnId(column.id)}
+                className={cn(
+                  "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-medium",
+                  selected
+                    ? "bg-background text-foreground"
+                    : "text-text-secondary",
+                )}
+              >
+                {TAB_LABELS[column.id]}
+                <span
+                  className={cn(
+                    "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
+                    column.id === "new" && count > 0
+                      ? "bg-amber-500 text-white"
+                      : selected
+                        ? "bg-surface text-text-secondary"
+                        : "bg-background text-text-tertiary",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <section className="mt-3 space-y-2" aria-label={activeColumn.title}>
+          {activeOrders.length === 0 ? (
+            <p className="py-10 text-center text-sm text-text-tertiary">
+              None
+            </p>
+          ) : (
+            <AnimatePresence initial={false} mode="popLayout">
+              {activeOrders.map((order) => (
+                <KitchenOrderCard key={order.id} order={order} />
+              ))}
+            </AnimatePresence>
+          )}
+        </section>
+      </div>
+
+      <div className="hidden gap-3 lg:grid lg:grid-cols-4">
         {KITCHEN_BOARD_COLUMNS.map((column) => {
-          const columnOrders = items.filter((order) =>
-            (column.statuses as readonly string[]).includes(order.status),
-          );
+          const columnOrders = ordersForColumn(items, column);
 
           return (
             <section
@@ -228,12 +334,22 @@ export function KitchenBoard({
   );
 }
 
-function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
-  const reduce = useReducedMotion();
-  const actions = getTransitionActions(order.status, {
+function kitchenActions(order: StaffOrderListItem): TransitionAction[] {
+  return getTransitionActions(order.status, {
     fulfillmentType: order.fulfillmentType,
     fulfillmentMethod: order.fulfillmentMethod,
-  }).filter((a) => a.to !== "cancelled");
+  })
+    .filter((action) => action.to !== "cancelled")
+    .slice(0, 1)
+    .map((action) => ({
+      ...action,
+      label: BOARD_ACTION_LABELS[action.to] ?? action.label,
+    }));
+}
+
+function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
+  const reduce = useReducedMotion();
+  const actions = kitchenActions(order);
 
   return (
     <motion.article
@@ -243,74 +359,60 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
       transition={{ duration: motionDuration.chrome, ease: easeOut }}
       className={cn(
-        "space-y-2 rounded-2xl border border-border bg-background p-3 shadow-sm",
+        "space-y-3 rounded-2xl border border-border bg-background p-3 shadow-sm",
         order.status === "pending_acceptance" && "border-amber-300",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 space-y-0.5">
-          <div className="flex items-baseline gap-2">
-            {order.dayTicketIsToday && order.dayTicket != null ? (
-              <p className="font-display text-xl font-semibold tabular-nums text-foreground">
-                {formatDayTicketLabel(order.dayTicket)}
-              </p>
-            ) : order.displayNumber ? (
-              <p className="font-semibold tabular-nums text-foreground">
-                {order.displayNumber}
-              </p>
-            ) : null}
-            <p className="truncate font-semibold text-foreground">
-              {order.customerName}
-            </p>
-          </div>
-          <p className="text-xs text-text-secondary">
-            {order.dayTicketIsToday && order.displayNumber
-              ? `${order.displayNumber} · `
-              : null}
-            {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} ·{" "}
-            {formatAge(order.placedAt ?? order.createdAt)}
+      <Link
+        href={`/dashboard/orders/${order.id}`}
+        className="block space-y-2 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-display text-2xl font-semibold tabular-nums leading-none text-foreground">
+            {order.displayNumber ?? "Order"}
           </p>
-          {order.scheduledFor ? (
-            <p className="text-xs font-medium text-amber-800">
-              Scheduled{" "}
-              {new Date(order.scheduledFor).toLocaleString("en-CA", {
-                weekday: "short",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </p>
-          ) : null}
+          <span className="shrink-0 rounded-md bg-surface px-2 py-1 text-xs font-medium text-foreground">
+            {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
+          </span>
         </div>
-        <OrderStatusBadge status={order.status} />
-      </div>
 
-      <p className="text-sm text-text-secondary">{order.itemSummary}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">
+            {order.customerName}
+          </p>
+        </div>
 
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="font-medium text-foreground">
-          {formatCadFromCents(order.totalCents)}
-        </span>
-        <OrderDetailLink orderId={order.id} />
-      </div>
+        {order.scheduledFor ? (
+          <p className="text-sm font-medium text-amber-800">
+            Scheduled {formatKitchenScheduled(order.scheduledFor)}
+          </p>
+        ) : (
+          <p className="text-sm text-text-secondary">
+            {formatKitchenWait(order.placedAt ?? order.createdAt)}
+          </p>
+        )}
 
-      {order.notes ? (
-        <p className="text-xs text-text-tertiary">Note: {order.notes}</p>
-      ) : null}
+        <p className="text-sm text-foreground">{order.itemSummary}</p>
+
+        {order.notes ? (
+          <p className="text-xs text-text-tertiary">Note: {order.notes}</p>
+        ) : null}
+      </Link>
 
       {order.status === "ready" &&
       order.fulfillmentType === "delivery" &&
       order.fulfillmentMethod === "unassigned" ? (
         <Link
           href={`/dashboard/orders/${order.id}`}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 text-sm font-medium text-amber-900"
+          className="inline-flex h-11 w-full items-center justify-center rounded-md border border-amber-300 bg-amber-50 text-sm font-medium text-amber-900"
         >
           Fulfill delivery
         </Link>
       ) : (
         <OrderTransitionButtons
           orderId={order.id}
-          actions={actions.slice(0, 1)}
-          compact
+          actions={actions}
+          fullWidth
         />
       )}
     </motion.article>

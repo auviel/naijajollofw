@@ -13,11 +13,14 @@ import { logger } from "@/lib/utils/logger";
 const VERIFY_TTL_MS = 48 * 60 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60_000;
 
-async function issueVerificationEmail(user: {
-  id: string;
-  email: string;
-  name: string;
-}): Promise<void> {
+async function issueVerificationEmail(
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  },
+  options: { welcome?: boolean } = {},
+): Promise<void> {
   const rawToken = generateEmailVerificationToken();
   const tokenHash = hashEmailVerificationToken(rawToken);
   const expiresAt = new Date(Date.now() + VERIFY_TTL_MS);
@@ -33,6 +36,7 @@ async function issueVerificationEmail(user: {
   const mail = buildEmailVerificationEmail({
     name: user.name,
     verifyUrl,
+    welcome: options.welcome,
   });
   sendEmailInBackground({
     to: user.email,
@@ -43,13 +47,16 @@ async function issueVerificationEmail(user: {
   });
 }
 
-/** Called after diner signup — always send a verification email. */
-export async function sendDinerEmailVerification(user: {
-  id: string;
-  email: string;
-  name: string;
-}): Promise<void> {
-  await issueVerificationEmail(user);
+/** Called after diner signup or email change — always send a verification email. */
+export async function sendDinerEmailVerification(
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  },
+  options: { welcome?: boolean } = {},
+): Promise<void> {
+  await issueVerificationEmail(user, options);
 }
 
 export async function resendDinerEmailVerification(userId: string): Promise<{

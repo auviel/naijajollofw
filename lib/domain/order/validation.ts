@@ -17,14 +17,12 @@ export const checkoutRequestSchema = z
     dropoffLng: z.number().min(-180).max(180).optional(),
     /** Guest-picked ready time (required when store is closed). */
     scheduledFor: z.coerce.date().optional(),
-    /** Receipt email — optional; confirmation sent when present. */
     customerEmail: z
       .string()
       .trim()
+      .min(1, "Email is required")
       .email("Enter a valid email")
-      .max(120)
-      .optional()
-      .or(z.literal("")),
+      .max(120),
   })
   .superRefine((data, ctx) => {
     if (data.fulfillmentType === "delivery") {

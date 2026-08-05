@@ -1,31 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   displayNumberSearchTerms,
-  formatDayTicketLabel,
   formatDisplayNumber,
   formatOrderRef,
-  parseDayTicketQuery,
   storeLocalDateKey,
 } from "@/lib/domain/order/order-numbers";
 
 describe("order numbers", () => {
-  it("formats lifetime and day ticket labels", () => {
+  it("formats lifetime sequence labels", () => {
     expect(formatDisplayNumber("nj", 1084)).toBe("NJ-1084");
     expect(formatDisplayNumber("  ", 3)).toBe("NJ-3");
-    expect(formatDayTicketLabel(12)).toBe("#12");
-    expect(formatOrderRef({ displayNumber: "NJ-1084", dayTicket: 12 })).toBe(
-      "NJ-1084 · #12",
-    );
     expect(formatOrderRef({ displayNumber: "NJ-1084" })).toBe("NJ-1084");
-    expect(formatOrderRef({ dayTicket: 12 })).toBe("#12");
     expect(formatOrderRef({})).toBe("");
-  });
-
-  it("parses kitchen ticket search", () => {
-    expect(parseDayTicketQuery("#12")).toBe(12);
-    expect(parseDayTicketQuery("12")).toBeNull();
-    expect(parseDayTicketQuery("NJ-12")).toBeNull();
-    expect(parseDayTicketQuery("Chioma")).toBeNull();
   });
 
   it("normalizes display number search variants", () => {

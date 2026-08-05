@@ -39,6 +39,3 @@ export default function DashboardLayout({
     </DashboardProviders>
   );
 }
-
-export { PageHeader, PrimaryLink } from "@/components/layout/page-header";
-export { DashboardPage, DashboardPageBody } from "@/components/layout/dashboard-page";

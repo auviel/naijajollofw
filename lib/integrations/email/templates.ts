@@ -103,27 +103,6 @@ function layout(input: {
 </html>`;
 }
 
-export function buildWelcomeEmail(input: {
-  name: string;
-  accountUrl: string;
-}): { subject: string; html: string; text: string } {
-  const first = input.name.trim().split(/\s+/)[0] || "there";
-  const subject = "Welcome to Naija Jollof Waterloo";
-  const reason =
-    "You’re receiving this because you created an account at Naija Jollof Waterloo.";
-  const html = layout({
-    title: subject,
-    reason,
-    bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
-     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Your account is ready. Order pickup or delivery anytime, and track your orders from your account.</p>
-     <p style="margin:24px 0 0;">
-       <a href="${escapeHtml(input.accountUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">View account</a>
-     </p>`,
-  });
-  const text = `Hi ${first},\n\nYour Naija Jollof Waterloo account is ready.\nView account: ${input.accountUrl}\n\n${footerText(reason)}`;
-  return { subject, html, text };
-}
-
 export function buildOrderConfirmationEmail(input: {
   customerName: string;
   storeName: string;
@@ -191,21 +170,27 @@ export function buildPasswordResetEmail(input: {
 export function buildEmailVerificationEmail(input: {
   name: string;
   verifyUrl: string;
+  welcome?: boolean;
 }): { subject: string; html: string; text: string } {
   const first = input.name.trim().split(/\s+/)[0] || "there";
-  const subject = "Verify your email";
+  const subject = input.welcome
+    ? "Welcome — verify your email"
+    : "Verify your email";
   const reason =
-    "You’re receiving this because you created an account at Naija Jollof Waterloo.";
+    "You’re receiving this because you created or updated a Naija Jollof Waterloo account.";
+  const intro = input.welcome
+    ? "Welcome to Naija Jollof Waterloo. Confirm your email so we know it’s really you. This link expires in 48 hours."
+    : "Confirm your email so we know it’s really you. This link expires in 48 hours.";
   const html = layout({
     title: subject,
     reason,
     bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
-     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Confirm your email so we know it’s really you. This link expires in 48 hours.</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">${escapeHtml(intro)}</p>
      <p style="margin:24px 0 0;">
        <a href="${escapeHtml(input.verifyUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Verify email</a>
      </p>`,
   });
-  const text = `Hi ${first},\n\nVerify your email (expires in 48 hours):\n${input.verifyUrl}\n\n${footerText(reason)}`;
+  const text = `Hi ${first},\n\n${intro}\n${input.verifyUrl}\n\n${footerText(reason)}`;
   return { subject, html, text };
 }
 
@@ -214,7 +199,6 @@ type OrderStatusEmailStatus =
   | "ready"
   | "ready_for_pickup"
   | "out_for_delivery"
-  | "completed"
   | "cancelled";
 
 function orderStatusCopy(input: {
@@ -257,13 +241,6 @@ function orderStatusCopy(input: {
         headline: "Your order is on the way",
         body: `A courier is bringing your food${ref ? ` (${ref})` : ""}. You can follow along with the track link.`,
         cta: "Track order",
-      };
-    case "completed":
-      return {
-        subject: withRef("Enjoy"),
-        headline: "Order complete",
-        body: "Thanks for ordering with us. We hope it hits the spot.",
-        cta: "View order",
       };
     case "cancelled":
       return {
@@ -345,13 +322,8 @@ export function buildStaffNewOrderEmail(input: {
   dashboardUrl: string;
   scheduledLabel?: string | null;
   displayNumber?: string | null;
-  dayTicket?: number | null;
 }): { subject: string; html: string; text: string } {
-  const refParts = [
-    input.displayNumber?.trim() || null,
-    input.dayTicket != null ? `#${input.dayTicket}` : null,
-  ].filter((part): part is string => Boolean(part));
-  const ref = refParts.join(" · ");
+  const ref = input.displayNumber?.trim() || "";
   const subject = ref
     ? `New order ${ref} · ${input.storeName}`
     : `New order · ${input.storeName}`;

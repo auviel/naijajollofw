@@ -30,11 +30,6 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
                 {order.displayNumber}
               </span>
             ) : null}
-            {order.dayTicketIsToday && order.dayTicket != null ? (
-              <span className="rounded-full bg-surface px-2 py-0.5 text-sm font-medium tabular-nums text-foreground">
-                #{order.dayTicket}
-              </span>
-            ) : null}
           </div>
           <p className="text-sm text-text-secondary">
             Placed{" "}

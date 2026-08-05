@@ -2,9 +2,6 @@ import bcrypt from "bcryptjs";
 import { customerRepository } from "@/lib/db/repositories/customer.repository";
 import { userRepository } from "@/lib/db/repositories/user.repository";
 import { dinerRegisterSchema } from "@/lib/domain/diner/validation";
-import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
-import { sendEmailInBackground } from "@/lib/integrations/email/send";
-import { buildWelcomeEmail } from "@/lib/integrations/email/templates";
 import { verifyTurnstileToken } from "@/lib/integrations/turnstile/verify";
 import { assertPasswordNotPwned } from "@/lib/integrations/hibp/pwned-passwords";
 import { ensureCustomerForDiner } from "@/lib/services/customer/ensure-customer-for-diner";
@@ -91,24 +88,15 @@ export async function registerDiner(
     throw error;
   }
 
-  const welcome = buildWelcomeEmail({
-    name: user.name,
-    accountUrl: `${getAppBaseUrl()}/account`,
-  });
-  sendEmailInBackground({
-    to: user.email,
-    subject: welcome.subject,
-    html: welcome.html,
-    text: welcome.text,
-    idempotencyKey: `welcome/${user.id}`,
-  });
-
   try {
-    await sendDinerEmailVerification({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    });
+    await sendDinerEmailVerification(
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+      { welcome: true },
+    );
   } catch (error) {
     logger.error("email_verify.send_on_register_failed", {
       userId: user.id,

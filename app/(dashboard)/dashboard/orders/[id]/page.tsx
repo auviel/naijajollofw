@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DashboardPage, DashboardPageBody, PageHeader } from "../../layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
+import { PageHeader } from "@/components/layout/page-header";
 import { OrderDetailView } from "@/components/features/orders/order-detail-view";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { getStaffOrder } from "@/lib/services/order/get-staff-order";
@@ -56,9 +60,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
       <PageHeader
         title={order.displayNumber ?? order.customerName}
         description={[
-          order.dayTicketIsToday && order.dayTicket != null
-            ? `#${order.dayTicket}`
-            : null,
           order.displayNumber ? order.customerName : null,
           `${order.itemCount} item${order.itemCount === 1 ? "" : "s"}`,
         ]

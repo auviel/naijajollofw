@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DashboardPage, DashboardPageBody, PageHeader } from "./layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
+import { PageHeader } from "@/components/layout/page-header";
 import { KitchenBoard } from "@/components/features/orders/kitchen-board";
+import { List } from "@/components/ui/icons";
 import { listStaffOrders } from "@/lib/services/order/list-staff-orders";
 
 export const metadata: Metadata = {
@@ -27,8 +32,9 @@ export default async function DashboardHomePage() {
         action={
           <Link
             href="/dashboard/orders"
-            className="inline-flex h-10 items-center justify-center rounded-md border border-border px-4 text-sm font-medium text-foreground"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-foreground hover:underline"
           >
+            <List className="h-4 w-4" aria-hidden />
             All orders
           </Link>
         }

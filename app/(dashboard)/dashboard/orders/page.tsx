@@ -4,9 +4,8 @@ import { ClipboardList } from "@/components/ui/icons";
 import {
   DashboardPage,
   DashboardPageBody,
-  PageHeader,
-  PrimaryLink,
-} from "../layout";
+} from "@/components/layout/dashboard-page";
+import { PageHeader, PrimaryLink } from "@/components/layout/page-header";
 import { OrderList, OrderListFilters } from "@/components/features/orders/order-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { listStaffOrders } from "@/lib/services/order/list-staff-orders";
@@ -75,7 +74,7 @@ export default async function OrdersListPage({ searchParams }: PageProps) {
             }
           />
         ) : (
-          <OrderList items={items} />
+          <OrderList items={items} filter={filter} />
         )}
       </DashboardPageBody>
     </DashboardPage>

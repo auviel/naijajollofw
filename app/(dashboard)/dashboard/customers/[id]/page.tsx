@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DashboardPage, DashboardPageBody } from "../../layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
 import { CustomerDetailView } from "@/components/features/customers/customer-detail-view";
 import { requireStoreManager } from "@/lib/auth/session";
 import {

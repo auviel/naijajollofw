@@ -159,9 +159,6 @@ export function StaffNotifications() {
                   >
                     <p className="text-sm font-medium text-foreground">
                       New order
-                      {order.dayTicketIsToday && order.dayTicket != null
-                        ? ` #${order.dayTicket}`
-                        : ""}
                       {order.displayNumber ? ` · ${order.displayNumber}` : ""}
                       {" · "}
                       {order.customerName}

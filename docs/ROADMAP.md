@@ -16,7 +16,7 @@ Build in this order:
 
 | # | Theme | Status | Effort | Depends on |
 |---|--------|--------|--------|------------|
-| 1 | [SMS & WhatsApp notifications](#1-sms--whatsapp-notifications) | Partial (staff WA + email) | M–L | Meta prod / SMS vendor |
+| 1 | [SMS & WhatsApp notifications](#1-sms--whatsapp-notifications) | Partial — email + staff WA bot shipped; diner SMS/WA + staff pings left | M | Twilio + Meta prod templates |
 | 2 | [Store manager permissions](#2-store-manager-permissions-and-functionality) | Binary RBAC only | M | Auth session |
 | 3 | [Coupons and discounts](#3-coupons-and-discounts) | Not started | M–L | Checkout totals + #2 |
 | 4 | [Blog](#4-setup-blog) | Placeholder `/blog` | S–M | None |
@@ -26,58 +26,80 @@ Build in this order:
 
 ## 1. SMS & WhatsApp notifications
 
-**Goal:** Diners get reliable order updates on phone; staff get instant new-order pings. Email stays the default fallback.
+**Goal:** Diners get reliable order updates on phone; staff get instant new-order pings. Email stays the fallback.
+
+Hooks already exist (`notify-order-status.ts`, `notifyStaffOrder`, checkout confirm). Do not rebuild the notification bus — extend it.
 
 **Today:**
 
 | Channel | Status |
 |---------|--------|
-| Diner email (Resend) | Shipped — confirm + status |
-| Staff email | Shipped — new / cancelled |
-| Dashboard bell | Shipped — polls `pending_acceptance` |
-| Staff WhatsApp bot | Shipped — dispatch courier (env allowlist) |
-| Diner WhatsApp | Stub — `WHATSAPP_ORDER_UPDATES`, free-form text only |
-| First-party SMS | None (Uber/DoorDash send their own courier SMS) |
+| Diner email (Resend) | **Shipped** — confirm + accepted / ready (delivery) or ready_for_pickup (pickup) / out / cancelled. Email required at checkout. |
+| Staff email | **Shipped** — new order + external cancel (Square fail). No mail when staff cancel from the dashboard. |
+| Dashboard bell + kitchen chime + tab badge | **Shipped** — `pending_acceptance` poll (10s) |
+| Staff WhatsApp bot | **Shipped** — inbound courier dispatch (`WHATSAPP_STAFF_PHONES` / `WhatsAppStaffPhone`). Not an outbound pager. |
+| Diner WhatsApp | **Stub** — `WHATSAPP_ORDER_UPDATES` free-form text. Keep **off** in prod until templates + opt-in. |
+| First-party SMS | **None** — hook is ready; no vendor. Uber/DoorDash still send their own courier SMS. |
 
-Do **not** enable `WHATSAPP_ORDER_UPDATES=true` in production until templates + opt-in exist. Meta will drop or ban free-form messages outside the 24h window.
+**Vendor (locked):**
 
-### Scope (v1)
+- **SMS:** Twilio Programmable Messaging + **verified toll-free** (1-8xx) for CA/US. Vercel Marketplace messaging is Resend-only (email). Telnyx is the fallback if Twilio onboarding stalls.
+- **WhatsApp:** existing Meta Cloud API account. Staff bot stays. Diner updates need **approved utility templates** + checkout opt-in — not session text.
+- **Email:** Resend (unchanged).
+
+### Noise cut (done)
+
+| Cut | What we did |
+|-----|-------------|
+| Pickup `ready` **and** `ready_for_pickup` | One diner ping: `ready_for_pickup` for pickup, `ready` for delivery. |
+| Diner `completed` / “Enjoy” | Dropped. Review-ask can come later. |
+| Staff cancel email when **they** cancelled | Dashboard cancel is silent for staff. Square fail/cancel still mails the kitchen. |
+| Signup welcome + verify | One email: “Welcome — verify your email”. Resend stays verify-only. |
+
+Leave `preparing` silent (accepted copy already says the kitchen is starting). Checkout email is required (same as phone).
+
+### Scope (remaining v1)
 
 **Diner**
 
-- Checkout opt-in: WhatsApp and/or SMS (default off, or SMS on if they typed a mobile).
-- Statuses already in `notify-order-status.ts`: accepted, ready / ready for pickup, out for delivery, completed, cancelled.
-- WhatsApp: **approved utility templates** (not session text).
-- SMS: Twilio (or equivalent CA-capable) transactional SMS.
-- Store preference + unsubscribe (`STOP` for SMS; WhatsApp opt-out flag on customer).
+- Checkout opt-in: SMS and/or WhatsApp (default off, or SMS on if they typed a mobile). Persist `smsOptIn` / `whatsappOptIn` on customer or order.
+- Phone statuses: **accepted**, **ready or ready_for_pickup** (one), **out_for_delivery**, **cancelled**. Email always sent (required at checkout).
+- SMS via Twilio; honor `STOP` / `START` inbound webhook.
+- WhatsApp only after Meta templates are approved; same status set.
 
 **Staff**
 
-- WhatsApp and/or SMS on new `pending_acceptance` (in addition to email + bell).
-- Dashboard CRUD for staff phones (table `WhatsAppStaffPhone` already exists; today allowlist is `WHATSAPP_STAFF_PHONES` env).
+- Outbound **new `pending_acceptance` ping** on WhatsApp and/or SMS (in addition to email + bell + chime).
+- Reuse `WhatsAppStaffPhone` + env allowlist; dashboard CRUD can wait on #2.4 / #2.5 if needed.
+- Optional later: escalate if still unaccepted after 3–5 minutes; scheduled orders page kitchen at prep window, not at place.
 
 ### Out of scope (v1)
 
 - Customer ordering via WhatsApp chat.
 - Marketing blasts / campaigns.
-- Replacing Uber courier PIN SMS.
+- Replacing Uber/DoorDash courier PIN SMS.
+- Knock / Novu / other notification clouds.
+- Browser / PWA push.
+- Diner “password changed” mail (tiny; separate hygiene).
 
 ### Delivery slices
 
-| Slice | Work |
-|-------|------|
-| 1.1 Meta production | Business verification, live WABA, prod webhook on `new.naijajollofw.ca`, token rotation |
-| 1.2 Templates | Submit utility templates; add `sendTemplateMessage` beside `sendTextMessage` |
-| 1.3 Opt-in model | `Customer` / order flags: `whatsappOptIn`, `smsOptIn`; checkout checkboxes |
-| 1.4 Diner WhatsApp | Route `notify-order-status` through templates when opted in |
-| 1.5 SMS provider | Integration + send log; same status hooks as email/WA |
-| 1.6 Staff pings | New-order WA/SMS; manage numbers in dashboard (#2 can restrict who edits) |
+| Slice | Status | Work |
+|-------|--------|------|
+| 1.0 Noise cut | **Done** | Pickup one-ready ping; no completed diner mail; no staff self-cancel mail; signup welcome+verify merged; checkout email required |
+| 1.1 Meta production | **Partial** | Staff WA bot already live in sandbox/prod wiring. Finish business verification, live WABA, prod webhook on `new.naijajollofw.ca`, token rotation |
+| 1.2 WA templates | **Todo** | Submit utility templates; `sendTemplateMessage` beside `sendTextMessage`; never enable free-form diner updates |
+| 1.3 Opt-in model | **Todo** | `smsOptIn` / `whatsappOptIn`; checkout checkboxes; unsubscribe / STOP |
+| 1.4 Diner WhatsApp | **Todo** | Route `notify-order-status` through templates when opted in (+ idempotency — stub has none today) |
+| 1.5 SMS (Twilio) | **Todo** | Account + toll-free verification; `lib/integrations/sms/`; send log; same status hooks as email |
+| 1.6 Staff pings | **Todo** | New-order WA and/or SMS on `notifyStaffOrder("new_order")`. Highest kitchen-impact slice; can ship before diner SMS |
 
 ### Done when
 
-- Opted-in diner gets WA **or** SMS on accept / ready / out / complete / cancel.
-- Non-opted-in diner still gets email only.
-- Staff get a phone ping within seconds of a new paid order.
+- Noise cuts are live (one pickup-ready ping; no completed mail; no staff self-cancel mail).
+- Opted-in diner gets SMS **or** templated WA on accept / ready / out / cancel.
+- Non-opted-in diner still gets email (required at checkout).
+- Staff get a phone ping within seconds of a new paid ASAP order.
 - Failed sends are logged (Sentry + structured log), never block kitchen transitions.
 
 ---
@@ -236,8 +258,8 @@ Migrate existing `STORE_MANAGER` → `OWNER` (or keep the enum value as alias du
 
 | Milestone | Includes | Outcome |
 |-----------|----------|---------|
-| **M1 — Reach diners on phone** | 1.1–1.5 | Opt-in WA templates + SMS on order status |
-| **M2 — Safe multi-staff** | 2.1–2.3, 1.6 | Roles + invites + staff phone pings |
+| **M1 — Reach diners on phone** | 1.0, 1.3, 1.5, then 1.1–1.2 / 1.4 | Noise cut + Twilio SMS; WA templates when Meta is ready |
+| **M2 — Safe multi-staff** | 2.1–2.3, 1.6 | Roles + invites + staff phone pings (1.6 can ship during M1) |
 | **M3 — Promos** | 3 | Working codes at checkout, owner-only admin |
 | **M4 — Marketing surface** | 4 v1 + 5 v1 | Live blog + Google rating on homepage |
 

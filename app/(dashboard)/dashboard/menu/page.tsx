@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { DashboardPage, DashboardPageBody, PageHeader } from "../layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
+import { PageHeader } from "@/components/layout/page-header";
 import { MenuCreateActions } from "@/components/features/menu/menu-create-actions";
 import { MenuCatalogView } from "@/components/features/menu/menu-catalog";
 import { listMenuCatalog } from "@/lib/services/menu/list-menu";

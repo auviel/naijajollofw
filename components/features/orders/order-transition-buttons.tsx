@@ -18,6 +18,7 @@ type OrderTransitionButtonsProps = {
   actions: TransitionAction[];
   onTransitioned?: (status: OrderStatus) => void;
   compact?: boolean;
+  fullWidth?: boolean;
 };
 
 export function OrderTransitionButtons({
@@ -25,6 +26,7 @@ export function OrderTransitionButtons({
   actions,
   onTransitioned,
   compact = false,
+  fullWidth = false,
 }: OrderTransitionButtonsProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
@@ -66,7 +68,13 @@ export function OrderTransitionButtons({
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-2", compact && "gap-1.5")}>
+    <div
+      className={cn(
+        "flex flex-wrap gap-2",
+        compact && "gap-1.5",
+        fullWidth && "w-full",
+      )}
+    >
       {actions.map((action) => (
         <button
           key={action.to}
@@ -75,7 +83,8 @@ export function OrderTransitionButtons({
           onClick={() => void runTransition(action)}
           className={cn(
             "inline-flex items-center justify-center rounded-md text-sm font-medium transition-opacity disabled:opacity-50",
-            compact ? "h-9 px-3" : "h-10 px-4",
+            compact ? "h-9 px-3" : "h-11 px-4",
+            fullWidth && "h-11 w-full",
             action.variant === "primary" &&
               "bg-accent text-text-inverse hover:opacity-90",
             action.variant === "secondary" &&

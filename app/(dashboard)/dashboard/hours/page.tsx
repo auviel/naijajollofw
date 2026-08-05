@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { DashboardPage, DashboardPageBody, PageHeader } from "../layout";
+import {
+  DashboardPage,
+  DashboardPageBody,
+} from "@/components/layout/dashboard-page";
+import { PageHeader } from "@/components/layout/page-header";
 import { HoursScheduleForm } from "@/components/features/store/hours-schedule-form";
 import { PrepMinutesForm } from "@/components/features/store/prep-minutes-form";
 import { getStaffStoreHours } from "@/lib/services/store/store-hours";
