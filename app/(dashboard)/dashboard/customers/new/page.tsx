@@ -3,7 +3,6 @@ import {
   DashboardPage,
   DashboardPageBody,
 } from "@/components/layout/dashboard-page";
-import { PageHeader } from "@/components/layout/page-header";
 import { CustomerForm } from "@/components/features/customers/customer-form";
 
 export const metadata: Metadata = {
@@ -13,10 +12,6 @@ export const metadata: Metadata = {
 export default function NewCustomerPage() {
   return (
     <DashboardPage>
-      <PageHeader
-        title="New customer"
-        description="Add a customer to your address book."
-      />
       <DashboardPageBody>
         <CustomerForm />
       </DashboardPageBody>

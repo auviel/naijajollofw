@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { MotionModal } from "@/components/motion/primitives";
 import { ArrowDown, Folder, UtensilsCrossed } from "@/components/ui/icons";
+import { headerActionClassName } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -106,7 +107,7 @@ export function MenuCreateActions() {
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           aria-controls={menuId}
-          className="h-10 gap-2 px-4 sm:h-12 sm:px-5"
+          className={cn("gap-2", headerActionClassName)}
           onClick={() => setMenuOpen((open) => !open)}
         >
           New

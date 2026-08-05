@@ -46,12 +46,12 @@ export function CustomerListFilters({ search }: CustomerListFiltersProps) {
   }, [query, search, pathname, router, searchParams, startTransition]);
 
   return (
-    <div className="relative mb-6 min-w-0">
-      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+    <div className="relative mb-5 min-w-0 sm:mb-6">
+      <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
       <Input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search customers by name, phone, or address"
+        placeholder="Search customers"
         className="pl-11"
         aria-label="Search customers"
       />

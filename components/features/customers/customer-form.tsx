@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
@@ -7,8 +8,9 @@ import {
   canRequestQuote,
 } from "@/components/features/deliveries/address-preview";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
+import { ArrowLeft } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -146,14 +148,16 @@ export function CustomerForm() {
       className="mx-auto w-full max-w-2xl space-y-4"
       noValidate
     >
+      <Link
+        href="/dashboard/customers"
+        className="inline-flex h-11 items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        Customers
+      </Link>
+
       <Card>
-        <CardHeader className="py-4">
-          <h2 className="text-base font-semibold text-foreground">Customer details</h2>
-          <p className="mt-1 text-sm text-text-secondary">
-            Save a customer now and reuse their details when sending deliveries.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 py-5">
           <FormField id="customerName" label="Name" error={fieldErrors.name}>
             <Input
               name="name"
@@ -219,19 +223,13 @@ export function CustomerForm() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => router.push("/dashboard/customers")}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting || isGeocoding}>
-          {isSubmitting ? "Saving…" : "Save customer"}
-        </Button>
-      </div>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isSubmitting || isGeocoding}
+      >
+        {isSubmitting ? "Saving…" : "Save customer"}
+      </Button>
     </form>
   );
 }

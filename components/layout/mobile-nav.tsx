@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
 import {
   ClipboardList,
+  Clock,
   LogOut,
   MoreHorizontal,
   Package,
@@ -137,10 +138,31 @@ export function MobileNav() {
               role="menuitem"
               href="/dashboard/store"
               className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground no-underline hover:bg-surface"
+              aria-current={
+                pathname === "/dashboard/store" ||
+                pathname.startsWith("/dashboard/store/")
+                  ? "page"
+                  : undefined
+              }
               onClick={() => setMoreOpen(false)}
             >
               <Store className="h-5 w-5 text-text-secondary" aria-hidden />
-              Profile
+              Store
+            </Link>
+            <Link
+              role="menuitem"
+              href="/dashboard/hours"
+              className="flex items-center gap-3 border-t border-border px-4 py-3 text-sm font-medium text-foreground no-underline hover:bg-surface"
+              aria-current={
+                pathname === "/dashboard/hours" ||
+                pathname.startsWith("/dashboard/hours/")
+                  ? "page"
+                  : undefined
+              }
+              onClick={() => setMoreOpen(false)}
+            >
+              <Clock className="h-5 w-5 text-text-secondary" aria-hidden />
+              Hours
             </Link>
             <form action={signOutStaff} className="border-t border-border">
               <button

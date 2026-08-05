@@ -204,7 +204,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
             id="storePhone"
             label="Store phone"
             error={fieldErrors.phone}
-            hint="Canadian number — 10 digits or +1 format."
+            hint="Canadian number"
           >
             <Input
               name="phone"
@@ -225,7 +225,6 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
             id="storeEmail"
             label="Store email"
             error={fieldErrors.email}
-            hint="New order and cancellation alerts are sent here."
           >
             <Input
               name="email"
@@ -246,7 +245,6 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
             id="addressLine2"
             label="Suite or unit"
             error={fieldErrors.addressLine2}
-            hint="Optional — apartment, suite, or unit number."
           >
             <Input
               name="addressLine2"

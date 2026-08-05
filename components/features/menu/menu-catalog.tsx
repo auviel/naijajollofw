@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Image, Search, UtensilsCrossed } from "@/components/ui/icons";
+import { Image as ImageIcon, Search, UtensilsCrossed } from "@/components/ui/icons";
 import { filterCatalogByQuery } from "@/lib/domain/menu/search";
 import type { MenuCatalog, MenuItemListItem } from "@/lib/domain/menu/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
@@ -230,7 +230,7 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-text-tertiary">
-              <Image className="h-5 w-5" aria-hidden />
+              <ImageIcon className="h-5 w-5" aria-hidden />
             </div>
           )}
           {item.imageCount > 1 ? (

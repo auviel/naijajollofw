@@ -1,5 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils/cn";
+
+/** Compact header CTA — Menu New, New delivery, New customer. */
+export const headerActionClassName =
+  "h-10 px-4 sm:h-12 sm:px-5";
 
 export function PageHeader({
   title,
@@ -35,7 +40,10 @@ export function PrimaryLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-12 w-full items-center justify-center rounded-md bg-accent px-5 text-sm font-medium text-text-inverse transition-colors duration-fast hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:w-auto"
+      className={cn(
+        "inline-flex w-auto items-center justify-center rounded-md bg-accent text-sm font-medium text-text-inverse transition-colors duration-fast hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
+        headerActionClassName,
+      )}
     >
       {children}
     </Link>

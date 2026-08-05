@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CUSTOMER_NOTES_MAX } from "@/lib/domain/customer/limits";
 import { canadianPhoneSchema } from "@/lib/domain/delivery/validation";
 
 export const listCustomersQuerySchema = z.object({
@@ -14,7 +15,7 @@ export const searchCustomersQuerySchema = z.object({
 
 export const updateCustomerSchema = z.object({
   name: z.string().trim().min(1, "Customer name is required").optional(),
-  notes: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(CUSTOMER_NOTES_MAX).nullable().optional(),
 });
 
 export const createCustomerSchema = z.object({
