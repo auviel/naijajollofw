@@ -9,6 +9,11 @@ import {
   getSquareEnvironment,
   getSquareLocationId,
 } from "@/lib/integrations/payments/square/config";
+import {
+  extractSquareErrorCode,
+  isSquareBuyerDeclineCode,
+  squareErrorToUserMessage,
+} from "@/lib/integrations/payments/square/user-errors";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -51,17 +56,32 @@ export type SquarePaymentResult = {
 function mapSquareError(error: unknown): AppError {
   if (error instanceof SquareError) {
     const first = error.errors?.[0];
-    const detail =
-      first?.detail || first?.code || error.message || "Payment failed.";
-    logger.error("square.payment.failed", {
+    const code = extractSquareErrorCode(
+      first?.code,
+      first?.detail,
+      error.message,
+    );
+    const message = squareErrorToUserMessage({
       code: first?.code,
+      detail: first?.detail,
+      message: error.message,
+      fallback:
+        "We couldn't process this payment. Try another card or contact your bank.",
+    });
+    logger.error("square.payment.failed", {
+      code,
       category: first?.category,
-      detail,
+      detail: first?.detail,
     });
-    return new AppError("PROVIDER_ERROR", detail, 402, {
-      squareCode: first?.code,
-      squareCategory: first?.category,
-    });
+    return new AppError(
+      "PROVIDER_ERROR",
+      message,
+      isSquareBuyerDeclineCode(code) ? 402 : 502,
+      {
+        squareCode: code,
+        squareCategory: first?.category,
+      },
+    );
   }
 
   logger.error("square.payment.unexpected", {

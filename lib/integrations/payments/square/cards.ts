@@ -6,6 +6,10 @@ import {
   isCheckoutSimulatePayments,
   isSquareConfigured,
 } from "@/lib/integrations/payments/square/config";
+import {
+  extractSquareErrorCode,
+  squareErrorToUserMessage,
+} from "@/lib/integrations/payments/square/user-errors";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -29,13 +33,23 @@ function getClient(): SquareClient {
 function mapSquareError(error: unknown, fallback: string): AppError {
   if (error instanceof SquareError) {
     const first = error.errors?.[0];
-    const detail = first?.detail || first?.code || error.message || fallback;
-    logger.error("square.cards.failed", {
+    const code = extractSquareErrorCode(
+      first?.code,
+      first?.detail,
+      error.message,
+    );
+    const message = squareErrorToUserMessage({
       code: first?.code,
-      detail,
+      detail: first?.detail,
+      message: error.message,
+      fallback,
     });
-    return new AppError("PROVIDER_ERROR", detail, 502, {
-      squareCode: first?.code,
+    logger.error("square.cards.failed", {
+      code,
+      detail: first?.detail,
+    });
+    return new AppError("PROVIDER_ERROR", message, 502, {
+      squareCode: code,
     });
   }
   return new AppError("PROVIDER_ERROR", fallback, 502);

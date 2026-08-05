@@ -5,6 +5,7 @@ import type {
   SquareCard,
   SquareVerificationDetails,
 } from "@/lib/integrations/payments/square/web-sdk.types";
+import { squareWebSdkErrorsToUserMessage } from "@/lib/integrations/payments/square/user-errors";
 import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 
 const SDK_WAIT_MS = 12_000;
@@ -136,10 +137,12 @@ export function useSquareCardForm({
       return result.token;
     }
 
-    const message =
-      result.errors?.map((e) => e.message).filter(Boolean).join(" ") ||
-      "Card details could not be verified.";
-    throw new Error(message);
+    throw new Error(
+      squareWebSdkErrorsToUserMessage(
+        result.errors,
+        "Check your card details and try again.",
+      ),
+    );
   }
 
   function retry() {

@@ -42,7 +42,7 @@ import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
-import { ChevronRight, Scooter, ShoppingBag, Store, X } from "@/components/ui/icons";
+import { Calendar, ChevronRight, Clock, Scooter, ShoppingBag, Store, X } from "@/components/ui/icons";
 
 const FULFILLMENT_OPTIONS = [
   { value: "pickup" as const, label: "Pickup", icon: Store },
@@ -657,22 +657,25 @@ export function CheckoutClient({
             </span>
           </button>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setScheduledFor(null)}
+              aria-pressed={!scheduledFor}
+              aria-label="Standard · ASAP"
               className={cn(
-                "flex w-full items-center justify-between rounded-2xl bg-surface-elevated px-4 py-3.5 text-left",
-                !scheduledFor ? "ring-2 ring-foreground" : "",
+                "flex min-w-0 items-center gap-2 rounded-2xl bg-surface-elevated px-3 py-3.5 text-left transition-colors",
+                !scheduledFor ? "ring-2 ring-foreground" : "hover:bg-surface",
               )}
             >
-              <span className="text-sm font-semibold text-foreground">
-                Standard · ASAP
+              <Clock className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+                ASAP
               </span>
               <span
                 aria-hidden
                 className={cn(
-                  "flex h-5 w-5 rounded-full border-2",
+                  "flex h-5 w-5 shrink-0 rounded-full border-2",
                   !scheduledFor
                     ? "border-foreground bg-foreground"
                     : "border-border-strong",
@@ -682,24 +685,30 @@ export function CheckoutClient({
             <button
               type="button"
               onClick={() => setSchedulePickerOpen(true)}
+              aria-pressed={Boolean(scheduledFor)}
+              aria-label={
+                scheduleLabel
+                  ? `Scheduled · ${scheduleLabel}`
+                  : fulfillmentType === "delivery"
+                    ? "Schedule delivery"
+                    : "Schedule pickup"
+              }
               className={cn(
-                "flex w-full items-center justify-between rounded-2xl bg-surface-elevated px-4 py-3.5 text-left",
-                scheduledFor ? "ring-2 ring-foreground" : "",
+                "flex min-w-0 items-center gap-2 rounded-2xl bg-surface-elevated px-3 py-3.5 text-left transition-colors",
+                scheduledFor ? "ring-2 ring-foreground" : "hover:bg-surface",
               )}
             >
-              <span>
-                <span className="block text-sm font-semibold text-foreground">
-                  {scheduleLabel
-                    ? `Scheduled · ${scheduleLabel}`
-                    : fulfillmentType === "delivery"
-                      ? "Schedule delivery"
-                      : "Schedule pickup"}
-                </span>
+              <Calendar
+                className="h-4 w-4 shrink-0 text-foreground"
+                aria-hidden
+              />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+                {scheduleLabel ?? "Schedule"}
               </span>
               <span
                 aria-hidden
                 className={cn(
-                  "flex h-5 w-5 rounded-full border-2",
+                  "flex h-5 w-5 shrink-0 rounded-full border-2",
                   scheduledFor
                     ? "border-foreground bg-foreground"
                     : "border-border-strong",
