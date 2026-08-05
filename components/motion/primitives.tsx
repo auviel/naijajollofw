@@ -163,7 +163,7 @@ export function MotionModal({
         aria-modal="true"
         aria-labelledby={labelledBy}
         className={cn(
-          "relative z-10 flex max-h-[min(90dvh,880px)] w-full max-w-4xl overflow-hidden rounded-2xl bg-surface-elevated shadow-xl",
+          "relative z-10 flex max-h-[min(90dvh,880px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-surface-elevated shadow-xl",
           panelClassName,
         )}
         initial={variants.initial}

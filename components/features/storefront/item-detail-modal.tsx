@@ -203,9 +203,9 @@ function ItemDetailModalContent({
   const customize = useItemCustomize(item, { scheduleLabel, onAdded });
 
   return (
-    <div className="flex max-h-[min(90dvh,880px)] w-full min-h-0 flex-col">
-      <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-2 lg:items-start">
-        <div className="relative hidden w-full self-start bg-surface-elevated pt-5 pl-5 pr-3 sm:pt-6 sm:pl-7 lg:block">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+      <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-2">
+        <div className="relative hidden w-full self-stretch bg-surface-elevated pt-5 pl-5 pr-3 sm:pt-6 sm:pl-7 lg:block">
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
             <ItemImagePlane
               item={item}

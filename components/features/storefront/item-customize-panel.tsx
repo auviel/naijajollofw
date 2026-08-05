@@ -372,54 +372,63 @@ function ItemCustomizePanelView({
     <div
       className={cn(
         "flex min-h-0 flex-col",
-        isModal ? "h-full" : "min-h-[70dvh] pb-28",
+        isModal ? "h-full min-h-0 flex-1" : "min-h-[70dvh] pb-28",
       )}
     >
       <div
         className={cn(
           "min-h-0 flex-1",
-          isModal ? "overflow-y-auto overscroll-contain" : "",
+          isModal
+            ? "overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+            : "",
         )}
       >
         {showImageHero ? (
           <div
             className={cn(
-              "relative h-[min(28vh,11.5rem)] w-full shrink-0 overflow-hidden bg-surface",
-              !isModal && "sm:h-[min(32vh,14rem)]",
+              "shrink-0",
+              isModal && "bg-surface-elevated px-5 pt-5 sm:px-7 sm:pt-6",
               heroClassName,
             )}
           >
-            {item.imageUrl ? (
-              <Image
-                src={item.imageUrl}
-                alt={item.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-              />
-            ) : (
-              <div
-                aria-hidden
-                className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,var(--accent-subtle),transparent_55%),linear-gradient(160deg,var(--surface)_0%,#ebe4dc_100%)]"
-              />
-            )}
-            {onClose ? (
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute top-3 left-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background text-foreground shadow-sm ring-1 ring-black/8 transition-colors hover:bg-surface"
-                aria-label={isModal ? "Close" : "Back to menu"}
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </button>
-            ) : null}
+            <div
+              className={cn(
+                "relative h-[min(28vh,11.5rem)] w-full overflow-hidden bg-surface",
+                isModal ? "rounded-2xl" : "sm:h-[min(32vh,14rem)]",
+              )}
+            >
+              {item.imageUrl ? (
+                <Image
+                  src={item.imageUrl}
+                  alt={item.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,var(--accent-subtle),transparent_55%),linear-gradient(160deg,var(--surface)_0%,#ebe4dc_100%)]"
+                />
+              )}
+              {onClose ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="absolute top-3 left-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background text-foreground shadow-sm ring-1 ring-black/8 transition-colors hover:bg-surface"
+                  aria-label={isModal ? "Close" : "Back to menu"}
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
         <div
           className={cn(
-            isModal ? "px-5 pt-5 pb-6 sm:px-7 sm:pt-6" : "space-y-0 pt-4",
+            isModal ? "px-5 pt-4 pb-6 sm:px-7 sm:pt-5" : "space-y-0 pt-4",
           )}
         >
           <header className="max-w-xl">
