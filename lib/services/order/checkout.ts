@@ -36,7 +36,6 @@ import {
   notifyStaffOrder,
   summarizeOrderLineItems,
 } from "@/lib/services/order/notify-staff-order";
-import { formatCadFromCents } from "@/lib/utils/currency";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 import { logger } from "@/lib/utils/logger";
@@ -86,10 +85,20 @@ function sendOrderConfirmationEmail(
     customerName: order.customerName,
     storeName: order.storeName,
     fulfillmentType: order.fulfillmentType,
-    totalLabel: formatCadFromCents(order.totalCents),
     trackUrl,
     scheduledLabel,
     displayNumber: order.displayNumber,
+    dropoffAddress: order.dropoffAddress,
+    lines: order.lineItems.map((line) => ({
+      name: line.name,
+      quantity: line.quantity,
+      lineTotalCents: line.lineTotalCents,
+      modifierNames: line.modifiers.map((modifier) => modifier.name),
+    })),
+    subtotalCents: order.subtotalCents,
+    taxCents: order.taxCents,
+    tipCents: order.tipCents,
+    totalCents: order.totalCents,
   });
   sendEmailInBackground({
     to,
@@ -213,7 +222,7 @@ export async function checkoutWithSquare(
       amountCents: totals.totalCents,
       currency: totals.currency,
       idempotencyKey: parsed.idempotencyKey,
-      note: `deliverGO ${parsed.fulfillmentType} order`,
+      note: `Naija Jollof ${parsed.fulfillmentType} order`,
       referenceId: sessionId.slice(0, 40),
     });
     paymentId = payment.paymentId;

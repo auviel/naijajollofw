@@ -152,12 +152,12 @@ export function buildGuestStatusMessage(input: {
   prepMinutes: number;
   storeName: string;
 }): string {
-  const { status, fulfillmentType, prepMinutes, storeName } = input;
+  const { status, fulfillmentType, prepMinutes } = input;
   const prep = Math.max(5, Math.min(prepMinutes, 180));
 
   switch (status) {
+    case "pending_payment":
     case "pending_acceptance":
-      return `${storeName} will confirm shortly.`;
     case "accepted":
       return "";
     case "preparing":

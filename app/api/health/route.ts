@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   return NextResponse.json({
     status: "ok",
-    service: "delivergo",
+    service: "naija-jollof",
     timestamp: new Date().toISOString(),
   });
 }

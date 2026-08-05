@@ -49,7 +49,7 @@ async function main() {
     console.log(`\nDoorDash store ${result.action} successfully.`);
     console.log(`  Status: ${result.store.status ?? "unknown"}`);
     console.log(`  Test:   ${result.store.is_test ? "yes" : "no"}`);
-    console.log("\nYou can quote DoorDash Drive in deliverGO now.");
+    console.log("\nYou can quote DoorDash Drive from Courier now.");
   } finally {
     await prisma.$disconnect();
   }

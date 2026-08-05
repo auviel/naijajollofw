@@ -1,4 +1,4 @@
-/** Raw Uber Direct API response shapes (subset used by deliverGO). */
+/** Raw Uber Direct API response shapes (subset used by Courier dispatch). */
 
 export type UberDeliveryQuoteResponse = {
   kind: string;

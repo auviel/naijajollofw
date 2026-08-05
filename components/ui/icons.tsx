@@ -11,6 +11,7 @@ import {
   Clock01Icon,
   CookingPotIcon,
   Delete02Icon,
+  DeliveryTruck01Icon,
   HandshakeIcon,
   DrinkIcon,
   EyeIcon,
@@ -90,6 +91,7 @@ export const ChevronLeft = createIcon(ArrowLeft01Icon, "ChevronLeft");
 export const ChevronRight = createIcon(ArrowRight01Icon, "ChevronRight");
 export const ClipboardList = createIcon(ClipboardListIcon, "ClipboardList");
 export const Clock = createIcon(Clock01Icon, "Clock");
+export const DeliveryTruck = createIcon(DeliveryTruck01Icon, "DeliveryTruck");
 export const Eye = createIcon(EyeIcon, "Eye");
 export const EyeOff = createIcon(ViewOffIcon, "EyeOff");
 export const ExternalLink = createIcon(LinkSquare01Icon, "ExternalLink");

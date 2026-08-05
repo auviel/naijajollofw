@@ -580,7 +580,7 @@ export const orderRepository = {
           orderId: existing.id,
           status: "out_for_delivery",
           actor: input.actor,
-          note: "Dispatched via deliverGO",
+          note: "Dispatched via Courier",
         },
       });
 

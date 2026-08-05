@@ -2,7 +2,7 @@ import type { DeliveryProviderId } from "@/lib/domain/delivery/types";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import { getDoorDashExternalStoreIdFromEnv } from "@/lib/integrations/delivery/doordash/config";
 
-/** DoorDash pickup store id — from env, then deliverGO Store.id. */
+/** DoorDash pickup store id — from env, then store id. */
 export function getDoorDashExternalStoreId(store: StoreProfile): string {
   return getDoorDashExternalStoreIdFromEnv() ?? store.id;
 }

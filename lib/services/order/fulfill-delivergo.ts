@@ -24,7 +24,7 @@ export async function fulfillOrderDelivergo(
   if (existing.fulfillmentType !== "delivery") {
     throw new AppError(
       "VALIDATION_ERROR",
-      "deliverGO dispatch is only for delivery orders.",
+      "Courier dispatch is only for delivery orders.",
       400,
     );
   }

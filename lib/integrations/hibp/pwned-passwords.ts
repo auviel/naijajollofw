@@ -18,7 +18,7 @@ export async function assertPasswordNotPwned(password: string): Promise<void> {
       {
         headers: {
           "Add-Padding": "true",
-          "User-Agent": "NaijaJollof-deliverGO",
+          "User-Agent": "NaijaJollof",
         },
         next: { revalidate: 0 },
       },

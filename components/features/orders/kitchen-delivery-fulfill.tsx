@@ -11,6 +11,7 @@ import {
 } from "@/lib/domain/delivery/types";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
+import { DeliveryTruck, Scooter } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
 
@@ -157,9 +158,16 @@ export function KitchenDeliveryFulfill({ order }: KitchenDeliveryFulfillProps) {
             type="button"
             disabled={quoting}
             onClick={() => void loadQuotes()}
-            className="inline-flex h-11 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-text-inverse disabled:opacity-50"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-accent text-sm font-medium text-text-inverse disabled:opacity-50"
           >
-            {quoting ? "Getting quotes…" : "Get courier quotes"}
+            {quoting ? (
+              "Getting quotes…"
+            ) : (
+              <>
+                <Scooter className="h-4 w-4" aria-hidden />
+                Get courier quotes
+              </>
+            )}
           </button>
         ) : (
           <>
@@ -196,9 +204,16 @@ export function KitchenDeliveryFulfill({ order }: KitchenDeliveryFulfillProps) {
               type="button"
               disabled={dispatching || !selectedProviderId}
               onClick={() => void dispatchCourier()}
-              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-text-inverse disabled:opacity-50"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-accent text-sm font-medium text-text-inverse disabled:opacity-50"
             >
-              {dispatching ? "Dispatching…" : "Send courier"}
+              {dispatching ? (
+                "Dispatching…"
+              ) : (
+                <>
+                  <Scooter className="h-4 w-4" aria-hidden />
+                  Send courier
+                </>
+              )}
             </button>
           </>
         )}
@@ -226,17 +241,25 @@ export function KitchenDeliveryFulfill({ order }: KitchenDeliveryFulfillProps) {
           setMode("courier");
           void loadQuotes();
         }}
-        className="inline-flex h-11 items-center justify-center rounded-md bg-accent px-2 text-sm font-medium text-text-inverse"
+        className="inline-flex h-11 items-center justify-center gap-1.5 rounded-md bg-accent px-2 text-sm font-medium text-text-inverse"
       >
+        <Scooter className="h-4 w-4 shrink-0" aria-hidden />
         Send courier
       </button>
       <button
         type="button"
         disabled={pendingManual}
         onClick={() => void fulfillOurselves()}
-        className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground disabled:opacity-50"
+        className="inline-flex h-11 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground disabled:opacity-50"
       >
-        {pendingManual ? "Saving…" : "We’ll deliver"}
+        {pendingManual ? (
+          "Saving…"
+        ) : (
+          <>
+            <DeliveryTruck className="h-4 w-4 shrink-0" aria-hidden />
+            We’ll deliver
+          </>
+        )}
       </button>
     </div>
   );

@@ -33,14 +33,17 @@ describe("guest order timeline", () => {
 });
 
 describe("guest status message", () => {
-  it("omits a status subtitle when accepted", () => {
-    const message = buildGuestStatusMessage({
-      status: "accepted",
-      fulfillmentType: "pickup",
-      prepMinutes: 30,
-      storeName: "Test Kitchen",
-    });
-    expect(message).toBe("");
+  it("omits a status subtitle before the kitchen starts cooking", () => {
+    for (const status of ["pending_acceptance", "accepted"] as const) {
+      expect(
+        buildGuestStatusMessage({
+          status,
+          fulfillmentType: "pickup",
+          prepMinutes: 30,
+          storeName: "Test Kitchen",
+        }),
+      ).toBe("");
+    }
   });
 
   it("uses a short pickup headline without repeating the status line", () => {

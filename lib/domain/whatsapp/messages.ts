@@ -2,7 +2,7 @@ import { formatFee, formatEta } from "@/lib/domain/whatsapp/types";
 
 export function buildHelpMessage(): string {
   return [
-    "deliverGO dispatch",
+    "Courier dispatch",
     "• Customer name → quote → Send",
     "• NEW (any case) or 3 lines: name / phone / address",
     "• NEW Name, phone, address (comma, |, or line breaks)",

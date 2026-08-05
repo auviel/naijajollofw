@@ -46,7 +46,7 @@ export function getAllowedTransitions(
     return ["completed", "cancelled"];
   }
 
-  // Delivery from ready is fulfilled via dedicated endpoints (manual / deliverGO).
+  // Delivery from ready is fulfilled via dedicated endpoints (manual / courier).
   return STAFF_TRANSITIONS.get(from) ?? [];
 }
 

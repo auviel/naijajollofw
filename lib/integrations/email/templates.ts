@@ -1,4 +1,5 @@
 import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
+import { formatCadFromCents } from "@/lib/utils/currency";
 
 const STORE_ADDRESS = "280 Lester St #102, Waterloo, ON N2L 0G2, Canada";
 const CONTACT_EMAIL = "hello@naijajollofw.ca";
@@ -103,46 +104,173 @@ function layout(input: {
 </html>`;
 }
 
+export type OrderConfirmationLine = {
+  name: string;
+  quantity: number;
+  lineTotalCents: number;
+  modifierNames?: string[];
+};
+
+function receiptTotalRowHtml(
+  label: string,
+  cents: number,
+  variant: "quiet" | "total" = "quiet",
+): string {
+  const quiet = variant === "quiet";
+  return `<tr>
+      <td style="padding:${quiet ? "4px 0" : "8px 0 0"};font-size:${quiet ? "14px" : "15px"};font-weight:${quiet ? "400" : "700"};color:${quiet ? "#666" : "#111"};">${label}</td>
+      <td align="right" style="padding:${quiet ? "4px 0 4px 12px" : "8px 0 0 12px"};font-size:${quiet ? "14px" : "15px"};font-weight:${quiet ? "400" : "700"};color:${quiet ? "#666" : "#111"};white-space:nowrap;">${escapeHtml(formatCadFromCents(cents))}</td>
+    </tr>`;
+}
+
+function receiptHtml(input: {
+  lines: OrderConfirmationLine[];
+  subtotalCents: number;
+  taxCents: number;
+  tipCents: number;
+  totalCents: number;
+}): string {
+  const itemRows =
+    input.lines.length === 0
+      ? ""
+      : input.lines
+          .map((line) => {
+            const modifiers = (line.modifierNames ?? [])
+              .map((name) => name.trim())
+              .filter(Boolean)
+              .join(", ");
+            return `<tr>
+      <td style="padding:8px 0;font-size:14px;line-height:1.45;color:#111;vertical-align:top;">
+        ${escapeHtml(`${line.quantity}× ${line.name}`)}
+        ${
+          modifiers
+            ? `<br /><span style="font-size:13px;color:#666;">${escapeHtml(modifiers)}</span>`
+            : ""
+        }
+      </td>
+      <td align="right" style="padding:8px 0 8px 12px;font-size:14px;color:#444;white-space:nowrap;vertical-align:top;">${escapeHtml(formatCadFromCents(line.lineTotalCents))}</td>
+    </tr>`;
+          })
+          .join("");
+
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:4px 0 8px;border-collapse:collapse;">
+    ${itemRows}
+    <tr>
+      <td colspan="2" style="padding:8px 0 4px;border-top:1px solid #eee;font-size:0;line-height:0;">&nbsp;</td>
+    </tr>
+    ${receiptTotalRowHtml("Subtotal", input.subtotalCents)}
+    ${receiptTotalRowHtml("Tax", input.taxCents)}
+    ${input.tipCents > 0 ? receiptTotalRowHtml("Tip", input.tipCents) : ""}
+    ${receiptTotalRowHtml("Total", input.totalCents, "total")}
+  </table>`;
+}
+
+function receiptText(input: {
+  lines: OrderConfirmationLine[];
+  subtotalCents: number;
+  taxCents: number;
+  tipCents: number;
+  totalCents: number;
+}): string {
+  const items = input.lines.map((line) => {
+    const modifiers = (line.modifierNames ?? [])
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .join(", ");
+    const head = `${line.quantity}× ${line.name}  ${formatCadFromCents(line.lineTotalCents)}`;
+    return modifiers ? `${head}\n  ${modifiers}` : head;
+  });
+
+  const totals = [
+    `Subtotal  ${formatCadFromCents(input.subtotalCents)}`,
+    `Tax  ${formatCadFromCents(input.taxCents)}`,
+    input.tipCents > 0 ? `Tip  ${formatCadFromCents(input.tipCents)}` : null,
+    `Total  ${formatCadFromCents(input.totalCents)}`,
+  ].filter((line): line is string => line != null);
+
+  return [...items, "", ...totals].join("\n");
+}
+
 export function buildOrderConfirmationEmail(input: {
   customerName: string;
   storeName: string;
   fulfillmentType: "pickup" | "delivery";
-  totalLabel: string;
   trackUrl: string;
   scheduledLabel?: string | null;
   displayNumber?: string | null;
+  dropoffAddress?: string | null;
+  lines: OrderConfirmationLine[];
+  subtotalCents: number;
+  taxCents: number;
+  tipCents?: number;
+  totalCents: number;
 }): { subject: string; html: string; text: string } {
   const first = input.customerName.trim().split(/\s+/)[0] || "there";
   const mode = input.fulfillmentType === "delivery" ? "delivery" : "pickup";
   const orderLabel = input.displayNumber?.trim() || null;
+  const tipCents = input.tipCents ?? 0;
   const subject = orderLabel
     ? `Order ${orderLabel} confirmed · ${input.storeName}`
     : `Order confirmed · ${input.storeName}`;
   const reason =
     "You’re receiving this because you placed an order with Naija Jollof Waterloo.";
   const scheduleLine = input.scheduledLabel
-    ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Scheduled for <strong>${escapeHtml(input.scheduledLabel)}</strong>.</p>`
+    ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Scheduled for <strong>${escapeHtml(input.scheduledLabel)}</strong></p>`
     : "";
   const scheduleText = input.scheduledLabel
-    ? `\nScheduled for ${input.scheduledLabel}.`
-    : "";
+    ? `Scheduled for ${input.scheduledLabel}`
+    : null;
   const numberLine = orderLabel
     ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Order <strong>${escapeHtml(orderLabel)}</strong></p>`
     : "";
-  const numberText = orderLabel ? `\nOrder ${orderLabel}.` : "";
+  const numberText = orderLabel ? `Order ${orderLabel}` : null;
+  const addressLine =
+    input.fulfillmentType === "delivery" && input.dropoffAddress?.trim()
+      ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;">Delivering to ${escapeHtml(input.dropoffAddress.trim())}</p>`
+      : "";
+  const addressText =
+    input.fulfillmentType === "delivery" && input.dropoffAddress?.trim()
+      ? `Delivering to ${input.dropoffAddress.trim()}`
+      : null;
+  const receipt = {
+    lines: input.lines,
+    subtotalCents: input.subtotalCents,
+    taxCents: input.taxCents,
+    tipCents,
+    totalCents: input.totalCents,
+  };
 
   const html = layout({
     title: subject,
     reason,
     bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
      ${numberLine}
-     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">We received your ${mode} order from <strong>${escapeHtml(input.storeName)}</strong>. Total ${escapeHtml(input.totalLabel)}.</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">We received your ${mode} order from <strong>${escapeHtml(input.storeName)}</strong>.</p>
      ${scheduleLine}
+     ${addressLine}
+     ${receiptHtml(receipt)}
      <p style="margin:24px 0 0;">
        <a href="${escapeHtml(input.trackUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Track order</a>
      </p>`,
   });
-  const text = `Hi ${first},\n${numberText}\nWe received your ${mode} order from ${input.storeName}. Total ${input.totalLabel}.${scheduleText}\n\nTrack order: ${input.trackUrl}\n\n${footerText(reason)}`;
+
+  const text = [
+    `Hi ${first},`,
+    numberText,
+    "",
+    `We received your ${mode} order from ${input.storeName}.`,
+    scheduleText,
+    addressText,
+    "",
+    receiptText(receipt),
+    "",
+    `Track order: ${input.trackUrl}`,
+    "",
+    footerText(reason),
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
+
   return { subject, html, text };
 }
 

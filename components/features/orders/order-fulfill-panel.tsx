@@ -34,7 +34,7 @@ export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
   if (order.linkedDelivery) {
     return (
       <section className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
-        <h2 className="text-sm font-semibold text-foreground">deliverGO dispatch</h2>
+        <h2 className="text-sm font-semibold text-foreground">Courier dispatch</h2>
         <p className="text-sm text-text-secondary">
           Carrier status: {order.linkedDelivery.status.replaceAll("_", " ")}
         </p>
@@ -65,7 +65,7 @@ export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
       <section className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
         <h2 className="text-sm font-semibold text-foreground">Manual delivery</h2>
         <p className="text-sm text-text-secondary">
-          {order.manualDeliveryNote || "Dispatched outside deliverGO."}
+          {order.manualDeliveryNote || "Dispatched outside Courier."}
         </p>
         <p className="text-xs text-text-tertiary">
           Mark Complete when the customer has received the order.
@@ -96,7 +96,7 @@ function DeliveryFulfillChoices({ order }: { order: StaffOrderDetail }) {
             onClick={() => setMode("delivergo")}
             className="h-10 rounded-md bg-accent px-4 text-sm font-medium text-text-inverse"
           >
-            Dispatch with deliverGO
+            Send courier
           </button>
           <button
             type="button"
