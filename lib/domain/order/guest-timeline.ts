@@ -17,14 +17,9 @@ type TimelineDef = {
 
 const PICKUP_STEPS: TimelineDef[] = [
   {
-    id: "placed",
-    label: "Order received",
-    description: "The restaurant has your order",
-  },
-  {
     id: "accepted",
     label: "Confirmed",
-    description: "Kitchen accepted your order",
+    description: "The kitchen has your order",
   },
   {
     id: "preparing",
@@ -33,7 +28,7 @@ const PICKUP_STEPS: TimelineDef[] = [
   },
   {
     id: "ready",
-    label: "Ready for pickup",
+    label: "Ready",
     description: "Come collect your order",
   },
   {
@@ -45,14 +40,9 @@ const PICKUP_STEPS: TimelineDef[] = [
 
 const DELIVERY_STEPS: TimelineDef[] = [
   {
-    id: "placed",
-    label: "Order received",
-    description: "The restaurant has your order",
-  },
-  {
     id: "accepted",
     label: "Confirmed",
-    description: "Kitchen accepted your order",
+    description: "The kitchen has your order",
   },
   {
     id: "preparing",
@@ -78,8 +68,8 @@ const DELIVERY_STEPS: TimelineDef[] = [
 
 function currentStepIndex(defs: TimelineDef[], status: OrderStatus): number {
   const statusToStepId: Partial<Record<OrderStatus, string>> = {
-    pending_payment: "placed",
-    pending_acceptance: "placed",
+    pending_payment: "accepted",
+    pending_acceptance: "accepted",
     accepted: "accepted",
     preparing: "preparing",
     ready: "ready",
@@ -129,6 +119,33 @@ export function buildGuestOrderTimeline(
   };
 }
 
+export function getGuestOrderHeadline(
+  status: OrderStatus,
+  fulfillmentType: FulfillmentType,
+): string {
+  switch (status) {
+    case "pending_payment":
+    case "pending_acceptance":
+      return "Order received";
+    case "accepted":
+      return "Confirmed";
+    case "preparing":
+      return "Preparing";
+    case "ready":
+      return fulfillmentType === "pickup" ? "Ready for pickup" : "Ready";
+    case "ready_for_pickup":
+      return "Ready for pickup";
+    case "out_for_delivery":
+      return "On the way";
+    case "completed":
+      return fulfillmentType === "pickup" ? "Picked up" : "Delivered";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return "Order";
+  }
+}
+
 export function buildGuestStatusMessage(input: {
   status: OrderStatus;
   fulfillmentType: FulfillmentType;
@@ -140,26 +157,24 @@ export function buildGuestStatusMessage(input: {
 
   switch (status) {
     case "pending_acceptance":
-      return `${storeName} has your order and will confirm shortly.`;
+      return `${storeName} will confirm shortly.`;
     case "accepted":
-      return `Confirmed — usually ready in about ${prep} minutes.`;
+      return "";
     case "preparing":
-      return `The kitchen is preparing your order (about ${prep} min total).`;
+      return `About ${prep} min.`;
     case "ready":
       return fulfillmentType === "pickup"
-        ? "Your order is ready — head over when you can."
-        : "Your order is ready and a courier will pick it up soon.";
+        ? "Come collect when you can."
+        : "A courier will pick it up soon.";
     case "ready_for_pickup":
-      return "Your order is ready for pickup.";
+      return "Come collect when you can.";
     case "out_for_delivery":
-      return "Your order is on the way.";
+      return "";
     case "completed":
-      return fulfillmentType === "pickup"
-        ? "Thanks — enjoy your meal!"
-        : "Delivered — enjoy your meal!";
+      return "Thanks — enjoy your meal!";
     case "cancelled":
-      return "This order was cancelled. Contact the restaurant if you have questions.";
+      return "Contact the restaurant if you have questions.";
     default:
-      return "We're updating your order status.";
+      return "";
   }
 }

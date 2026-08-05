@@ -5,8 +5,27 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { OrderStatus } from "@prisma/client";
 import type { TransitionAction } from "@/lib/domain/order/transitions";
+import {
+  CheckCircle,
+  CookingPot,
+  Handshake,
+  Package,
+  ShoppingBagCheck,
+  X,
+} from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
+
+const ACTION_ICONS: Partial<
+  Record<OrderStatus, typeof CheckCircle>
+> = {
+  accepted: Handshake,
+  preparing: CookingPot,
+  ready: Package,
+  ready_for_pickup: ShoppingBagCheck,
+  completed: CheckCircle,
+  cancelled: X,
+};
 
 async function readApiError(response: Response): Promise<string> {
   const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -19,6 +38,8 @@ type OrderTransitionButtonsProps = {
   onTransitioned?: (status: OrderStatus) => void;
   compact?: boolean;
   fullWidth?: boolean;
+  className?: string;
+  buttonClassName?: string;
 };
 
 export function OrderTransitionButtons({
@@ -27,6 +48,8 @@ export function OrderTransitionButtons({
   onTransitioned,
   compact = false,
   fullWidth = false,
+  className,
+  buttonClassName,
 }: OrderTransitionButtonsProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
@@ -73,29 +96,46 @@ export function OrderTransitionButtons({
         "flex flex-wrap gap-2",
         compact && "gap-1.5",
         fullWidth && "w-full",
+        className,
       )}
     >
-      {actions.map((action) => (
-        <button
-          key={action.to}
-          type="button"
-          disabled={pendingTo !== null}
-          onClick={() => void runTransition(action)}
-          className={cn(
-            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-opacity disabled:opacity-50",
-            compact ? "h-9 px-3" : "h-11 px-4",
-            fullWidth && "h-11 w-full",
-            action.variant === "primary" &&
-              "bg-accent text-text-inverse hover:opacity-90",
-            action.variant === "secondary" &&
-              "border border-border bg-surface-elevated text-foreground",
-            action.variant === "danger" &&
-              "border border-red-200 bg-red-50 text-red-800 hover:bg-red-100",
-          )}
-        >
-          {pendingTo === action.to ? "…" : action.label}
-        </button>
-      ))}
+      {actions.map((action) => {
+        const Icon = ACTION_ICONS[action.to];
+        return (
+          <button
+            key={action.to}
+            type="button"
+            disabled={pendingTo !== null}
+            onClick={() => void runTransition(action)}
+            className={cn(
+              "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-opacity disabled:opacity-50",
+              compact ? "h-9 gap-1.5 px-3" : "h-11 px-4",
+              fullWidth && "h-11 w-full",
+              action.variant === "primary" &&
+                "bg-accent text-text-inverse hover:opacity-90",
+              action.variant === "secondary" &&
+                "border border-border bg-surface-elevated text-foreground",
+              action.variant === "danger" &&
+                "border border-red-200 bg-red-50 text-red-800 hover:bg-red-100",
+              buttonClassName,
+            )}
+          >
+            {pendingTo === action.to ? (
+              "…"
+            ) : (
+              <>
+                {Icon ? (
+                  <Icon
+                    className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
+                    aria-hidden
+                  />
+                ) : null}
+                {action.label}
+              </>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

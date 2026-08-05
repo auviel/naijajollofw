@@ -144,6 +144,7 @@ export function getOrderStatusLabel(status: OrderStatus): string {
 export const STAFF_ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   ...ORDER_STATUS_LABELS,
   pending_acceptance: "Needs accept",
+  ready_for_pickup: "Ready",
 };
 
 const STAFF_ORDER_STATUS_LABEL_BY_STATUS = new Map<OrderStatus, string>(

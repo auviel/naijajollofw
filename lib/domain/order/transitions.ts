@@ -27,8 +27,8 @@ const ACTION_META = new Map<
 >([
   ["accepted", { label: "Accept", variant: "primary" }],
   ["preparing", { label: "Start preparing", variant: "primary" }],
-  ["ready", { label: "Mark ready", variant: "primary" }],
-  ["ready_for_pickup", { label: "Ready for pickup", variant: "primary" }],
+  ["ready", { label: "Ready", variant: "primary" }],
+  ["ready_for_pickup", { label: "Ready", variant: "primary" }],
   ["completed", { label: "Complete", variant: "primary" }],
   ["cancelled", { label: "Cancel order", variant: "danger" }],
 ]);
@@ -37,8 +37,13 @@ export function getAllowedTransitions(
   from: OrderStatus,
   ctx?: TransitionContext,
 ): readonly OrderStatus[] {
-  if (from === "ready" && ctx?.fulfillmentType === "pickup") {
+  if (from === "preparing" && ctx?.fulfillmentType === "pickup") {
     return ["ready_for_pickup", "cancelled"];
+  }
+
+  // Legacy pickup tickets that landed on `ready` before the single-Ready flow.
+  if (from === "ready" && ctx?.fulfillmentType === "pickup") {
+    return ["completed", "cancelled"];
   }
 
   // Delivery from ready is fulfilled via dedicated endpoints (manual / deliverGO).
@@ -62,7 +67,11 @@ export function getTransitionActions(
     if (!meta) {
       return [];
     }
-    return [{ to, label: meta.label, variant: meta.variant }];
+    const label =
+      to === "completed" && ctx?.fulfillmentType === "pickup"
+        ? "Picked up"
+        : meta.label;
+    return [{ to, label, variant: meta.variant }];
   });
 }
 

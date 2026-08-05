@@ -23,16 +23,6 @@ type OrderFulfillPanelProps = {
 };
 
 export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
-  if (order.status === "ready" && order.fulfillmentType === "pickup") {
-    return (
-      <section className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
-        Use <span className="font-medium text-foreground">Ready for pickup</span>{" "}
-        above when the bag is ready, then <span className="font-medium text-foreground">Complete</span>{" "}
-        when the customer collects it.
-      </section>
-    );
-  }
-
   if (
     order.status === "ready" &&
     order.fulfillmentType === "delivery" &&

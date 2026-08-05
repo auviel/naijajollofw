@@ -57,23 +57,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   return (
     <DashboardPage>
-      <PageHeader
-        title={order.displayNumber ?? order.customerName}
-        description={[
-          order.displayNumber ? order.customerName : null,
-          `${order.itemCount} item${order.itemCount === 1 ? "" : "s"}`,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        action={
-          <Link
-            href="/dashboard"
-            className="text-sm font-medium text-text-secondary hover:text-foreground"
-          >
-            ← Board
-          </Link>
-        }
-      />
       <DashboardPageBody>
         <OrderDetailView order={order} />
       </DashboardPageBody>

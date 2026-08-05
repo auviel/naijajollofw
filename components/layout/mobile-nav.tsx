@@ -2,20 +2,24 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useId, useState } from "react";
 import {
   ClipboardList,
+  LogOut,
+  MoreHorizontal,
   Package,
   Store,
   Users,
   UtensilsCrossed,
 } from "@/components/ui/icons";
+import { signOutStaff } from "@/lib/auth/actions";
 import { cn } from "@/lib/utils/cn";
 
 type NavItem = {
   href: string;
   label: string;
   icon: typeof ClipboardList;
-  kind: "orders" | "menu" | "courier" | "customers" | "store";
+  kind: "orders" | "menu" | "courier" | "customers";
 };
 
 const items: NavItem[] = [
@@ -42,12 +46,6 @@ const items: NavItem[] = [
     label: "Customers",
     icon: Users,
     kind: "customers",
-  },
-  {
-    href: "/dashboard/store",
-    label: "Profile",
-    icon: Store,
-    kind: "store",
   },
 ];
 
@@ -83,48 +81,111 @@ function isNavActive(
         pathname === "/dashboard/customers" ||
         pathname.startsWith("/dashboard/customers/")
       );
-    case "store":
-      return (
-        pathname === "/dashboard/store" ||
-        pathname.startsWith("/dashboard/store/") ||
-        pathname === "/dashboard/hours" ||
-        pathname.startsWith("/dashboard/hours/")
-      );
     default:
       return false;
   }
+}
+
+function isMoreSectionActive(pathname: string): boolean {
+  return (
+    pathname === "/dashboard/store" ||
+    pathname.startsWith("/dashboard/store/") ||
+    pathname === "/dashboard/hours" ||
+    pathname.startsWith("/dashboard/hours/")
+  );
 }
 
 export function MobileNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const channel = searchParams.get("channel");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreMenuId = useId();
+  const moreActive = moreOpen || isMoreSectionActive(pathname);
+
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   return (
-    <nav
-      aria-label="Staff"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:hidden"
-    >
-      <div className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-5 rounded-2xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
-        {items.map(({ href, label, icon: Icon, kind }) => {
-          const active = isNavActive(kind, pathname, channel);
+    <>
+      {moreOpen ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/20 md:hidden"
+          aria-label="Close more menu"
+          onClick={() => setMoreOpen(false)}
+        />
+      ) : null}
 
-          return (
+      <nav
+        aria-label="Staff"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:hidden"
+      >
+        {moreOpen ? (
+          <div
+            id={moreMenuId}
+            role="menu"
+            className="pointer-events-auto mx-auto mb-2 max-w-lg overflow-hidden rounded-2xl border border-border bg-background shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+          >
             <Link
-              key={href}
-              href={href}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium no-underline transition-colors",
-                active ? "text-foreground" : "text-text-tertiary",
-              )}
-              aria-current={active ? "page" : undefined}
+              role="menuitem"
+              href="/dashboard/store"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground no-underline hover:bg-surface"
+              onClick={() => setMoreOpen(false)}
             >
-              <Icon className="h-5 w-5" aria-hidden />
-              {label}
+              <Store className="h-5 w-5 text-text-secondary" aria-hidden />
+              Profile
             </Link>
-          );
-        })}
-      </div>
-    </nav>
+            <form action={signOutStaff} className="border-t border-border">
+              <button
+                type="submit"
+                role="menuitem"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-surface"
+              >
+                <LogOut className="h-5 w-5 text-text-secondary" aria-hidden />
+                Sign out
+              </button>
+            </form>
+          </div>
+        ) : null}
+
+        <div className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-5 rounded-2xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
+          {items.map(({ href, label, icon: Icon, kind }) => {
+            const active = isNavActive(kind, pathname, channel);
+
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium no-underline transition-colors",
+                  active ? "text-foreground" : "text-text-tertiary",
+                )}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon className="h-5 w-5" aria-hidden />
+                {label}
+              </Link>
+            );
+          })}
+
+          <button
+            type="button"
+            className={cn(
+              "relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
+              moreActive ? "text-foreground" : "text-text-tertiary",
+            )}
+            aria-expanded={moreOpen}
+            aria-controls={moreMenuId}
+            aria-haspopup="menu"
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            <MoreHorizontal className="h-5 w-5" aria-hidden />
+            More
+          </button>
+        </div>
+      </nav>
+    </>
   );
 }

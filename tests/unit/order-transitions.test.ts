@@ -21,13 +21,38 @@ describe("order transitions", () => {
     expect(canTransition("ready", "preparing")).toBe(false);
   });
 
-  it("allows pickup handoff from ready", () => {
+  it("sends pickup from preparing to ready_for_pickup, then picked up", () => {
     expect(
-      canTransition("ready", "ready_for_pickup", { fulfillmentType: "pickup" }),
+      canTransition("preparing", "ready_for_pickup", {
+        fulfillmentType: "pickup",
+      }),
     ).toBe(true);
     expect(
-      canTransition("ready", "ready_for_pickup", { fulfillmentType: "delivery" }),
+      canTransition("preparing", "ready", { fulfillmentType: "pickup" }),
     ).toBe(false);
+    expect(
+      canTransition("ready_for_pickup", "completed", {
+        fulfillmentType: "pickup",
+      }),
+    ).toBe(true);
+    expect(
+      canTransition("ready", "completed", { fulfillmentType: "pickup" }),
+    ).toBe(true);
+    expect(
+      canTransition("ready", "ready_for_pickup", { fulfillmentType: "pickup" }),
+    ).toBe(false);
+    expect(
+      canTransition("ready", "completed", { fulfillmentType: "delivery" }),
+    ).toBe(false);
+  });
+
+  it("labels pickup complete as Picked up", () => {
+    const actions = getTransitionActions("ready_for_pickup", {
+      fulfillmentType: "pickup",
+    });
+    expect(actions.find((action) => action.to === "completed")?.label).toBe(
+      "Picked up",
+    );
   });
 
   it("exposes primary accept action first", () => {

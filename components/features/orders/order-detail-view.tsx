@@ -4,9 +4,12 @@ import Link from "next/link";
 import { OrderStatusBadge } from "@/components/features/orders/order-status-badge";
 import { OrderFulfillPanel } from "@/components/features/orders/order-fulfill-panel";
 import { OrderTransitionButtons } from "@/components/features/orders/order-transition-buttons";
+import { ArrowLeft, Calendar, Call, ExternalLink } from "@/components/ui/icons";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { getOrderStatusLabel } from "@/lib/domain/order/types";
+import { formatKitchenScheduled } from "@/lib/domain/order/kitchen-format";
 import { formatCadFromCents } from "@/lib/utils/currency";
+import { formatDateTime } from "@/lib/utils/date";
 import { cn } from "@/lib/utils/cn";
 
 type OrderDetailViewProps = {
@@ -15,63 +18,99 @@ type OrderDetailViewProps = {
 
 export function OrderDetailView({ order }: OrderDetailViewProps) {
   const trackingPath = `/orders/${order.id}?token=${order.publicToken}`;
+  const mode = order.fulfillmentType === "delivery" ? "Delivery" : "Pickup";
+  const showFulfill =
+    order.needsFulfillment ||
+    Boolean(order.linkedDelivery) ||
+    order.fulfillmentMethod === "manual";
 
   return (
-    <div className="space-y-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <OrderStatusBadge status={order.status} />
-            <span className="text-sm text-text-secondary">
-              {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
-            </span>
-            {order.displayNumber ? (
-              <span className="text-sm font-medium tabular-nums text-foreground">
-                {order.displayNumber}
-              </span>
+    <div className="space-y-6 sm:space-y-8">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-3">
+          <Link
+            href="/dashboard"
+            className="inline-flex h-11 items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Board
+          </Link>
+
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-start gap-x-2 gap-y-2">
+              <h1 className="font-display text-3xl font-semibold tabular-nums tracking-tight text-foreground sm:text-4xl">
+                {order.displayNumber ?? "Order"}
+              </h1>
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 sm:pt-1.5">
+                <OrderStatusBadge status={order.status} className="shrink-0" />
+                <span className="inline-flex shrink-0 items-center rounded-full bg-surface px-3 py-1 text-xs font-medium text-foreground">
+                  {mode}
+                </span>
+              </div>
+            </div>
+            {order.scheduledFor ? (
+              <p className="inline-flex items-center gap-1.5 text-base font-semibold text-amber-800">
+                <Calendar className="h-4 w-4" aria-hidden />
+                Scheduled {formatKitchenScheduled(order.scheduledFor)}
+              </p>
             ) : null}
           </div>
-          <p className="text-sm text-text-secondary">
-            Placed{" "}
-            {new Date(order.placedAt ?? order.createdAt).toLocaleString("en-CA", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
-          </p>
         </div>
-        <OrderTransitionButtons orderId={order.id} actions={order.allowedActions} />
-      </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
-          <h2 className="text-sm font-semibold text-foreground">Customer</h2>
-          <p className="text-sm text-foreground">{order.customerName}</p>
-          <p className="text-sm text-text-secondary">{order.customerPhone}</p>
+        <OrderTransitionButtons
+          orderId={order.id}
+          actions={order.allowedActions}
+          className="w-full flex-col lg:w-auto lg:flex-row lg:justify-end"
+          buttonClassName="w-full lg:w-auto"
+        />
+      </header>
+
+      <section className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            Customer
+          </h2>
+          <p className="text-base font-medium text-foreground">
+            {order.customerName}
+          </p>
+          <a
+            href={`tel:${order.customerPhone}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+          >
+            <Call className="h-4 w-4" aria-hidden />
+            {order.customerPhone}
+          </a>
           {order.dropoffAddress ? (
             <p className="text-sm text-text-secondary">{order.dropoffAddress}</p>
           ) : null}
           {order.notes ? (
-            <p className="pt-2 text-sm text-text-secondary">Note: {order.notes}</p>
+            <p className="text-sm text-text-secondary">Note: {order.notes}</p>
           ) : null}
         </div>
-        <div className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
-          <h2 className="text-sm font-semibold text-foreground">Guest tracking</h2>
+
+        <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            Guest tracking
+          </h2>
           <p className="text-sm text-text-secondary">
-            Share this link so the diner can follow status.
+            Share so the diner can follow status.
           </p>
           <Link
             href={trackingPath}
-            className="inline-flex text-sm font-medium text-accent hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
             target="_blank"
             rel="noreferrer"
           >
+            <ExternalLink className="h-4 w-4" aria-hidden />
             Open tracking page
           </Link>
         </div>
       </section>
 
+      {showFulfill ? <OrderFulfillPanel order={order} /> : null}
+
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
           Items
         </h2>
         <ul className="space-y-3">
@@ -87,7 +126,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
                   </p>
                 ) : null}
               </div>
-              <p className="shrink-0 text-text-secondary">
+              <p className="shrink-0 tabular-nums text-text-secondary">
                 {formatCadFromCents(line.lineTotalCents)}
               </p>
             </li>
@@ -96,23 +135,27 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
         <div className="space-y-1 border-t border-border pt-3 text-sm">
           <div className="flex justify-between text-text-secondary">
             <span>Subtotal</span>
-            <span>{formatCadFromCents(order.subtotalCents)}</span>
+            <span className="tabular-nums">
+              {formatCadFromCents(order.subtotalCents)}
+            </span>
           </div>
           <div className="flex justify-between text-text-secondary">
             <span>Tax</span>
-            <span>{formatCadFromCents(order.taxCents)}</span>
+            <span className="tabular-nums">
+              {formatCadFromCents(order.taxCents)}
+            </span>
           </div>
           <div className="flex justify-between font-semibold text-foreground">
             <span>Total</span>
-            <span>{formatCadFromCents(order.totalCents)}</span>
+            <span className="tabular-nums">
+              {formatCadFromCents(order.totalCents)}
+            </span>
           </div>
         </div>
       </section>
 
-      <OrderFulfillPanel order={order} />
-
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
           Timeline
         </h2>
         <ol className="space-y-3 border-l border-border pl-4">
@@ -128,10 +171,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
                 {getOrderStatusLabel(event.status)}
               </p>
               <p className="text-xs text-text-tertiary">
-                {new Date(event.createdAt).toLocaleString("en-CA", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
+                {formatDateTime(event.createdAt)}
                 {" · "}
                 {event.actor}
                 {event.note ? ` · ${event.note}` : ""}

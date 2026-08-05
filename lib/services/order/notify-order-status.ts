@@ -26,7 +26,7 @@ type EmailNotifyStatus =
   | "out_for_delivery"
   | "cancelled";
 
-/** Pickup: one ready ping (`ready_for_pickup`). Delivery: ping on `ready`. No completed mail. */
+/** Pickup: one ready ping when the bag is ready. Delivery: ping on `ready`. No completed mail. */
 export function shouldNotifyOrderStatus(
   status: OrderStatus,
   fulfillmentType: "pickup" | "delivery",

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { PublicOrderView } from "@/lib/domain/order/types";
-import { getOrderStatusLabel } from "@/lib/domain/order/types";
+import { getGuestOrderHeadline } from "@/lib/domain/order/guest-timeline";
+import { formatKitchenScheduled } from "@/lib/domain/order/kitchen-format";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
@@ -79,30 +80,30 @@ export function OrderStatusClient({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-3">
+      <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {getOrderStatusLabel(order.status)}
+          {getGuestOrderHeadline(order.status, order.fulfillmentType)}
         </h1>
-        {order.displayNumber ? (
-          <p className="text-sm font-medium tabular-nums text-foreground">
-            Order {order.displayNumber}
-          </p>
-        ) : null}
-        <p className="text-base text-text-secondary">{order.statusMessage}</p>
-        <p className="text-sm text-text-tertiary">
+        <p className="text-sm text-text-secondary">
+          {order.displayNumber ? (
+            <span className="font-medium tabular-nums text-foreground">
+              {order.displayNumber}
+            </span>
+          ) : (
+            "Order"
+          )}
+          {" · "}
           {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} for{" "}
           {order.customerName}
         </p>
-        {order.scheduledFor ? (
-          <p className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
-            Scheduled for{" "}
-            <span className="font-medium text-foreground">
-              {new Date(order.scheduledFor).toLocaleString("en-CA", {
-                weekday: "long",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
+        {order.statusMessage ? (
+          <p className="text-base text-text-secondary">{order.statusMessage}</p>
+        ) : null}
+        {order.scheduledFor &&
+        order.status !== "completed" &&
+        order.status !== "cancelled" ? (
+          <p className="text-sm font-semibold text-amber-800">
+            Scheduled {formatKitchenScheduled(order.scheduledFor)}
           </p>
         ) : null}
       </div>
@@ -152,7 +153,9 @@ export function OrderStatusClient({
                 >
                   {step.label}
                 </p>
-                <p className="text-xs text-text-tertiary">{step.description}</p>
+                {step.state === "current" && step.description ? (
+                  <p className="text-xs text-text-tertiary">{step.description}</p>
+                ) : null}
               </div>
             </li>
           ))}

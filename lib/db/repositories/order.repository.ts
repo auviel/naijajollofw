@@ -187,9 +187,8 @@ export function mapOrderToStaffDetail(order: OrderWithRelations): StaffOrderDeta
   const base = mapOrderToStaffListItem(order);
   const needsFulfillment =
     order.status === "ready" &&
-    (order.fulfillmentType === "pickup" ||
-      (order.fulfillmentType === "delivery" &&
-        order.fulfillmentMethod === "unassigned"));
+    order.fulfillmentType === "delivery" &&
+    order.fulfillmentMethod === "unassigned";
 
   return {
     ...base,
