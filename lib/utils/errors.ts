@@ -41,6 +41,9 @@ export function handleApiError(error: unknown): Response {
   }
 
   if (isAppError(error)) {
+    if (error.status >= 500) {
+      Sentry.captureException(error);
+    }
     return Response.json(
       {
         error: error.message,

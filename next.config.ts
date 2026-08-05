@@ -113,6 +113,9 @@ function r2RemotePatterns(): NonNullable<
 }
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? "",
+  },
   images: {
     remotePatterns: r2RemotePatterns(),
   },

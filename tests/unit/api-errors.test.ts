@@ -55,6 +55,18 @@ describe("handleApiError", () => {
     });
   });
 
+  it("reports AppError 500s to Sentry", async () => {
+    const boom = new AppError("INTERNAL_ERROR", "R2 is not configured.", 500);
+    const response = handleApiError(boom);
+
+    expect(response.status).toBe(500);
+    expect(captureException).toHaveBeenCalledWith(boom);
+    await expect(response.json()).resolves.toEqual({
+      error: "R2 is not configured.",
+      code: "INTERNAL_ERROR",
+    });
+  });
+
   it("reports unexpected errors to Sentry as INTERNAL_ERROR", async () => {
     const boom = new Error("db down");
     const response = handleApiError(boom);

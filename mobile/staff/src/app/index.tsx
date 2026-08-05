@@ -1,98 +1,196 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from "@/constants/theme";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import {
+  formatCadFromCents,
+  isKitchenBoardDeferred,
+  KITCHEN_BOARD_COLUMNS,
+  type ListStaffOrdersResult,
+  type StaffOrderListItem,
+} from "@naijajollof/api-types";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+const POLL_MS = 10_000;
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function KitchenBoardScreen() {
+  const router = useRouter();
+  const { store } = useAuth();
+  const [data, setData] = useState<ListStaffOrdersResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const result = await apiFetch<ListStaffOrdersResult>(
+        "/api/orders?filter=active&channel=kitchen&limit=80",
+      );
+      setData(result);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load board");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const id = setInterval(() => void load(), POLL_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const prepMinutes = data?.prepMinutes ?? 15;
+  const grouped = useMemo(() => {
+    const live: StaffOrderListItem[] = [];
+    const later: StaffOrderListItem[] = [];
+    for (const item of data?.items ?? []) {
+      if (isKitchenBoardDeferred(item, prepMinutes)) {
+        later.push(item);
+      } else {
+        live.push(item);
+      }
+    }
+    return { live, later };
+  }, [data?.items, prepMinutes]);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={async () => {
+            setRefreshing(true);
+            await load();
+            setRefreshing(false);
+          }}
+        />
+      }
+    >
+      <View style={styles.topRow}>
+        <View>
+          <Text style={styles.store}>{store?.name ?? "Kitchen"}</Text>
+          <Text style={styles.meta}>
+            {data?.pendingAcceptanceCount ?? 0} new · refreshes every 10s
+          </Text>
+        </View>
+        <Pressable onPress={() => router.push("/account")} style={styles.accountBtn}>
+          <Text style={styles.accountText}>Account</Text>
+        </Pressable>
+      </View>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {KITCHEN_BOARD_COLUMNS.map((column) => {
+        const items = grouped.live.filter((order) =>
+          (column.statuses as readonly string[]).includes(order.status),
+        );
+        return (
+          <View key={column.id} style={styles.column}>
+            <Text style={styles.columnTitle}>
+              {column.title} · {items.length}
+            </Text>
+            {items.length === 0 ? (
+              <Text style={styles.empty}>None</Text>
+            ) : (
+              items.map((order) => (
+                <TicketCard
+                  key={order.id}
+                  order={order}
+                  onPress={() => router.push(`/orders/${order.id}`)}
+                />
+              ))
+            )}
+          </View>
+        );
+      })}
+
+      <View style={styles.column}>
+        <Text style={styles.columnTitle}>Later · {grouped.later.length}</Text>
+        {grouped.later.length === 0 ? (
+          <Text style={styles.empty}>No scheduled tickets waiting</Text>
+        ) : (
+          grouped.later.map((order) => (
+            <TicketCard
+              key={order.id}
+              order={order}
+              onPress={() => router.push(`/orders/${order.id}`)}
+            />
+          ))
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
-export default function HomeScreen() {
+function TicketCard({
+  order,
+  onPress,
+}: {
+  order: StaffOrderListItem;
+  onPress: () => void;
+}) {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <Pressable onPress={onPress} style={styles.card}>
+      <View style={styles.cardTop}>
+        <Text style={styles.ticket}>
+          {order.displayNumber ?? (order.dayTicket ? `#${order.dayTicket}` : "Order")}
+        </Text>
+        <Text style={styles.total}>{formatCadFromCents(order.totalCents)}</Text>
+      </View>
+      <Text style={styles.customer}>{order.customerName}</Text>
+      <Text style={styles.summary} numberOfLines={2}>
+        {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} · {order.itemSummary}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+  scroll: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: 16, paddingBottom: 48, gap: 16 },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+  store: { fontSize: 22, fontWeight: "700", color: Colors.text },
+  meta: { color: Colors.textSecondary, marginTop: 4 },
+  accountBtn: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: Colors.surface,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  accountText: { fontWeight: "600" },
+  error: { color: Colors.danger },
+  column: { gap: 8 },
+  columnTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 4,
   },
-  title: {
-    textAlign: 'center',
+  empty: { color: Colors.textSecondary },
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
   },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  cardTop: { flexDirection: "row", justifyContent: "space-between" },
+  ticket: { fontWeight: "700", fontSize: 16 },
+  total: { fontWeight: "700" },
+  customer: { color: Colors.text },
+  summary: { color: Colors.textSecondary },
 });

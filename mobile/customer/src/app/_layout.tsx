@@ -1,18 +1,27 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Colors } from "@/constants/theme";
+import { AuthProvider } from "@/lib/auth";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <AuthProvider>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: Colors.surface },
+          headerTintColor: Colors.text,
+          contentStyle: { backgroundColor: Colors.background },
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: "Menu" }} />
+        <Stack.Screen name="item/[id]" options={{ title: "Item" }} />
+        <Stack.Screen name="cart" options={{ title: "Cart" }} />
+        <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
+        <Stack.Screen name="orders/[id]" options={{ title: "Track order" }} />
+        <Stack.Screen name="account" options={{ title: "Account" }} />
+        <Stack.Screen name="login" options={{ title: "Sign in" }} />
+      </Stack>
+    </AuthProvider>
   );
 }

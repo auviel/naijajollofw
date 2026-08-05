@@ -1,18 +1,63 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { Colors } from "@/constants/theme";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, type ReactNode } from "react";
+import { ActivityIndicator, View } from "react-native";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+function Gate({ children }: { children: ReactNode }) {
+  const { loading, user } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
 
-SplashScreen.preventAutoHideAsync();
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    const onLogin = segments[0] === "login";
+    if (!user && !onLogin) {
+      router.replace("/login");
+    } else if (user && onLogin) {
+      router.replace("/");
+    }
+  }, [loading, user, segments, router]);
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: Colors.background,
+        }}
+      >
+        <ActivityIndicator color={Colors.accent} />
+      </View>
+    );
+  }
+
+  return children;
+}
+
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <AuthProvider>
+      <StatusBar style="dark" />
+      <Gate>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: Colors.surface },
+            headerTintColor: Colors.text,
+            contentStyle: { backgroundColor: Colors.background },
+          }}
+        >
+          <Stack.Screen name="index" options={{ title: "Kitchen" }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="orders/[id]" options={{ title: "Ticket" }} />
+          <Stack.Screen name="account" options={{ title: "Account" }} />
+        </Stack>
+      </Gate>
+    </AuthProvider>
   );
 }

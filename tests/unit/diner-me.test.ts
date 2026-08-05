@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapDinerMe } from "@/lib/services/diner/get-me";
+import { mapDinerMe } from "@/lib/domain/auth/diner-me";
 
 describe("mapDinerMe", () => {
   it("exposes a safe diner profile", () => {
@@ -10,9 +10,7 @@ describe("mapDinerMe", () => {
         name: "Ada",
         storeId: "store_1",
         storeName: "Naija Jollof Waterloo",
-        role: "DINER",
         phoneE164: "+15195550100",
-        sessionVersion: 1,
         emailVerifiedAt: new Date("2026-01-01T00:00:00.000Z"),
       }),
     ).toEqual({

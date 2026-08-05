@@ -53,7 +53,12 @@ async function getSessionUserFromBearer(): Promise<SessionUser | null> {
     return null;
   }
 
-  const claims = verifyMobileAccessToken(token);
+  let claims;
+  try {
+    claims = verifyMobileAccessToken(token);
+  } catch {
+    return null;
+  }
   if (!claims) {
     return null;
   }

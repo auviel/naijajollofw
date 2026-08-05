@@ -214,14 +214,9 @@ Use this before going live:
 | `WHATSAPP_STAFF_PHONES` | Comma-separated allowlisted staff phones (+15195550100) |
 | `WHATSAPP_STORE_ID` | Optional store ID (defaults to first store in DB) |
 
-4. Run migrations against Neon once:
+4. `npm run build` runs `prisma migrate deploy` then `next build`. Vercel uses that by default — no separate migrate step.
 
-```bash
-DATABASE_URL="your-neon-url" npx prisma migrate deploy
-DATABASE_URL="your-neon-url" npm run db:seed
-```
-
-5. Set Vercel build command (optional): `npx prisma migrate deploy && npm run build`
+Do **not** run `npm run db:seed` against production after go-live (it resets menu + seed logins).
 
 ## API routes
 

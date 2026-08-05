@@ -6,6 +6,9 @@
       "@/*": [
         "./src/*"
       ],
+      "@naijajollof/api-types": [
+        "../packages/api-types/src/index.ts"
+      ],
       "@/assets/*": [
         "./assets/*"
       ]
