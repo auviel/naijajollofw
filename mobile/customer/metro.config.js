@@ -1,17 +1,27 @@
-const { getDefaultConfig } = require("expo/metro-config");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 const path = require("path");
 
 const projectRoot = __dirname;
-const apiTypes = path.resolve(projectRoot, "../packages/api-types");
-const ui = path.resolve(projectRoot, "../packages/ui");
+const workspaceRoot = path.resolve(projectRoot, "..");
+const apiTypes = path.resolve(workspaceRoot, "packages/api-types");
+const ui = path.resolve(workspaceRoot, "packages/ui");
+const appNodeModules = path.resolve(projectRoot, "node_modules");
 
-const config = getDefaultConfig(projectRoot);
+const config = getSentryExpoConfig(projectRoot, {
+  autoWrapExpoRouterErrorBoundary: true,
+});
 
 config.watchFolders = [...(config.watchFolders ?? []), apiTypes, ui];
+config.resolver.nodeModulesPaths = [appNodeModules];
+config.resolver.disableHierarchicalLookup = true;
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules ?? {}),
   "@naijajollof/api-types": apiTypes,
   "@naijajollof/ui": ui,
+  react: path.resolve(appNodeModules, "react"),
+  "react-native": path.resolve(appNodeModules, "react-native"),
+  "expo-blur": path.resolve(appNodeModules, "expo-blur"),
+  "expo-glass-effect": path.resolve(appNodeModules, "expo-glass-effect"),
 };
 config.resolver.unstable_enableSymlinks = true;
 

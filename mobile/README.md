@@ -9,6 +9,15 @@ Two Expo SDK 54 apps talk to the Next.js API:
 
 Point `EXPO_PUBLIC_API_URL` at the Next.js origin (LAN IP + port for Expo Go).
 
+## Sentry
+
+| App | Sentry project | Env |
+|-----|----------------|-----|
+| Diner | `naijajollofw-diner` | `EXPO_PUBLIC_SENTRY_DSN` in `customer/.env` |
+| Kitchen | `naijajollofw-kitchen` | `EXPO_PUBLIC_SENTRY_DSN` in `staff/.env` |
+
+Copy from `.env.example`, paste the project DSN from Sentry, restart Metro with `-c`. For EAS source maps / native symbols, set `SENTRY_AUTH_TOKEN` in EAS secrets (org `naija-jollof-waterloo`). Do not commit tokens or DSNs.
+
 ## Checks (what catches user errors)
 
 Layered so a missed field, bad tip, or broken native plugin fails *before* a diner hits it:

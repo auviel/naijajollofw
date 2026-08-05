@@ -1,11 +1,22 @@
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { headerScreenOptions } from "@naijajollof/ui";
+import { isRunningInExpoGo } from "expo";
 import * as Notifications from "expo-notifications";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as Sentry from "@sentry/react-native";
 import { useEffect } from "react";
 import { Platform } from "react-native";
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: Boolean(process.env.EXPO_PUBLIC_SENTRY_DSN),
+  sendDefaultPii: true,
+  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+  enableNativeFramesTracking: !isRunningInExpoGo(),
+  environment: __DEV__ ? "development" : "production",
+});
 
 function PushDeepLink() {
   const router = useRouter();
@@ -35,7 +46,7 @@ function PushDeepLink() {
   return null;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
@@ -57,3 +68,5 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

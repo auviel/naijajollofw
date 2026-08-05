@@ -134,6 +134,7 @@ type MotionModalProps = {
   children: ReactNode;
   labelledBy: string;
   panelClassName?: string;
+  overlayClassName?: string;
 };
 
 export function MotionModal({
@@ -142,6 +143,7 @@ export function MotionModal({
   children,
   labelledBy,
   panelClassName,
+  overlayClassName,
 }: MotionModalProps) {
   const reduce = useReducedMotion();
   const variants = reduce ? fadeOnly : modalScale;
@@ -150,7 +152,10 @@ export function MotionModal({
     <MotionOverlay
       open={open}
       onClose={onClose}
-      className="flex items-center justify-center p-4"
+      className={cn(
+        "flex items-center justify-center p-4",
+        overlayClassName,
+      )}
       scrimClassName="bg-black/50"
     >
       <motion.div

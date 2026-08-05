@@ -31,6 +31,23 @@ export async function createMenuItem(input: unknown) {
     throw new AppError("NOT_FOUND", "Category not found", 404);
   }
 
+  const additionalCategoryIds = [
+    ...new Set(
+      (parsed.additionalCategoryIds ?? []).filter(
+        (id) => id !== parsed.categoryId,
+      ),
+    ),
+  ];
+  for (const extraId of additionalCategoryIds) {
+    const extra = await menuRepository.findCategoryByIdAndStoreId(
+      extraId,
+      user.storeId,
+    );
+    if (!extra) {
+      throw new AppError("NOT_FOUND", "Additional category not found", 404);
+    }
+  }
+
   const sortOrder =
     parsed.sortOrder ??
     (await menuRepository.nextItemSortOrder(user.storeId, parsed.categoryId));
@@ -44,6 +61,7 @@ export async function createMenuItem(input: unknown) {
   const item = await menuRepository.createItem({
     storeId: user.storeId,
     categoryId: parsed.categoryId,
+    additionalCategoryIds,
     name: parsed.name,
     description: parsed.description?.trim() ? parsed.description.trim() : null,
     priceCents: parsed.priceCents,

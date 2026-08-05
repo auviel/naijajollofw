@@ -9,6 +9,7 @@ import {
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
+import { isAppError } from "@/lib/utils/errors";
 
 const YEAR = new Date().getFullYear();
 
@@ -45,9 +46,17 @@ function formatFooterPhone(phone: string): string {
 }
 
 export async function StorefrontFooter() {
-  const storeId = await resolvePublicStoreId();
-  const store = await storeRepository.getProfileById(storeId);
-  const storeName = store?.name ?? "Restaurant";
+  let store: StoreProfile | null = null;
+  try {
+    const storeId = await resolvePublicStoreId();
+    store = await storeRepository.getProfileById(storeId);
+  } catch (error) {
+    if (!isAppError(error) || error.code !== "NOT_FOUND") {
+      throw error;
+    }
+  }
+
+  const storeName = store?.name ?? "Naija Jollof";
   const address = store ? formatFooterAddress(store) : null;
   const phone = store?.phone ?? null;
   const phoneLabel = phone ? formatFooterPhone(phone) : null;

@@ -3,6 +3,7 @@ import {
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  ArrowUp01Icon,
   Calendar01Icon,
   CallIcon,
   Cancel01Icon,
@@ -82,6 +83,7 @@ function createIcon(icon: IconSvgElement, displayName: string) {
 export const Plus = createIcon(Add01Icon, "Plus");
 export const ArrowDown = createIcon(ArrowDown01Icon, "ArrowDown");
 export const ArrowLeft = createIcon(ArrowLeft01Icon, "ArrowLeft");
+export const ArrowUp = createIcon(ArrowUp01Icon, "ArrowUp");
 export const Calendar = createIcon(Calendar01Icon, "Calendar");
 export const Call = createIcon(CallIcon, "Call");
 export const Check = createIcon(Tick02Icon, "Check");

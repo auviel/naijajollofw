@@ -20,8 +20,11 @@ describe("formatKitchenWait", () => {
 
 describe("formatKitchenScheduled", () => {
   it("uses a stable en-US 12-hour clock in the store timezone", () => {
-    expect(formatKitchenScheduled("2026-07-13T16:00:00.000Z")).toMatch(
-      /Mon.*12:00\sPM/,
-    );
+    const formatted = formatKitchenScheduled("2026-07-13T16:00:00.000Z");
+    // en-US avoids Safari vs Node “a.m.” / “AM” hydration mismatches.
+    expect(formatted).toContain("Mon");
+    expect(formatted).toMatch(/12:00/);
+    expect(formatted).toMatch(/\bPM\b/);
+    expect(formatted).not.toMatch(/a\.m\.|p\.m\./i);
   });
 });

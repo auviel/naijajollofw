@@ -52,6 +52,8 @@ export type MenuItemDetail = {
   storeId: string;
   categoryId: string;
   categoryName: string;
+  /** Extra shelves — excludes the primary categoryId. */
+  additionalCategoryIds: string[];
   name: string;
   description: string | null;
   priceCents: number;

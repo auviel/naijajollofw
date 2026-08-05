@@ -76,11 +76,7 @@ npm run db:migrate
 npm run db:seed
 ```
 
-**Seed credentials:**
-
-| Account | Email | Password | Notes |
-|---------|-------|----------|-------|
-| Staff | `hello@naijajollofw.ca` | `SEED_STAFF_PASSWORD` in `.env` | `/login` (or `/staff` → login) |
+Seed creates the Waterloo store + menu only — **no staff login**. Create a store manager separately (dashboard signup flow or insert a `User` with a bcrypt `passwordHash`).
 
 | Field | Value |
 |-------|-------|

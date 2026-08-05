@@ -18,7 +18,7 @@ describe("mobile access tokens", () => {
     process.env.AUTH_SECRET = "test-secret-for-mobile-tokens";
     const token = signMobileAccessToken({
       sub: "user_1",
-      email: "store.manager@delivergo.local",
+      email: "manager@example.com",
       name: "Manager",
       storeId: "store_1",
       storeName: "Naija Jollof",
@@ -39,7 +39,7 @@ describe("mobile access tokens", () => {
     process.env.AUTH_SECRET = "test-secret-for-mobile-tokens";
     const token = signMobileAccessToken({
       sub: "user_1",
-      email: "diner@delivergo.local",
+      email: "diner@example.com",
       name: "Diner",
       storeId: "store_1",
       storeName: "Naija Jollof",

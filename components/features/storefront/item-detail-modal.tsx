@@ -3,11 +3,16 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ItemCustomizePanel } from "@/components/features/storefront/item-customize-panel";
+import {
+  ItemCustomizeFooter,
+  ItemCustomizePanel,
+  useItemCustomize,
+} from "@/components/features/storefront/item-customize-panel";
 import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { MotionModal } from "@/components/motion/primitives";
 import { X } from "@/components/ui/icons";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
+import { cn } from "@/lib/utils/cn";
 
 type ItemDetailModalProps = {
   open: boolean;
@@ -46,7 +51,13 @@ export function ItemDetailModal({
   }, [open, onClose]);
 
   return (
-    <MotionModal open={open && Boolean(activeId)} onClose={onClose} labelledBy="item-modal-title">
+    <MotionModal
+      open={open && Boolean(activeId)}
+      onClose={onClose}
+      labelledBy="item-modal-title"
+      overlayClassName="items-end p-0 sm:items-center sm:p-4"
+      panelClassName="max-h-[min(94dvh,920px)] max-w-5xl rounded-t-2xl rounded-b-none sm:rounded-2xl"
+    >
       {activeId ? (
         <ItemDetailModalBody
           key={activeId}
@@ -56,6 +67,36 @@ export function ItemDetailModal({
         />
       ) : null}
     </MotionModal>
+  );
+}
+
+function ItemImagePlane({
+  item,
+  className,
+  sizes,
+}: {
+  item: MenuItemDetail;
+  className?: string;
+  sizes: string;
+}) {
+  return (
+    <div className={cn("relative overflow-hidden bg-surface", className)}>
+      {item.imageUrl ? (
+        <Image
+          src={item.imageUrl}
+          alt={item.name}
+          fill
+          className="object-cover"
+          sizes={sizes}
+          priority
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,var(--accent-subtle),transparent_55%),linear-gradient(160deg,var(--surface)_0%,#ebe4dc_100%)]"
+        />
+      )}
+    </div>
   );
 }
 
@@ -117,21 +158,14 @@ function ItemDetailModalBody({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-3 left-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm ring-1 ring-border transition-colors hover:bg-surface"
-        aria-label="Close"
-      >
-        <X className="h-5 w-5" aria-hidden />
-      </button>
-
       {loading ? (
-        <div className="flex min-h-[28rem] w-full items-center justify-center p-10 text-sm text-text-secondary">
+        <div className="relative flex min-h-[28rem] w-full items-center justify-center p-10 text-sm text-text-secondary">
+          <CloseButton onClose={onClose} className="absolute top-3 left-3" />
           Loading…
         </div>
       ) : error || !item ? (
-        <div className="flex min-h-[20rem] w-full flex-col items-center justify-center gap-3 p-10 text-center">
+        <div className="relative flex min-h-[20rem] w-full flex-col items-center justify-center gap-3 p-10 text-center">
+          <CloseButton onClose={onClose} className="absolute top-3 left-3" />
           <p className="text-sm text-text-secondary">
             {error ?? "Item not found."}
           </p>
@@ -144,34 +178,86 @@ function ItemDetailModalBody({
           </button>
         </div>
       ) : (
-        <div className="grid min-h-0 w-full lg:grid-cols-2">
-          <div className="relative hidden min-h-[28rem] bg-surface lg:block">
-            {item.imageUrl ? (
-              <Image
-                src={item.imageUrl}
-                alt={item.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 0px, 50vw"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-surface to-border/40" />
-            )}
-          </div>
+        <ItemDetailModalContent
+          item={item}
+          scheduleLabel={scheduleLabel}
+          onClose={onClose}
+          onAdded={handleAdded}
+        />
+      )}
+    </>
+  );
+}
 
-          <div className="flex min-h-0 max-h-[min(90dvh,880px)] flex-col">
-            <span id="item-modal-title" className="sr-only">
-              {item.name}
-            </span>
-            <ItemCustomizePanel
+function ItemDetailModalContent({
+  item,
+  scheduleLabel,
+  onClose,
+  onAdded,
+}: {
+  item: MenuItemDetail;
+  scheduleLabel: string | null;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
+  const customize = useItemCustomize(item, { scheduleLabel, onAdded });
+
+  return (
+    <div className="flex max-h-[min(90dvh,880px)] w-full min-h-0 flex-col">
+      <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-2 lg:items-start">
+        <div className="relative hidden w-full self-start bg-surface-elevated pt-5 pl-5 pr-3 sm:pt-6 sm:pl-7 lg:block">
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
+            <ItemImagePlane
               item={item}
-              variant="modal"
-              scheduleLabel={scheduleLabel}
-              onAdded={handleAdded}
+              className="absolute inset-0"
+              sizes="(max-width: 1024px) 0px, 32rem"
+            />
+            <CloseButton
+              onClose={onClose}
+              className="absolute top-3 left-3"
             />
           </div>
         </div>
+
+        <div className="flex min-h-0 w-full flex-col overflow-hidden bg-surface-elevated">
+          <span id="item-modal-title" className="sr-only">
+            {item.name}
+          </span>
+          <ItemCustomizePanel
+            item={item}
+            variant="modal"
+            scheduleLabel={scheduleLabel}
+            showImageHero
+            onClose={onClose}
+            hideFooter
+            customize={customize}
+          />
+        </div>
+      </div>
+
+      <ItemCustomizeFooter customize={customize} />
+    </div>
+  );
+}
+
+function CloseButton({
+  onClose,
+  className,
+}: {
+  onClose: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClose}
+      className={cn(
+        "z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background text-foreground shadow-sm ring-1 ring-black/8 transition-colors hover:bg-surface",
+        className,
       )}
-    </>
+      aria-label="Close"
+    >
+      <X className="h-4 w-4" aria-hidden />
+    </button>
   );
 }

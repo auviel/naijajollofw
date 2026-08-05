@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
 import { IconButton } from "@/components/ui/icon-button";
-import { ArrowLeft, Plus, X } from "@/components/ui/icons";
+import { ArrowDown, ArrowLeft, ArrowUp, Plus, X } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ModifierSourcePicker } from "@/components/features/menu/modifier-source-picker";
@@ -122,6 +122,9 @@ export function MenuItemForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [categoryId, setCategoryId] = useState(item?.categoryId ?? categories[0]?.id ?? "");
+  const [additionalCategoryIds, setAdditionalCategoryIds] = useState<string[]>(
+    () => item?.additionalCategoryIds ?? [],
+  );
   const [name, setName] = useState(item?.name ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
   const [priceDollars, setPriceDollars] = useState(
@@ -144,13 +147,31 @@ export function MenuItemForm({
   const [destroyTarget, setDestroyTarget] = useState<DestroyTarget | null>(null);
   const [destroyPending, setDestroyPending] = useState(false);
 
-  const activeCategories = categories.filter((category) => category.active || category.id === categoryId);
+  const activeCategories = categories.filter(
+    (category) => category.active || category.id === categoryId,
+  );
+  const alsoShowCategories = activeCategories.filter(
+    (category) => category.id !== categoryId,
+  );
   const totalPhotoCount = savedImages.length + pendingFiles.length;
 
   function updateGroup(key: string, patch: Partial<ModifierGroupDraft>) {
     setGroups((current) =>
       current.map((group) => (group.key === key ? { ...group, ...patch } : group)),
     );
+  }
+
+  function moveGroup(key: string, direction: -1 | 1) {
+    setGroups((current) => {
+      const index = current.findIndex((group) => group.key === key);
+      if (index < 0) return current;
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current.length) return current;
+      const next = [...current];
+      const [moved] = next.splice(index, 1);
+      next.splice(nextIndex, 0, moved);
+      return next;
+    });
   }
 
   function buildPayload() {
@@ -202,6 +223,9 @@ export function MenuItemForm({
 
     return {
       categoryId,
+      additionalCategoryIds: additionalCategoryIds.filter(
+        (id) => id !== categoryId,
+      ),
       name: name.trim(),
       description: description.trim() ? description.trim() : null,
       priceCents,
@@ -476,6 +500,9 @@ export function MenuItemForm({
               value={categoryId}
               onChange={(next) => {
                 setCategoryId(next);
+                setAdditionalCategoryIds((current) =>
+                  current.filter((id) => id !== next),
+                );
                 if (fieldErrors.categoryId) {
                   setFieldErrors((current) => ({
                     ...current,
@@ -489,6 +516,41 @@ export function MenuItemForm({
               }))}
             />
           </FormField>
+
+          {alsoShowCategories.length > 0 ? (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium text-text-secondary">
+                Also show in
+              </legend>
+              <p className="text-sm text-text-tertiary">
+                Same product can appear under more than one category.
+              </p>
+              <ul className="space-y-1 rounded-2xl bg-surface-elevated p-3">
+                {alsoShowCategories.map((category) => {
+                  const checked = additionalCategoryIds.includes(category.id);
+                  return (
+                    <li key={category.id}>
+                      <label className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-sm text-foreground hover:bg-surface">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border accent-foreground"
+                          checked={checked}
+                          onChange={() => {
+                            setAdditionalCategoryIds((current) =>
+                              checked
+                                ? current.filter((id) => id !== category.id)
+                                : [...current, category.id],
+                            );
+                          }}
+                        />
+                        <span>{category.name}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </fieldset>
+          ) : null}
 
           <div className="space-y-2">
             <label
@@ -681,7 +743,8 @@ export function MenuItemForm({
           <div>
             <h2 className="text-base font-semibold text-foreground">Options</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Link products or a category so prices stay in sync.
+              Link products or a category so prices stay in sync. Group order
+              is how diners see options.
             </p>
           </div>
           <Button
@@ -710,7 +773,7 @@ export function MenuItemForm({
           {groups.length === 0 ? (
             <p className="text-sm text-text-secondary">No options yet.</p>
           ) : (
-            groups.map((group) => (
+            groups.map((group, groupIndex) => (
               <div
                 key={group.key}
                 className="space-y-3 rounded-2xl bg-surface-elevated p-4"
@@ -762,19 +825,37 @@ export function MenuItemForm({
                       aria-label="Max selections"
                     />
                   </FormField>
-                  <IconButton
-                    className="mt-7 h-12 w-12"
-                    aria-label="Remove group"
-                    onClick={() =>
-                      setDestroyTarget({
-                        type: "group",
-                        key: group.key,
-                        name: group.name.trim(),
-                      })
-                    }
-                  >
-                    <X className="h-5 w-5" aria-hidden />
-                  </IconButton>
+                  <div className="mt-7 flex shrink-0 items-center gap-1">
+                    <IconButton
+                      className="h-12 w-12"
+                      aria-label="Move group up"
+                      disabled={groupIndex === 0}
+                      onClick={() => moveGroup(group.key, -1)}
+                    >
+                      <ArrowUp className="h-5 w-5" aria-hidden />
+                    </IconButton>
+                    <IconButton
+                      className="h-12 w-12"
+                      aria-label="Move group down"
+                      disabled={groupIndex === groups.length - 1}
+                      onClick={() => moveGroup(group.key, 1)}
+                    >
+                      <ArrowDown className="h-5 w-5" aria-hidden />
+                    </IconButton>
+                    <IconButton
+                      className="h-12 w-12"
+                      aria-label="Remove group"
+                      onClick={() =>
+                        setDestroyTarget({
+                          type: "group",
+                          key: group.key,
+                          name: group.name.trim(),
+                        })
+                      }
+                    >
+                      <X className="h-5 w-5" aria-hidden />
+                    </IconButton>
+                  </div>
                 </div>
 
                 <FormField

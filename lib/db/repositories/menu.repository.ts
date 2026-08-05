@@ -32,19 +32,24 @@ type ModifierGroupWithModifiers = MenuModifierGroup & {
   modifiers: ModifierWithSource[];
 };
 
-type ItemWithRelations = MenuItem & {
-  category: MenuCategory;
-  modifierGroups: ModifierGroupWithModifiers[];
-  images: MenuItemImage[];
+type CatalogItemRow = MenuItem & {
+  modifierGroups: Array<{ id: string }>;
+  images: Array<{ id: string; url: string }>;
 };
 
 type CategoryWithItems = MenuCategory & {
-  items: Array<
-    MenuItem & {
-      modifierGroups: Array<{ id: string }>;
-      images: Array<{ id: string; url: string }>;
-    }
-  >;
+  items: CatalogItemRow[];
+  itemLinks: Array<{
+    sortOrder: number;
+    item: CatalogItemRow & { categoryId: string };
+  }>;
+};
+
+type ItemWithRelations = MenuItem & {
+  category: MenuCategory;
+  categoryLinks: Array<{ categoryId: string; sortOrder: number }>;
+  modifierGroups: ModifierGroupWithModifiers[];
+  images: MenuItemImage[];
 };
 
 const itemImagesInclude = {
@@ -59,8 +64,20 @@ const sourceItemSelect = {
   sortOrder: true,
 } satisfies Prisma.MenuItemSelect;
 
+const catalogItemInclude = {
+  modifierGroups: { select: { id: true } },
+  images: {
+    select: { id: true, url: true },
+    orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
+  },
+} satisfies Prisma.MenuItemInclude;
+
 const itemDetailInclude = {
   category: true,
+  categoryLinks: {
+    select: { categoryId: true, sortOrder: true },
+    orderBy: [{ sortOrder: "asc" as const }],
+  },
   images: itemImagesInclude,
   modifierGroups: {
     orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
@@ -155,6 +172,9 @@ export function mapMenuItemToDetail(item: ItemWithRelations): MenuItemDetail {
     storeId: item.storeId,
     categoryId: item.categoryId,
     categoryName: item.category.name,
+    additionalCategoryIds: item.categoryLinks
+      .map((link) => link.categoryId)
+      .filter((id) => id !== item.categoryId),
     name: item.name,
     description: item.description,
     priceCents: item.priceCents,
@@ -171,17 +191,35 @@ export function mapMenuItemToDetail(item: ItemWithRelations): MenuItemDetail {
 }
 
 function mapCategory(category: CategoryWithItems): MenuCategoryView {
+  const byId = new Map<
+    string,
+    { item: CatalogItemRow; sortOrder: number }
+  >();
+
+  for (const item of category.items) {
+    byId.set(item.id, { item, sortOrder: item.sortOrder });
+  }
+  for (const link of category.itemLinks) {
+    if (byId.has(link.item.id)) continue;
+    byId.set(link.item.id, { item: link.item, sortOrder: link.sortOrder });
+  }
+
+  const items = [...byId.values()]
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.item.name.localeCompare(b.item.name))
+    .map(({ item, sortOrder }) =>
+      mapMenuItemToListItem({
+        ...item,
+        sortOrder,
+        category,
+      }),
+    );
+
   return {
     id: category.id,
     name: category.name,
     sortOrder: category.sortOrder,
     active: category.active,
-    items: category.items.map((item) =>
-      mapMenuItemToListItem({
-        ...item,
-        category,
-      }),
-    ),
+    items,
   };
 }
 
@@ -212,12 +250,12 @@ export const menuRepository = {
       include: {
         items: {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          include: catalogItemInclude,
+        },
+        itemLinks: {
+          orderBy: [{ sortOrder: "asc" }],
           include: {
-            modifierGroups: { select: { id: true } },
-            images: {
-              select: { id: true, url: true },
-              orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-            },
+            item: { include: catalogItemInclude },
           },
         },
       },
@@ -236,12 +274,12 @@ export const menuRepository = {
       include: {
         items: {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          include: catalogItemInclude,
+        },
+        itemLinks: {
+          orderBy: [{ sortOrder: "asc" }],
           include: {
-            modifierGroups: { select: { id: true } },
-            images: {
-              select: { id: true, url: true },
-              orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-            },
+            item: { include: catalogItemInclude },
           },
         },
       },
@@ -257,7 +295,10 @@ export const menuRepository = {
       where: {
         id,
         storeId,
-        category: { active: true },
+        OR: [
+          { category: { active: true } },
+          { categoryLinks: { some: { category: { active: true } } } },
+        ],
       },
       include: itemDetailInclude,
     });
@@ -345,6 +386,7 @@ export const menuRepository = {
   async createItem(input: {
     storeId: string;
     categoryId: string;
+    additionalCategoryIds?: string[];
     name: string;
     description: string | null;
     priceCents: number;
@@ -367,6 +409,12 @@ export const menuRepository = {
         },
       });
 
+      await replaceAdditionalCategories(
+        tx,
+        item.id,
+        input.additionalCategoryIds ?? [],
+        input.categoryId,
+      );
       await replaceModifierGroups(tx, item.id, input.modifierGroups);
 
       return tx.menuItem.findFirstOrThrow({
@@ -381,6 +429,7 @@ export const menuRepository = {
     storeId: string,
     data: {
       categoryId?: string;
+      additionalCategoryIds?: string[];
       name?: string;
       description?: string | null;
       priceCents?: number;
@@ -408,6 +457,20 @@ export const menuRepository = {
           sortOrder: data.sortOrder,
         },
       });
+
+      if (data.additionalCategoryIds !== undefined) {
+        await replaceAdditionalCategories(
+          tx,
+          id,
+          data.additionalCategoryIds,
+          data.categoryId ?? existing.categoryId,
+        );
+      } else if (data.categoryId && data.categoryId !== existing.categoryId) {
+        // Drop stale link if primary moved onto a former extra shelf.
+        await tx.menuItemCategory.deleteMany({
+          where: { itemId: id, categoryId: data.categoryId },
+        });
+      }
 
       if (data.modifierGroups) {
         await replaceModifierGroups(tx, id, data.modifierGroups);
@@ -558,6 +621,41 @@ export const menuRepository = {
     return (last?.sortOrder ?? -1) + 1;
   },
 };
+
+async function replaceAdditionalCategories(
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  categoryIds: string[],
+  primaryCategoryId: string,
+) {
+  const unique = [
+    ...new Set(categoryIds.filter((id) => id && id !== primaryCategoryId)),
+  ];
+
+  await tx.menuItemCategory.deleteMany({ where: { itemId } });
+  if (unique.length === 0) {
+    return;
+  }
+
+  const rows: Array<{ itemId: string; categoryId: string; sortOrder: number }> =
+    [];
+  for (const categoryId of unique) {
+    const maxPrimary = await tx.menuItem.aggregate({
+      where: { categoryId },
+      _max: { sortOrder: true },
+    });
+    const maxLinked = await tx.menuItemCategory.aggregate({
+      where: { categoryId },
+      _max: { sortOrder: true },
+    });
+    const next =
+      Math.max(maxPrimary._max.sortOrder ?? -1, maxLinked._max.sortOrder ?? -1) +
+      1;
+    rows.push({ itemId, categoryId, sortOrder: next });
+  }
+
+  await tx.menuItemCategory.createMany({ data: rows });
+}
 
 async function replaceModifierGroups(
   tx: Prisma.TransactionClient,

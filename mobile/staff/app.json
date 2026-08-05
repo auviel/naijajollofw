@@ -44,6 +44,14 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "naija-jollof-waterloo",
+          "project": "naijajollofw-kitchen"
+        }
       ]
     ],
     "experiments": {

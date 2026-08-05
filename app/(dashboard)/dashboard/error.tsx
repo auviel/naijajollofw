@@ -2,18 +2,46 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DashboardPage, DashboardPageBody } from "@/components/layout/dashboard-page";
 import { Button } from "@/components/ui/button";
+import { signOutStaff } from "@/lib/auth/actions";
+import { isAppError } from "@/lib/utils/errors";
 
 type DashboardErrorProps = {
-  error: Error & { digest?: string };
+  error: Error & { digest?: string; code?: string };
   reset: () => void;
 };
 
+function isAuthFailure(error: DashboardErrorProps["error"]): boolean {
+  if (isAppError(error)) {
+    return error.code === "UNAUTHORIZED" || error.code === "FORBIDDEN";
+  }
+  return /authentication required|store manager access required/i.test(
+    error.message,
+  );
+}
+
 export default function DashboardError({ error, reset }: DashboardErrorProps) {
+  const router = useRouter();
+
   useEffect(() => {
     console.error("[dashboard] error boundary", error);
-  }, [error]);
+    if (!isAuthFailure(error)) return;
+    void signOutStaff().catch(() => {
+      router.replace("/login");
+    });
+  }, [error, router]);
+
+  if (isAuthFailure(error)) {
+    return (
+      <DashboardPage>
+        <DashboardPageBody centered>
+          <p className="text-sm text-text-secondary">Signing you out…</p>
+        </DashboardPageBody>
+      </DashboardPage>
+    );
+  }
 
   return (
     <DashboardPage>

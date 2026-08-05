@@ -1,31 +1,8 @@
-import { PrismaClient, UserRole } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
 import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
 
 const prisma = new PrismaClient();
-
-/** Staff login — password from SEED_STAFF_PASSWORD (see README / .env.example). */
-const SEED_USER = {
-  email: "hello@naijajollofw.ca",
-  name: "Store Manager",
-  role: UserRole.STORE_MANAGER,
-} as const;
-
-function requireSeedPassword(): string {
-  const password = process.env.SEED_STAFF_PASSWORD?.trim();
-  if (!password) {
-    throw new Error(
-      "SEED_STAFF_PASSWORD is required to seed the staff account.",
-    );
-  }
-  return password;
-}
-
-const LEGACY_SEED_EMAILS = [
-  "store.manager@delivergo.local",
-  "diner@delivergo.local",
-] as const;
 
 const SEED_STORE_BASE = {
   name: "Naija Jollof Waterloo",
@@ -75,7 +52,6 @@ async function resolveStoreCoordinates() {
 }
 
 async function main() {
-  const passwordHash = await bcrypt.hash(requireSeedPassword(), 12);
   const storeData = await resolveStoreCoordinates();
 
   const store = await prisma.store.upsert({
@@ -87,37 +63,6 @@ async function main() {
       nextOrderNumber: 1001,
     },
   });
-
-  await prisma.user.upsert({
-    where: { email: SEED_USER.email },
-    update: {
-      name: SEED_USER.name,
-      role: SEED_USER.role,
-      passwordHash,
-      storeId: store.id,
-    },
-    create: {
-      email: SEED_USER.email,
-      name: SEED_USER.name,
-      role: SEED_USER.role,
-      passwordHash,
-      storeId: store.id,
-    },
-  });
-
-  for (const email of LEGACY_SEED_EMAILS) {
-    const legacy = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, customerId: true },
-    });
-    if (!legacy) {
-      continue;
-    }
-    await prisma.user.delete({ where: { id: legacy.id } });
-    if (legacy.customerId) {
-      await prisma.customer.delete({ where: { id: legacy.customerId } });
-    }
-  }
 
   // Reset and seed menu matching Naija Jollof Waterloo (Uber Eats layout).
   await prisma.cartItem.deleteMany({
@@ -459,8 +404,7 @@ async function main() {
   console.log(`  Store: ${store.name} (${store.id})`);
   console.log(`  DoorDash external_store_id: ${getDoorDashExternalStoreIdFromEnv() ?? store.id}`);
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
-  console.log(`  Staff:  ${SEED_USER.email}`);
-  console.log("  Login password: SEED_STAFF_PASSWORD");
+  console.log("  No staff user seeded — create one separately.");
   console.log(
     `  Menu: ${categoryDefs.length} categories · ${items.length} items`,
   );

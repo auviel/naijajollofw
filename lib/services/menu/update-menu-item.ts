@@ -43,6 +43,25 @@ export async function updateMenuItem(id: string, input: unknown) {
     throw new AppError("NOT_FOUND", "Menu item not found", 404);
   }
 
+  const primaryCategoryId = parsed.categoryId ?? existing.categoryId;
+  let additionalCategoryIds = parsed.additionalCategoryIds;
+  if (additionalCategoryIds !== undefined) {
+    additionalCategoryIds = [
+      ...new Set(
+        additionalCategoryIds.filter((extraId) => extraId !== primaryCategoryId),
+      ),
+    ];
+    for (const extraId of additionalCategoryIds) {
+      const extra = await menuRepository.findCategoryByIdAndStoreId(
+        extraId,
+        user.storeId,
+      );
+      if (!extra) {
+        throw new AppError("NOT_FOUND", "Additional category not found", 404);
+      }
+    }
+  }
+
   const modifierGroups = parsed.modifierGroups
     ? toModifierGroupWriteInput(parsed.modifierGroups)
     : undefined;
@@ -76,6 +95,7 @@ export async function updateMenuItem(id: string, input: unknown) {
 
   const item = await menuRepository.updateItem(id, user.storeId, {
     categoryId: parsed.categoryId,
+    additionalCategoryIds,
     name: parsed.name,
     description:
       parsed.description === undefined

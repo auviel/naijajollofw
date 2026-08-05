@@ -4,6 +4,8 @@ import {
   ensureCheckoutSchedule,
 } from "./helpers/storefront";
 
+test.describe.configure({ mode: "serial" });
+
 test.describe("checkout user errors", () => {
   test("empty cart checkout points guests back to the menu", async ({
     page,
@@ -42,12 +44,39 @@ test.describe("checkout user errors", () => {
     await addFirstMenuItemAndOpenCheckout(page);
     await ensureCheckoutSchedule(page);
 
-    await page.getByLabel("Name").fill("Ada Okonkwo");
-    await page.getByLabel("Phone").fill("5195550100");
-    await page.getByLabel("Email").fill("ada.e2e@delivergo.local");
+    const name = page.getByLabel("Name");
+    const phone = page.getByLabel("Phone");
+    const email = page.getByLabel("Email");
 
-    await page.getByRole("button", { name: /Place order \(test\)/ }).click();
-    await expect(page).toHaveURL(/\/orders\/.+/, { timeout: 20_000 });
+    await name.fill("Ada Okonkwo");
+    await phone.fill("5195550100");
+    await email.fill("ada.e2e@example.com");
+    await expect(name).toHaveValue("Ada Okonkwo");
+    await expect(phone).toHaveValue("(519) 555-0100");
+    await expect(email).toHaveValue("ada.e2e@example.com");
+
+    const placeOrder = page.getByRole("button", {
+      name: /Place order \(test\)/,
+    });
+    await expect(placeOrder).toBeEnabled();
+
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (res) =>
+          res.url().includes("/api/checkout") &&
+          res.request().method() === "POST",
+        { timeout: 30_000 },
+      ),
+      placeOrder.click(),
+    ]);
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const body = (await response.json()) as {
+      data: { id: string; publicToken: string };
+    };
+
+    await expect
+      .poll(() => page.url(), { timeout: 20_000 })
+      .toContain(`/orders/${body.data.id}`);
     await expect(page.locator("body")).toContainText(/order|ada/i);
   });
 });

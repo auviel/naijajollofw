@@ -9,9 +9,15 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Skip jobs when the push head commit or PR title includes [skip ci] / [ci skip].
+# (GitHub also skips the workflow natively for those tokens in commit messages.)
+env:
+  SKIP_CI: ${{ contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]') }}
+
 jobs:
   unit:
     name: Lint & unit coverage
+    if: ${{ env.SKIP_CI != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -29,6 +35,7 @@ jobs:
 
   mobile:
     name: Mobile typecheck
+    if: ${{ env.SKIP_CI != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,6 +58,7 @@ jobs:
 
   e2e:
     name: Playwright e2e
+    if: ${{ env.SKIP_CI != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -70,7 +78,6 @@ jobs:
     env:
       DATABASE_URL: postgresql://delivergo:delivergo@localhost:5433/delivergo?schema=public
       AUTH_SECRET: ci-test-auth-secret-not-for-production
-      SEED_STAFF_PASSWORD: ci-seed-staff-password
       NEXT_PUBLIC_APP_URL: http://localhost:3100
       CHECKOUT_SIMULATE_PAYMENTS: "true"
       STORE_TIMEZONE: America/Toronto

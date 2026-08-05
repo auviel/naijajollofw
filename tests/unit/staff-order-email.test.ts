@@ -23,14 +23,14 @@ describe("staff email recipients", () => {
       mergeStaffNotifyRecipients({
         storeEmail: "hello@naijajollofw.ca",
         managerEmails: [
-          "store.manager@delivergo.local",
+          "manager@example.com",
           "hello@naijajollofw.ca",
         ],
         envEmails: ["hello@naijajollofw.ca", "owner@example.com"],
       }),
     ).toEqual([
       "hello@naijajollofw.ca",
-      "store.manager@delivergo.local",
+      "manager@example.com",
       "owner@example.com",
     ]);
   });

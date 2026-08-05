@@ -389,6 +389,7 @@ model MenuCategory {
   updatedAt DateTime @updatedAt
 
   items          MenuItem[]
+  itemLinks      MenuItemCategory[]
   modifierGroups MenuModifierGroup[] @relation("ModifierGroupCategory")
 
   @@index([storeId, sortOrder])
@@ -411,12 +412,25 @@ model MenuItem {
   updatedAt   DateTime     @updatedAt
 
   images              MenuItemImage[]
+  categoryLinks       MenuItemCategory[]
   modifierGroups      MenuModifierGroup[]
   sourcedAsModifiers  MenuModifier[]      @relation("ModifierSourceItem")
   cartItems           CartItem[]
 
   @@index([categoryId, sortOrder])
   @@index([storeId, available])
+}
+
+/// Extra category shelves for a product (primary stays on MenuItem.categoryId).
+model MenuItemCategory {
+  itemId     String
+  categoryId String
+  sortOrder  Int          @default(0)
+  item       MenuItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, categoryId])
+  @@index([categoryId, sortOrder])
 }
 
 /// Extra photos for a menu item. Keys live under stores/{storeId}/menu/{itemId}/.

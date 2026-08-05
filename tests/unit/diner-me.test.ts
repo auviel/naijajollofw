@@ -6,7 +6,7 @@ describe("mapDinerMe", () => {
     expect(
       mapDinerMe({
         id: "user_1",
-        email: "diner@delivergo.local",
+        email: "diner@example.com",
         name: "Ada",
         storeId: "store_1",
         storeName: "Naija Jollof Waterloo",
@@ -15,7 +15,7 @@ describe("mapDinerMe", () => {
       }),
     ).toEqual({
       id: "user_1",
-      email: "diner@delivergo.local",
+      email: "diner@example.com",
       name: "Ada",
       phoneE164: "+15195550100",
       storeId: "store_1",

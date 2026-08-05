@@ -1,16 +1,24 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SkipLink } from "@/components/layout/skip-link";
 import { TopBar } from "@/components/layout/top-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { MotionPageShell } from "@/components/motion/motion-page-shell";
 import { DashboardProviders } from "@/components/providers/dashboard-providers";
+import { getSessionUser } from "@/lib/auth/session";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getSessionUser();
+  if (!user || user.role !== "STORE_MANAGER") {
+    // Stale JWT after DB reset: clear cookie via route handler (layouts can't set cookies).
+    redirect("/api/auth/clear-session?callbackUrl=/login");
+  }
+
   return (
     <DashboardProviders>
       <SkipLink />

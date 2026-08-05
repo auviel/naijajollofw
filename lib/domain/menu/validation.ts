@@ -61,46 +61,85 @@ const imageUrlSchema = z
   ])
   .optional();
 
-export const createMenuItemSchema = z.object({
-  categoryId: z.string().cuid("Choose a category"),
-  name: z
-    .string()
-    .trim()
-    .min(1, "Item name is required")
-    .max(MENU_ITEM_NAME_MAX),
-  description: z
-    .string()
-    .trim()
-    .max(MENU_ITEM_DESCRIPTION_MAX)
-    .nullable()
-    .optional(),
-  priceCents: z.number().int().min(0, "Price must be zero or more").max(1_000_000),
-  imageUrl: imageUrlSchema,
-  available: z.boolean().optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  modifierGroups: z.array(modifierGroupInputSchema).max(10).optional(),
-});
+export const createMenuItemSchema = z
+  .object({
+    categoryId: z.string().cuid("Choose a category"),
+    additionalCategoryIds: z.array(z.string().cuid()).max(20).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, "Item name is required")
+      .max(MENU_ITEM_NAME_MAX),
+    description: z
+      .string()
+      .trim()
+      .max(MENU_ITEM_DESCRIPTION_MAX)
+      .nullable()
+      .optional(),
+    priceCents: z.number().int().min(0, "Price must be zero or more").max(1_000_000),
+    imageUrl: imageUrlSchema,
+    available: z.boolean().optional(),
+    sortOrder: z.number().int().min(0).optional(),
+    modifierGroups: z.array(modifierGroupInputSchema).max(10).optional(),
+  })
+  .superRefine((item, ctx) => {
+    const extras = item.additionalCategoryIds ?? [];
+    if (new Set(extras).size !== extras.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Duplicate additional categories.",
+        path: ["additionalCategoryIds"],
+      });
+    }
+    if (extras.includes(item.categoryId)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Primary category is already selected.",
+        path: ["additionalCategoryIds"],
+      });
+    }
+  });
 
-export const updateMenuItemSchema = z.object({
-  categoryId: z.string().cuid().optional(),
-  name: z
-    .string()
-    .trim()
-    .min(1, "Item name is required")
-    .max(MENU_ITEM_NAME_MAX)
-    .optional(),
-  description: z
-    .string()
-    .trim()
-    .max(MENU_ITEM_DESCRIPTION_MAX)
-    .nullable()
-    .optional(),
-  priceCents: z.number().int().min(0).max(1_000_000).optional(),
-  imageUrl: imageUrlSchema,
-  available: z.boolean().optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  modifierGroups: z.array(modifierGroupInputSchema).max(10).optional(),
-});
+export const updateMenuItemSchema = z
+  .object({
+    categoryId: z.string().cuid().optional(),
+    additionalCategoryIds: z.array(z.string().cuid()).max(20).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, "Item name is required")
+      .max(MENU_ITEM_NAME_MAX)
+      .optional(),
+    description: z
+      .string()
+      .trim()
+      .max(MENU_ITEM_DESCRIPTION_MAX)
+      .nullable()
+      .optional(),
+    priceCents: z.number().int().min(0).max(1_000_000).optional(),
+    imageUrl: imageUrlSchema,
+    available: z.boolean().optional(),
+    sortOrder: z.number().int().min(0).optional(),
+    modifierGroups: z.array(modifierGroupInputSchema).max(10).optional(),
+  })
+  .superRefine((item, ctx) => {
+    const extras = item.additionalCategoryIds;
+    if (!extras) return;
+    if (new Set(extras).size !== extras.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Duplicate additional categories.",
+        path: ["additionalCategoryIds"],
+      });
+    }
+    if (item.categoryId && extras.includes(item.categoryId)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Primary category is already selected.",
+        path: ["additionalCategoryIds"],
+      });
+    }
+  });
 
 export const setItemAvailabilitySchema = z.object({
   available: z.boolean(),
