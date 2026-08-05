@@ -57,7 +57,7 @@ export function CartAddedPopover({
     >
       <span
         aria-hidden
-        className="absolute -top-1.5 right-4 h-3 w-3 rotate-45 border-t border-l border-border bg-background"
+        className="absolute -top-1.5 right-4 h-3 w-3 rotate-45 bg-surface-elevated"
       />
       <p className="relative text-sm font-semibold text-foreground">
         Added to cart

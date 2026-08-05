@@ -38,12 +38,12 @@ export default async function AccountOrdersPage() {
           </Link>
         </p>
       ) : (
-        <ul className="divide-y divide-border border-y border-border">
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl bg-surface-elevated px-4">
           {views.map((order) => (
             <li key={order.id}>
               <Link
                 href={`/orders/${order.id}?token=${order.publicToken}`}
-                className="flex flex-col gap-1 py-4 no-underline transition-colors hover:bg-surface/60 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-1 py-4 no-underline transition-colors hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="text-sm font-medium text-foreground">

@@ -196,11 +196,21 @@ export function ItemCustomizePanel({
             </p>
           ) : null}
           {!item.available ? (
-            <p className="mt-3 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+            <p
+              className={cn(
+                "mt-3 rounded-2xl px-3 py-2 text-sm text-text-secondary",
+                isModal ? "bg-surface" : "bg-surface-elevated",
+              )}
+            >
               This item is sold out.
             </p>
           ) : scheduleLabel ? (
-            <p className="mt-3 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+            <p
+              className={cn(
+                "mt-3 rounded-2xl px-3 py-2 text-sm text-text-secondary",
+                isModal ? "bg-surface" : "bg-surface-elevated",
+              )}
+            >
               Restaurant is closed — you&apos;ll pick a time at checkout
               {scheduleLabel ? (
                 <>
@@ -239,7 +249,8 @@ export function ItemCustomizePanel({
               </div>
               <div
                 className={cn(
-                  "divide-y divide-border rounded-2xl bg-surface-elevated",
+                  "divide-y divide-border rounded-2xl",
+                  isModal ? "bg-surface" : "bg-surface-elevated",
                   groupErrors[group.id] && "ring-1 ring-error",
                 )}
               >
@@ -259,7 +270,13 @@ export function ItemCustomizePanel({
                       }
                       className={cn(
                         "flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors",
-                        checked ? "bg-surface" : "bg-background hover:bg-surface/60",
+                        checked
+                          ? isModal
+                            ? "bg-surface-elevated"
+                            : "bg-surface"
+                          : isModal
+                            ? "hover:bg-surface-elevated/70"
+                            : "hover:bg-surface/60",
                         disabled && "cursor-not-allowed opacity-50",
                       )}
                     >
@@ -310,10 +327,10 @@ export function ItemCustomizePanel({
 
       <div
         className={cn(
-          "shrink-0 border-t border-border bg-background",
+          "shrink-0 border-t border-border bg-surface-elevated",
           isModal
             ? "px-5 py-4 sm:px-6"
-            : "fixed inset-x-0 bottom-0 z-30 bg-background/95 p-4 backdrop-blur safe-bottom",
+            : "fixed inset-x-0 bottom-0 z-30 bg-surface-elevated/95 p-4 backdrop-blur safe-bottom",
         )}
       >
         <div

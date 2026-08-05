@@ -839,7 +839,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                   {group.modifiers.map((modifier) => (
                     <div
                       key={modifier.key}
-                      className="grid gap-2 rounded-md border border-border bg-background p-3 sm:grid-cols-[1fr_7rem_auto_auto]"
+                      className="grid gap-2 rounded-2xl bg-surface p-3 sm:grid-cols-[1fr_7rem_auto_auto]"
                     >
                       <div className="space-y-1">
                         <Input

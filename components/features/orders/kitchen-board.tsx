@@ -258,7 +258,7 @@ export function KitchenBoard({
     <div className="space-y-4">
       {flashNew ? (
         <p
-          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900"
+          className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900"
           role="status"
         >
           New order received
@@ -269,7 +269,7 @@ export function KitchenBoard({
         <div
           role="tablist"
           aria-label="Kitchen board columns"
-          className="flex gap-1 overflow-x-auto rounded-2xl bg-surface-elevated p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-1 overflow-x-auto rounded-2xl bg-surface p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {KITCHEN_BOARD_COLUMNS.map((column) => {
             const count = columnCounts[column.id];
@@ -284,7 +284,7 @@ export function KitchenBoard({
                 className={cn(
                   "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-medium",
                   selected
-                    ? "bg-background text-foreground"
+                    ? "bg-surface-elevated text-foreground"
                     : "text-text-secondary",
                 )}
               >
@@ -296,7 +296,7 @@ export function KitchenBoard({
                       ? "bg-amber-500 text-white"
                       : selected
                         ? "bg-surface text-text-secondary"
-                        : "bg-background text-text-tertiary",
+                        : "bg-surface-elevated text-text-tertiary",
                   )}
                 >
                   {count}
@@ -340,7 +340,7 @@ export function KitchenBoard({
                     "inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
                     column.id === "new" && columnOrders.length > 0
                       ? "bg-amber-500 text-white"
-                      : "bg-background text-text-secondary",
+                      : "bg-surface text-text-secondary",
                   )}
                 >
                   {columnOrders.length}
@@ -374,7 +374,7 @@ export function KitchenBoard({
             aria-expanded={laterOpen || liveItems.length === 0}
           >
             <h2 className="text-sm font-semibold text-foreground">Later</h2>
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-background px-1.5 text-xs font-semibold text-text-secondary">
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-surface px-1.5 text-xs font-semibold text-text-secondary">
               {laterItems.length}
             </span>
           </button>
@@ -417,7 +417,7 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
       transition={{ duration: motionDuration.chrome, ease: easeOut }}
       className={cn(
         "space-y-3 rounded-2xl bg-surface-elevated p-3",
-        order.status === "pending_acceptance" && "border-amber-300",
+        order.status === "pending_acceptance" && "ring-1 ring-amber-300",
       )}
     >
       <Link

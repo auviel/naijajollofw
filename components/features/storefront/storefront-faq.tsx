@@ -107,7 +107,7 @@ export function StorefrontFaq({
           Ordering, pickup, delivery, and how {store.name} works online.
         </p>
 
-        <div className="mt-8 divide-y divide-border border-y border-border">
+        <div className="mt-8 divide-y divide-border rounded-2xl bg-surface-elevated px-5">
           {items.map((item) => (
             <details key={item.question} className="group py-1">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left text-[15px] font-medium text-foreground outline-none transition-colors marker:content-none [&::-webkit-details-marker]:hidden focus-visible:text-accent">

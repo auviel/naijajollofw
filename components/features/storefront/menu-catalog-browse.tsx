@@ -335,7 +335,7 @@ function MenuItemCard({
       }}
       className={cn(
         "flex gap-3 rounded-2xl bg-surface-elevated p-3 no-underline transition-colors",
-        "hover:border-border-strong hover:bg-surface/40",
+        "hover:bg-surface",
       )}
     >
       {text}

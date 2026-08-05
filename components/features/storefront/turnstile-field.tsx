@@ -184,7 +184,7 @@ export function TurnstileField({
         <p className="text-xs text-text-tertiary">Loading security check…</p>
       ) : null}
       {showHelp ? (
-        <div className="space-y-2 rounded-md border border-border bg-surface px-3 py-2">
+        <div className="space-y-2 rounded-2xl bg-surface px-3 py-2">
           <p className="text-sm text-foreground" role="alert">
             {THIRD_PARTY_BLOCKED.turnstile}
           </p>

@@ -110,13 +110,13 @@ export function OrderStatusClient({
 
       {order.timeline.cancelled ? (
         <p
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
           role="status"
         >
           This order was cancelled.
         </p>
       ) : (
-        <ol className="space-y-0">
+        <ol className="rounded-2xl bg-surface-elevated px-5 py-5">
           {order.timeline.steps.map((step, index) => (
             <li key={step.id} className="flex gap-3">
               <div className="flex w-6 flex-col items-center">
@@ -179,7 +179,7 @@ export function OrderStatusClient({
         </p>
       ) : null}
 
-      <section className="space-y-3">
+      <section className="space-y-3 rounded-2xl bg-surface-elevated px-5 py-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Items
         </h2>

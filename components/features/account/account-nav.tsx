@@ -77,7 +77,7 @@ export function AccountNav({ userName }: { userName: string }) {
         {open ? (
           <ul
             id={listId}
-            className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-surface-elevated shadow-lg"
+            className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-surface-elevated shadow-md"
           >
             {NAV.map((item) => (
               <li key={item.href}>

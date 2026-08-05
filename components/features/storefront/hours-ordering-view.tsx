@@ -77,7 +77,7 @@ export function HoursOrderingView({
           .
         </p>
 
-        <ul className="mt-5 divide-y divide-border border-y border-border">
+        <ul className="mt-5 divide-y divide-border rounded-2xl bg-surface-elevated px-5">
           {schedule.days.map((day) => {
             const isToday = day.dayOfWeek === todayDow;
             const closed =

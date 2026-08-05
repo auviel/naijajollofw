@@ -103,7 +103,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
   return (
     <>
       {/* Mobile / tablet: underline tabs + list sheet trigger */}
-      <div className="sticky top-[var(--storefront-header-offset)] z-10 -mx-4 border-b border-border bg-background/95 sm:-mx-6 lg:hidden">
+      <div className="sticky top-[var(--storefront-header-offset)] z-10 -mx-4 border-b border-border bg-surface/95 sm:-mx-6 lg:hidden">
         <div className="relative flex items-stretch">
           <div
             ref={railRef}
@@ -145,12 +145,12 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
             <span className="w-10 shrink-0" aria-hidden />
           </div>
 
-          <div className="pointer-events-none absolute inset-y-0 right-10 w-8 bg-gradient-to-r from-transparent to-background/95" />
+          <div className="pointer-events-none absolute inset-y-0 right-10 w-8 bg-gradient-to-r from-transparent to-surface/95" />
 
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
-            className="relative z-[1] flex w-11 shrink-0 items-center justify-center border-l border-border bg-background text-foreground"
+            className="relative z-[1] flex w-11 shrink-0 items-center justify-center border-l border-border bg-surface text-foreground"
             aria-label="All categories"
           >
             <List className="h-5 w-5" aria-hidden />
@@ -181,7 +181,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
               onClick={() => setSheetOpen(false)}
             />
             <motion.div
-              className="relative max-h-[75dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-background pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg"
+              className="relative max-h-[75dvh] w-full overflow-y-auto rounded-t-2xl bg-surface-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl"
               initial={reduce ? { opacity: 0 } : { y: "100%" }}
               animate={reduce ? { opacity: 1 } : { y: 0 }}
               exit={reduce ? { opacity: 0 } : { y: "100%" }}
@@ -192,7 +192,7 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
               }
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-4 py-3">
+              <div className="sticky top-0 flex items-center justify-between border-b border-border bg-surface-elevated px-4 py-3">
                 <p
                   id="category-sheet-title"
                   className="font-display text-base font-semibold text-foreground"

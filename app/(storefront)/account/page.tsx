@@ -82,12 +82,12 @@ export default async function AccountOverviewPage() {
             </Link>
           </p>
         ) : (
-          <ul className="mt-4 divide-y divide-border border-y border-border">
+          <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl bg-surface-elevated px-4">
             {views.map((order) => (
               <li key={order.id}>
                 <Link
                   href={`/orders/${order.id}?token=${order.publicToken}`}
-                  className="flex flex-col gap-1 py-4 no-underline transition-colors hover:bg-surface/60 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-1 py-4 no-underline transition-colors hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <p className="text-sm font-medium text-foreground">
@@ -129,7 +129,7 @@ function OverviewStat({
   return (
     <Link
       href={href}
-      className="rounded-2xl bg-surface-elevated px-4 py-3 no-underline transition-colors hover:border-border-strong"
+      className="rounded-2xl bg-surface-elevated px-4 py-3 no-underline transition-colors hover:bg-surface"
     >
       <p className="text-xs font-medium tracking-wide text-text-tertiary uppercase">
         {label}

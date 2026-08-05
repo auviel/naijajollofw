@@ -124,7 +124,7 @@ export function MenuCreateActions() {
           <ul
             id={menuId}
             role="menu"
-            className="absolute top-full right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl bg-surface-elevated shadow-lg"
+            className="absolute top-full right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl bg-surface-elevated shadow-md"
           >
             <li role="none">
               <Link

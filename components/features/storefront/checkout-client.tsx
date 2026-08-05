@@ -500,7 +500,7 @@ export function CheckoutClient({
               {initialCart.items.map((line) => (
                 <li
                   key={line.id}
-                  className="flex gap-3 rounded-2xl bg-surface-elevated p-3"
+                  className="flex gap-3 rounded-2xl bg-surface p-3"
                 >
                   <CartLineThumbnail line={line} size="sm" />
                   <div className="min-w-0 flex-1">

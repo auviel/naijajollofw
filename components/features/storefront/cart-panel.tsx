@@ -142,7 +142,12 @@ export function CartPanel({
         )}
       >
         {hasUnavailable ? (
-          <p className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+          <p
+            className={cn(
+              "rounded-2xl px-3 py-2 text-sm text-text-secondary",
+              isDrawer ? "bg-surface" : "bg-surface-elevated",
+            )}
+          >
             Some items are no longer available. Remove them before checkout.
           </p>
         ) : null}
@@ -150,7 +155,10 @@ export function CartPanel({
         {cart.items.map((line) => (
           <div
             key={line.id}
-            className="rounded-2xl bg-surface-elevated p-4"
+            className={cn(
+              "rounded-2xl p-4",
+              isDrawer ? "bg-surface" : "bg-surface-elevated",
+            )}
           >
             <div className="flex gap-3">
               <CartLineThumbnail line={line} />
@@ -218,10 +226,10 @@ export function CartPanel({
 
       <div
         className={cn(
-          "shrink-0 border-t border-border bg-background",
+          "shrink-0 border-t border-border bg-surface-elevated",
           isDrawer
             ? "px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]"
-            : "fixed inset-x-0 bottom-0 z-30 bg-background/95 p-4 backdrop-blur safe-bottom md:static md:z-auto md:bg-transparent md:p-0 md:pt-4 md:backdrop-blur-none",
+            : "fixed inset-x-0 bottom-0 z-30 bg-surface-elevated/95 p-4 backdrop-blur safe-bottom md:static md:z-auto md:bg-transparent md:border-0 md:p-0 md:pt-4 md:backdrop-blur-none",
         )}
       >
         <div className={cn(!isDrawer && "mx-auto max-w-3xl")}>
