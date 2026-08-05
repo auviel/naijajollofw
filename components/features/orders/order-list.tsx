@@ -112,7 +112,7 @@ export function OrderListFilters({
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name or phone"
+          placeholder="Search NJ-1084, #12, name, or phone"
           className="pl-11"
           aria-label="Search orders"
         />
@@ -171,7 +171,13 @@ export function OrderList({ items }: OrderListProps) {
             className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-background sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 space-y-0.5">
-              <p className="font-medium text-foreground">{order.customerName}</p>
+              <p className="font-medium text-foreground">
+                {order.displayNumber ? `${order.displayNumber} · ` : null}
+                {order.customerName}
+                {order.dayTicketIsToday && order.dayTicket != null ? (
+                  <span className="ml-1.5 text-text-secondary">#{order.dayTicket}</span>
+                ) : null}
+              </p>
               <p className="truncate text-sm text-text-secondary">
                 {order.itemSummary} ·{" "}
                 {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}

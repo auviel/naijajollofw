@@ -9,6 +9,9 @@ function order(
   overrides: Partial<StaffOrderListItem> & Pick<StaffOrderListItem, "id">,
 ): StaffOrderListItem {
   return {
+    displayNumber: "NJ-1",
+    dayTicket: 1,
+    dayTicketIsToday: true,
     status: "pending_acceptance",
     fulfillmentType: "pickup",
     fulfillmentMethod: "unassigned",

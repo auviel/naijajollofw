@@ -5,7 +5,7 @@ import { OrderStatusBadge } from "@/components/features/orders/order-status-badg
 import { OrderFulfillPanel } from "@/components/features/orders/order-fulfill-panel";
 import { OrderTransitionButtons } from "@/components/features/orders/order-transition-buttons";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
-import { ORDER_STATUS_LABELS } from "@/lib/domain/order/types";
+import { getOrderStatusLabel } from "@/lib/domain/order/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
@@ -25,6 +25,16 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
             <span className="text-sm text-text-secondary">
               {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
             </span>
+            {order.displayNumber ? (
+              <span className="text-sm font-medium tabular-nums text-foreground">
+                {order.displayNumber}
+              </span>
+            ) : null}
+            {order.dayTicketIsToday && order.dayTicket != null ? (
+              <span className="rounded-full bg-surface px-2 py-0.5 text-sm font-medium tabular-nums text-foreground">
+                #{order.dayTicket}
+              </span>
+            ) : null}
           </div>
           <p className="text-sm text-text-secondary">
             Placed{" "}
@@ -120,7 +130,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
                 )}
               />
               <p className="text-sm font-medium text-foreground">
-                {ORDER_STATUS_LABELS[event.status]}
+                {getOrderStatusLabel(event.status)}
               </p>
               <p className="text-xs text-text-tertiary">
                 {new Date(event.createdAt).toLocaleString("en-CA", {

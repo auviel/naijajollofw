@@ -448,7 +448,6 @@ export function DeliveryForm() {
             id="dropoffPhone"
             label="Customer phone"
             error={fieldErrors.dropoffPhone}
-            hint="10-digit Canadian number."
           >
             <Input
               name="dropoffPhone"

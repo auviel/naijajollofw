@@ -131,10 +131,14 @@ export function buildOrderConfirmationEmail(input: {
   totalLabel: string;
   trackUrl: string;
   scheduledLabel?: string | null;
+  displayNumber?: string | null;
 }): { subject: string; html: string; text: string } {
   const first = input.customerName.trim().split(/\s+/)[0] || "there";
   const mode = input.fulfillmentType === "delivery" ? "delivery" : "pickup";
-  const subject = `Order confirmed · ${input.storeName}`;
+  const orderLabel = input.displayNumber?.trim() || null;
+  const subject = orderLabel
+    ? `Order ${orderLabel} confirmed · ${input.storeName}`
+    : `Order confirmed · ${input.storeName}`;
   const reason =
     "You’re receiving this because you placed an order with Naija Jollof Waterloo.";
   const scheduleLine = input.scheduledLabel
@@ -143,18 +147,23 @@ export function buildOrderConfirmationEmail(input: {
   const scheduleText = input.scheduledLabel
     ? `\nScheduled for ${input.scheduledLabel}.`
     : "";
+  const numberLine = orderLabel
+    ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">Order <strong>${escapeHtml(orderLabel)}</strong></p>`
+    : "";
+  const numberText = orderLabel ? `\nOrder ${orderLabel}.` : "";
 
   const html = layout({
     title: subject,
     reason,
     bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
+     ${numberLine}
      <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">We received your ${mode} order from <strong>${escapeHtml(input.storeName)}</strong>. Total ${escapeHtml(input.totalLabel)}.</p>
      ${scheduleLine}
      <p style="margin:24px 0 0;">
        <a href="${escapeHtml(input.trackUrl)}" style="display:inline-block;background:#CC5400;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;">Track order</a>
      </p>`,
   });
-  const text = `Hi ${first},\n\nWe received your ${mode} order from ${input.storeName}. Total ${input.totalLabel}.${scheduleText}\n\nTrack order: ${input.trackUrl}\n\n${footerText(reason)}`;
+  const text = `Hi ${first},\n${numberText}\nWe received your ${mode} order from ${input.storeName}. Total ${input.totalLabel}.${scheduleText}\n\nTrack order: ${input.trackUrl}\n\n${footerText(reason)}`;
   return { subject, html, text };
 }
 
@@ -212,14 +221,17 @@ function orderStatusCopy(input: {
   status: OrderStatusEmailStatus;
   fulfillmentType: "pickup" | "delivery";
   storeName: string;
+  displayNumber?: string | null;
 }): { subject: string; headline: string; body: string; cta: string } {
   const store = input.storeName;
+  const ref = input.displayNumber?.trim();
+  const withRef = (label: string) => (ref ? `${label} ${ref} · ${store}` : `${label} · ${store}`);
   switch (input.status) {
     case "accepted":
       return {
-        subject: `Order accepted · ${store}`,
+        subject: withRef("Order accepted"),
         headline: "We’ve got your order",
-        body: `${store} accepted your order and the kitchen is getting started.`,
+        body: `${store} accepted your order${ref ? ` ${ref}` : ""} and the kitchen is getting started.`,
         cta: "Track order",
       };
     case "ready":
@@ -227,37 +239,37 @@ function orderStatusCopy(input: {
       return {
         subject:
           input.fulfillmentType === "pickup"
-            ? `Ready for pickup · ${store}`
-            : `Order ready · ${store}`,
+            ? withRef("Ready for pickup")
+            : withRef("Order ready"),
         headline:
           input.fulfillmentType === "pickup"
             ? "Ready for pickup"
             : "Your order is ready",
         body:
           input.fulfillmentType === "pickup"
-            ? "Your order is ready. Head over when you can."
-            : "Your order is ready and will be on its way shortly.",
+            ? `Your order${ref ? ` ${ref}` : ""} is ready. Head over when you can.`
+            : `Your order${ref ? ` ${ref}` : ""} is ready and will be on its way shortly.`,
         cta: "Track order",
       };
     case "out_for_delivery":
       return {
-        subject: `On the way · ${store}`,
+        subject: withRef("On the way"),
         headline: "Your order is on the way",
-        body: "A courier is bringing your food. You can follow along with the track link.",
+        body: `A courier is bringing your food${ref ? ` (${ref})` : ""}. You can follow along with the track link.`,
         cta: "Track order",
       };
     case "completed":
       return {
-        subject: `Enjoy · ${store}`,
+        subject: withRef("Enjoy"),
         headline: "Order complete",
         body: "Thanks for ordering with us. We hope it hits the spot.",
         cta: "View order",
       };
     case "cancelled":
       return {
-        subject: `Order cancelled · ${store}`,
+        subject: withRef("Order cancelled"),
         headline: "Order cancelled",
-        body: `Your order from ${store} was cancelled. If you were charged, reply to this email or contact ${CONTACT_EMAIL} and we’ll help with a refund.`,
+        body: `Your order${ref ? ` ${ref}` : ""} from ${store} was cancelled. If you were charged, reply to this email or contact ${CONTACT_EMAIL} and we’ll help with a refund.`,
         cta: "View order",
       };
   }
@@ -271,12 +283,14 @@ export function buildOrderStatusEmail(input: {
   trackUrl: string;
   courierTrackingUrl?: string | null;
   note?: string | null;
+  displayNumber?: string | null;
 }): { subject: string; html: string; text: string } {
   const first = input.customerName.trim().split(/\s+/)[0] || "there";
   const copy = orderStatusCopy({
     status: input.status,
     fulfillmentType: input.fulfillmentType,
     storeName: input.storeName,
+    displayNumber: input.displayNumber,
   });
   const reason =
     input.status === "cancelled"
@@ -330,8 +344,17 @@ export function buildStaffNewOrderEmail(input: {
   itemSummary: string;
   dashboardUrl: string;
   scheduledLabel?: string | null;
+  displayNumber?: string | null;
+  dayTicket?: number | null;
 }): { subject: string; html: string; text: string } {
-  const subject = `New order · ${input.storeName}`;
+  const refParts = [
+    input.displayNumber?.trim() || null,
+    input.dayTicket != null ? `#${input.dayTicket}` : null,
+  ].filter((part): part is string => Boolean(part));
+  const ref = refParts.join(" · ");
+  const subject = ref
+    ? `New order ${ref} · ${input.storeName}`
+    : `New order · ${input.storeName}`;
   const reason = `You’re receiving this because you’re a staff contact for ${input.storeName}.`;
   const mode = input.fulfillmentType === "delivery" ? "Delivery" : "Pickup";
   const scheduleLine = input.scheduledLabel
@@ -340,11 +363,14 @@ export function buildStaffNewOrderEmail(input: {
   const scheduleText = input.scheduledLabel
     ? `\nScheduled for ${input.scheduledLabel}.`
     : "";
+  const refLine = ref
+    ? `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">${escapeHtml(ref)}</p>`
+    : `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">New order needs acceptance</p>`;
 
   const html = layout({
     title: subject,
     reason,
-    bodyHtml: `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">New order needs acceptance</p>
+    bodyHtml: `${refLine}
      <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;"><strong>${escapeHtml(input.customerName)}</strong> · ${escapeHtml(input.customerPhone)}</p>
      <p style="margin:0 0 8px;font-size:15px;line-height:1.55;color:#444;">${escapeHtml(mode)} · ${escapeHtml(input.totalLabel)}</p>
      <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;">${escapeHtml(input.itemSummary)}</p>
@@ -355,7 +381,7 @@ export function buildStaffNewOrderEmail(input: {
   });
 
   const text = [
-    "New order needs acceptance",
+    ref || "New order needs acceptance",
     "",
     `${input.customerName} · ${input.customerPhone}`,
     `${mode} · ${input.totalLabel}`,
@@ -379,8 +405,12 @@ export function buildStaffOrderCancelledEmail(input: {
   totalLabel: string;
   dashboardUrl: string;
   note?: string | null;
+  displayNumber?: string | null;
 }): { subject: string; html: string; text: string } {
-  const subject = `Order cancelled · ${input.storeName}`;
+  const ref = input.displayNumber?.trim();
+  const subject = ref
+    ? `Order ${ref} cancelled · ${input.storeName}`
+    : `Order cancelled · ${input.storeName}`;
   const reason = `You’re receiving this because you’re a staff contact for ${input.storeName}.`;
   const noteLine = input.note?.trim()
     ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#666;">Note: ${escapeHtml(input.note.trim())}</p>`
@@ -390,7 +420,7 @@ export function buildStaffOrderCancelledEmail(input: {
   const html = layout({
     title: subject,
     reason,
-    bodyHtml: `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">Order cancelled</p>
+    bodyHtml: `<p style="margin:0 0 8px;font-size:18px;font-weight:600;letter-spacing:-0.02em;">${ref ? escapeHtml(`${ref} cancelled`) : "Order cancelled"}</p>
      <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;"><strong>${escapeHtml(input.customerName)}</strong> · ${escapeHtml(input.totalLabel)}</p>
      ${noteLine}
      <p style="margin:24px 0 0;">
@@ -399,7 +429,7 @@ export function buildStaffOrderCancelledEmail(input: {
   });
 
   const text = [
-    "Order cancelled",
+    ref ? `${ref} cancelled` : "Order cancelled",
     "",
     `${input.customerName} · ${input.totalLabel}`,
     noteText,

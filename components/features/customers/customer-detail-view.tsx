@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { validateCustomerDetailFields } from "@/lib/domain/customer/form-validation";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
 import type { CustomerDetail } from "@/lib/domain/customer/types";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
+import { readApiErrorResponse } from "@/lib/forms/read-api-error";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/date";
 
@@ -18,11 +21,6 @@ type CustomerDetailViewProps = {
   customer: CustomerDetail;
   recentOrders?: StaffOrderListItem[];
 };
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Something went wrong. Please try again.";
-}
 
 export function CustomerDetailView({
   customer: initialCustomer,
@@ -33,10 +31,21 @@ export function CustomerDetailView({
   const [customer, setCustomer] = useState(initialCustomer);
   const [name, setName] = useState(initialCustomer.name);
   const [notes, setNotes] = useState(initialCustomer.notes ?? "");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<"name", string>>>(
+    {},
+  );
+  const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const validation = validateCustomerDetailFields({ name });
+    setFieldErrors(validation);
+    setFormError(null);
+    if (Object.keys(validation).length > 0) {
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -50,7 +59,11 @@ export function CustomerDetailView({
       });
 
       if (!response.ok) {
-        toastError(await readApiError(response));
+        const { message, fieldErrors: apiFields } =
+          await readApiErrorResponse(response);
+        setFieldErrors((current) => ({ ...current, ...apiFields }));
+        setFormError(message);
+        toastError(message);
         return;
       }
 
@@ -91,21 +104,28 @@ export function CustomerDetailView({
             <h2 className="text-lg font-semibold text-foreground">Profile</h2>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField id="customerName" label="Name">
+            <FormField id="customerName" label="Name" error={fieldErrors.name}>
               <Input
-                id="customerName"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  if (fieldErrors.name) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      name: undefined,
+                    }));
+                  }
+                }}
               />
             </FormField>
             <FormField id="customerNotes" label="Notes">
               <Input
-                id="customerNotes"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="Apartment instructions, preferences, etc."
               />
             </FormField>
+            {formError ? <FormBanner>{formError}</FormBanner> : null}
             <Button type="submit" disabled={isSaving}>
               {isSaving ? "Saving…" : "Save changes"}
             </Button>
@@ -187,6 +207,9 @@ export function CustomerDetailView({
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">
+                    {order.displayNumber
+                      ? `${order.displayNumber} · `
+                      : null}
                     {order.itemSummary || "Courier job"}
                   </p>
                   <p className="text-xs text-text-secondary">

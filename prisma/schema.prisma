@@ -46,9 +46,13 @@ model Store {
   enabledDoorDashDrive    Boolean  @default(true)
   doordashExternalStoreId String?
   /// Typical kitchen prep time shown on guest tracking (minutes).
-  prepMinutes             Int      @default(25)
+  prepMinutes             Int      @default(15)
   whatsappEnabled         Boolean  @default(false)
   whatsappPhoneNumberId   String?
+  /// Prefix for lifetime order numbers, e.g. "NJ" → "NJ-1084".
+  orderNumberPrefix       String   @default("NJ")
+  /// Next lifetime sequence value (incremented atomically on place).
+  nextOrderNumber         Int      @default(1001)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -62,6 +66,17 @@ model Store {
   carts                 Cart[]
   orders                Order[]
   hours                 StoreHours[]
+  dayTickets            StoreDayTicket[]
+}
+
+/// Daily kitchen ticket counter (resets each local calendar day).
+model StoreDayTicket {
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  localDate  DateTime @db.Date
+  nextTicket Int      @default(1)
+
+  @@id([storeId, localDate])
 }
 
 /// Weekly open/closed schedule (store-local timezone via STORE_TIMEZONE).
@@ -451,6 +466,12 @@ model Order {
   customerId           String?
   customer             Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
   publicToken          String            @unique @default(cuid())
+  /// Lifetime human number, e.g. "NJ-1084". Assigned when the order is placed.
+  displayNumber        String?
+  /// Kitchen ticket for the local calendar day (1, 2, 3…).
+  dayTicket            Int?
+  /// Local calendar date the dayTicket belongs to (store timezone).
+  dayTicketDate        DateTime?         @db.Date
   status               OrderStatus       @default(pending_payment)
   source               OrderSource       @default(storefront)
   fulfillmentType      FulfillmentType
@@ -481,6 +502,8 @@ model Order {
   lineItems OrderLineItem[]
   events    OrderEvent[]
 
+  @@unique([storeId, displayNumber])
+  @@unique([storeId, dayTicketDate, dayTicket])
   @@index([storeId, createdAt(sort: Desc)])
   @@index([storeId, status])
   @@index([storeId, source])

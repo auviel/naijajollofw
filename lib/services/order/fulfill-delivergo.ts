@@ -89,6 +89,7 @@ export async function fulfillOrderDelivergo(
     status: updated.status,
     fulfillmentType: updated.fulfillmentType,
     courierTrackingUrl: created.trackingUrl ?? updated.delivery?.trackingUrl,
+    displayNumber: updated.displayNumber,
   });
 
   return mapOrderToStaffDetail(updated);

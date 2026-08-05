@@ -14,6 +14,7 @@ import {
   ACTIVE_DELIVERY_POLL_MS,
   useLiveRefresh,
 } from "@/components/hooks/use-live-refresh";
+import { formatDayTicketLabel } from "@/lib/domain/order/order-numbers";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import {
   getTransitionActions,
@@ -248,10 +249,24 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
-          <p className="truncate font-semibold text-foreground">
-            {order.customerName}
-          </p>
+          <div className="flex items-baseline gap-2">
+            {order.dayTicketIsToday && order.dayTicket != null ? (
+              <p className="font-display text-xl font-semibold tabular-nums text-foreground">
+                {formatDayTicketLabel(order.dayTicket)}
+              </p>
+            ) : order.displayNumber ? (
+              <p className="font-semibold tabular-nums text-foreground">
+                {order.displayNumber}
+              </p>
+            ) : null}
+            <p className="truncate font-semibold text-foreground">
+              {order.customerName}
+            </p>
+          </div>
           <p className="text-xs text-text-secondary">
+            {order.dayTicketIsToday && order.displayNumber
+              ? `${order.displayNumber} · `
+              : null}
             {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} ·{" "}
             {formatAge(order.placedAt ?? order.createdAt)}
           </p>

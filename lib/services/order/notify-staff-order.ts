@@ -24,6 +24,8 @@ export type NotifyStaffOrderInput = {
   itemSummary: string;
   scheduledLabel?: string | null;
   note?: string | null;
+  displayNumber?: string | null;
+  dayTicket?: number | null;
 };
 
 function dashboardOrderUrl(orderId: string): string | null {
@@ -77,6 +79,8 @@ export async function notifyStaffOrder(
         itemSummary: input.itemSummary || "See dashboard for items",
         dashboardUrl,
         scheduledLabel: input.scheduledLabel,
+        displayNumber: input.displayNumber,
+        dayTicket: input.dayTicket,
       });
       for (const to of recipients) {
         sendEmailInBackground({
@@ -97,6 +101,7 @@ export async function notifyStaffOrder(
       totalLabel,
       dashboardUrl,
       note: input.note,
+      displayNumber: input.displayNumber,
     });
     for (const to of recipients) {
       sendEmailInBackground({

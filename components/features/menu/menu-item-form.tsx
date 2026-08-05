@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -13,17 +14,20 @@ import {
   parseDollarsToCents,
 } from "@/lib/domain/menu/format";
 import {
+  hasMenuItemFormErrors,
+  validateMenuItemForm,
+  type MenuItemFieldErrors,
+  type MenuItemGroupErrors,
+  type MenuItemModifierErrors,
+} from "@/lib/domain/menu/form-validation";
+import { readApiError, readApiErrorResponse } from "@/lib/forms/read-api-error";
+import {
   MENU_IMAGE_ACCEPT,
   MENU_IMAGE_ALLOWED_TYPES,
   MENU_IMAGE_MAX_BYTES,
   MENU_IMAGE_MAX_COUNT,
 } from "@/lib/domain/menu/media";
 import type { MenuItemDetail, MenuItemImageView } from "@/lib/domain/menu/types";
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Something went wrong. Please try again.";
-}
 
 type CategoryOption = {
   id: string;
@@ -97,6 +101,11 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
   const [clearAllImages, setClearAllImages] = useState(false);
   const [groups, setGroups] = useState<ModifierGroupDraft[]>(() => groupsFromItem(item));
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<MenuItemFieldErrors>({});
+  const [groupErrors, setGroupErrors] = useState<MenuItemGroupErrors>({});
+  const [modifierErrors, setModifierErrors] = useState<MenuItemModifierErrors>(
+    {},
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activeCategories = categories.filter((category) => category.active || category.id === categoryId);
@@ -251,6 +260,20 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const validation = validateMenuItemForm({
+      categoryId,
+      name,
+      priceDollars,
+      groups,
+    });
+    setFieldErrors(validation.fieldErrors);
+    setGroupErrors(validation.groupErrors);
+    setModifierErrors(validation.modifierErrors);
+    if (hasMenuItemFormErrors(validation)) {
+      setFormError("Fix the highlighted fields first.");
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError(null);
 
@@ -266,7 +289,14 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
       );
 
       if (!response.ok) {
-        const message = await readApiError(response);
+        const { message, fieldErrors: apiFields } =
+          await readApiErrorResponse(response);
+        setFieldErrors((current) => ({
+          ...current,
+          categoryId: apiFields.categoryId ?? current.categoryId,
+          name: apiFields.name ?? current.name,
+          priceDollars: apiFields.priceCents ?? current.priceDollars,
+        }));
         setFormError(message);
         toastError(message);
         return;
@@ -338,10 +368,22 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
           <h2 className="text-base font-semibold text-foreground">Item details</h2>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField id="itemCategory" label="Category">
+          <FormField
+            id="itemCategory"
+            label="Category"
+            error={fieldErrors.categoryId}
+          >
             <Select
               value={categoryId}
-              onChange={setCategoryId}
+              onChange={(next) => {
+                setCategoryId(next);
+                if (fieldErrors.categoryId) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    categoryId: undefined,
+                  }));
+                }
+              }}
               options={activeCategories.map((category) => ({
                 value: category.id,
                 label: category.name,
@@ -349,10 +391,18 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
             />
           </FormField>
 
-          <FormField id="itemName" label="Name">
+          <FormField id="itemName" label="Name" error={fieldErrors.name}>
             <Input
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (fieldErrors.name) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    name: undefined,
+                  }));
+                }
+              }}
               placeholder="Classic burger"
             />
           </FormField>
@@ -365,10 +415,23 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
             />
           </FormField>
 
-          <FormField id="itemPrice" label="Price (CAD)" hint="Example: 14.50">
+          <FormField
+            id="itemPrice"
+            label="Price (CAD)"
+            hint="Example: 14.50"
+            error={fieldErrors.priceDollars}
+          >
             <Input
               value={priceDollars}
-              onChange={(event) => setPriceDollars(event.target.value)}
+              onChange={(event) => {
+                setPriceDollars(event.target.value);
+                if (fieldErrors.priceDollars) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    priceDollars: undefined,
+                  }));
+                }
+              }}
               inputMode="decimal"
               placeholder="14.50"
             />
@@ -513,12 +576,25 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1">
-                    <FormField id={`group-name-${group.key}`} label="Group name">
+                    <FormField
+                      id={`group-name-${group.key}`}
+                      label="Group name"
+                      error={groupErrors[group.key]?.name}
+                    >
                       <Input
                         value={group.name}
-                        onChange={(event) =>
-                          updateGroup(group.key, { name: event.target.value })
-                        }
+                        onChange={(event) => {
+                          updateGroup(group.key, { name: event.target.value });
+                          if (groupErrors[group.key]?.name) {
+                            setGroupErrors((current) => ({
+                              ...current,
+                              [group.key]: {
+                                ...current[group.key],
+                                name: undefined,
+                              },
+                            }));
+                          }
+                        }}
                         placeholder="Toppings"
                       />
                     </FormField>
@@ -548,21 +624,51 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                     />
                     Required
                   </label>
-                  <FormField id={`min-${group.key}`} label="Min select">
+                  <FormField
+                    id={`min-${group.key}`}
+                    label="Min select"
+                    error={groupErrors[group.key]?.minSelect}
+                  >
                     <Input
                       value={group.minSelect}
-                      onChange={(event) =>
-                        updateGroup(group.key, { minSelect: event.target.value })
-                      }
+                      onChange={(event) => {
+                        updateGroup(group.key, {
+                          minSelect: event.target.value,
+                        });
+                        if (groupErrors[group.key]?.minSelect) {
+                          setGroupErrors((current) => ({
+                            ...current,
+                            [group.key]: {
+                              ...current[group.key],
+                              minSelect: undefined,
+                            },
+                          }));
+                        }
+                      }}
                       inputMode="numeric"
                     />
                   </FormField>
-                  <FormField id={`max-${group.key}`} label="Max select">
+                  <FormField
+                    id={`max-${group.key}`}
+                    label="Max select"
+                    error={groupErrors[group.key]?.maxSelect}
+                  >
                     <Input
                       value={group.maxSelect}
-                      onChange={(event) =>
-                        updateGroup(group.key, { maxSelect: event.target.value })
-                      }
+                      onChange={(event) => {
+                        updateGroup(group.key, {
+                          maxSelect: event.target.value,
+                        });
+                        if (groupErrors[group.key]?.maxSelect) {
+                          setGroupErrors((current) => ({
+                            ...current,
+                            [group.key]: {
+                              ...current[group.key],
+                              maxSelect: undefined,
+                            },
+                          }));
+                        }
+                      }}
                       inputMode="numeric"
                     />
                   </FormField>
@@ -574,27 +680,69 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                       key={modifier.key}
                       className="grid gap-2 rounded-md border border-border bg-background p-3 sm:grid-cols-[1fr_7rem_auto_auto]"
                     >
-                      <Input
-                        value={modifier.name}
-                        onChange={(event) =>
-                          updateModifier(group.key, modifier.key, {
-                            name: event.target.value,
-                          })
-                        }
-                        placeholder="Extra cheese"
-                        aria-label="Modifier name"
-                      />
-                      <Input
-                        value={modifier.priceDollars}
-                        onChange={(event) =>
-                          updateModifier(group.key, modifier.key, {
-                            priceDollars: event.target.value,
-                          })
-                        }
-                        inputMode="decimal"
-                        placeholder="1.50"
-                        aria-label="Modifier price"
-                      />
+                      <div className="space-y-1">
+                        <Input
+                          value={modifier.name}
+                          onChange={(event) => {
+                            updateModifier(group.key, modifier.key, {
+                              name: event.target.value,
+                            });
+                            if (modifierErrors[modifier.key]?.name) {
+                              setModifierErrors((current) => ({
+                                ...current,
+                                [modifier.key]: {
+                                  ...current[modifier.key],
+                                  name: undefined,
+                                },
+                              }));
+                            }
+                          }}
+                          placeholder="Extra cheese"
+                          aria-label="Modifier name"
+                          aria-invalid={
+                            modifierErrors[modifier.key]?.name
+                              ? true
+                              : undefined
+                          }
+                        />
+                        {modifierErrors[modifier.key]?.name ? (
+                          <p role="alert" className="text-sm text-error">
+                            {modifierErrors[modifier.key]?.name}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1">
+                        <Input
+                          value={modifier.priceDollars}
+                          onChange={(event) => {
+                            updateModifier(group.key, modifier.key, {
+                              priceDollars: event.target.value,
+                            });
+                            if (modifierErrors[modifier.key]?.priceDollars) {
+                              setModifierErrors((current) => ({
+                                ...current,
+                                [modifier.key]: {
+                                  ...current[modifier.key],
+                                  priceDollars: undefined,
+                                },
+                              }));
+                            }
+                          }}
+                          inputMode="decimal"
+                          placeholder="1.50"
+                          aria-label="Modifier price"
+                          aria-invalid={
+                            modifierErrors[modifier.key]?.priceDollars
+                              ? true
+                              : undefined
+                          }
+                        />
+                        {modifierErrors[modifier.key]?.priceDollars ? (
+                          <p role="alert" className="text-sm text-error">
+                            {modifierErrors[modifier.key]?.priceDollars}
+                          </p>
+                        ) : null}
+                      </div>
                       <label className="flex items-center gap-2 text-xs text-foreground">
                         <input
                           type="checkbox"
@@ -650,11 +798,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
         </CardContent>
       </Card>
 
-      {formError ? (
-        <p className="text-sm text-error" role="alert">
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <FormBanner>{formError}</FormBanner> : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <Button

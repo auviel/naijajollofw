@@ -8,7 +8,15 @@ import type {
   Store,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
+import { getStoreTimeZone } from "@/lib/config/environment";
+import { allocateOrderNumbers } from "@/lib/db/repositories/allocate-order-numbers";
 import type { CartModifierSelection } from "@/lib/domain/cart/types";
+import {
+  displayNumberSearchTerms,
+  isSameStoreLocalDate,
+  parseDayTicketQuery,
+  storeLocalDateKey,
+} from "@/lib/domain/order/order-numbers";
 import {
   getDeliveryProviderLabel,
 } from "@/lib/domain/delivery/types";
@@ -81,7 +89,7 @@ function summarizeLines(lineItems: OrderLineItem[]): {
 
 export function mapOrderToPublicView(order: OrderWithRelations): PublicOrderView {
   const storeName = order.store?.name ?? "Restaurant";
-  const prepMinutes = order.store?.prepMinutes ?? 25;
+  const prepMinutes = order.store?.prepMinutes ?? 15;
   const timeline = buildGuestOrderTimeline(order.status, order.fulfillmentType);
   const tracking =
     order.fulfillmentMethod === "delivergo" && order.delivery
@@ -99,6 +107,8 @@ export function mapOrderToPublicView(order: OrderWithRelations): PublicOrderView
   return {
     id: order.id,
     publicToken: order.publicToken,
+    displayNumber: order.displayNumber,
+    dayTicket: order.dayTicket,
     status: order.status,
     fulfillmentType: order.fulfillmentType,
     fulfillmentMethod: order.fulfillmentMethod,
@@ -148,6 +158,12 @@ export function mapOrderToStaffListItem(
   const { itemCount, itemSummary } = summarizeLines(order.lineItems);
   return {
     id: order.id,
+    displayNumber: order.displayNumber,
+    dayTicket: order.dayTicket,
+    dayTicketIsToday: isSameStoreLocalDate(
+      order.dayTicketDate,
+      getStoreTimeZone(),
+    ),
     status: order.status,
     fulfillmentType: order.fulfillmentType,
     fulfillmentMethod: order.fulfillmentMethod,
@@ -336,6 +352,10 @@ export const orderRepository = {
   }) {
     const search = input.search?.trim();
     const channel = input.channel ?? "all";
+    const dayTicketQuery = search ? parseDayTicketQuery(search) : null;
+    const todayDate = new Date(
+      `${storeLocalDateKey(new Date(), getStoreTimeZone())}T00:00:00.000Z`,
+    );
     return prisma.order.findMany({
       where: {
         storeId: input.storeId,
@@ -351,6 +371,12 @@ export const orderRepository = {
                 { customerName: { contains: search, mode: "insensitive" } },
                 { customerPhone: { contains: search } },
                 { id: { contains: search } },
+                ...displayNumberSearchTerms(search).map((term) => ({
+                  displayNumber: { contains: term, mode: "insensitive" as const },
+                })),
+                ...(dayTicketQuery != null
+                  ? [{ dayTicket: dayTicketQuery, dayTicketDate: todayDate }]
+                  : []),
               ],
             }
           : {}),
@@ -383,54 +409,60 @@ export const orderRepository = {
 
   async createPaidOrder(input: CreateOrderInput) {
     const now = new Date();
-    return prisma.order.create({
-      data: {
-        storeId: input.storeId,
-        userId: input.userId ?? null,
-        customerId: input.customerId ?? null,
-        source: input.source ?? "storefront",
-        status: "pending_acceptance",
-        fulfillmentType: input.fulfillmentType,
-        fulfillmentMethod: "unassigned",
-        customerName: input.customerName,
-        customerPhone: input.customerPhone,
-        customerEmail: input.customerEmail?.trim().toLowerCase() || null,
-        dropoffAddress: input.dropoffAddress ?? null,
-        dropoffLat: input.dropoffLat ?? null,
-        dropoffLng: input.dropoffLng ?? null,
-        notes: input.notes ?? null,
-        scheduledFor: input.scheduledFor ?? null,
-        subtotalCents: input.subtotalCents,
-        tipCents: input.tipCents,
-        taxCents: input.taxCents,
-        totalCents: input.totalCents,
-        currency: input.currency,
-        squarePaymentId: input.squarePaymentId,
-        placedAt: now,
-        lineItems: {
-          create: input.lineItems.map((line) => ({
-            name: line.name,
-            description: line.description,
-            unitPriceCents: line.unitPriceCents,
-            quantity: line.quantity,
-            modifiers: line.modifiers as Prisma.InputJsonValue,
-            lineTotalCents: line.lineTotalCents,
-            menuItemId: line.menuItemId,
-          })),
+    return prisma.$transaction(async (tx) => {
+      const numbers = await allocateOrderNumbers(tx, input.storeId, now);
+      return tx.order.create({
+        data: {
+          storeId: input.storeId,
+          userId: input.userId ?? null,
+          customerId: input.customerId ?? null,
+          source: input.source ?? "storefront",
+          status: "pending_acceptance",
+          fulfillmentType: input.fulfillmentType,
+          fulfillmentMethod: "unassigned",
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          customerEmail: input.customerEmail?.trim().toLowerCase() || null,
+          dropoffAddress: input.dropoffAddress ?? null,
+          dropoffLat: input.dropoffLat ?? null,
+          dropoffLng: input.dropoffLng ?? null,
+          notes: input.notes ?? null,
+          scheduledFor: input.scheduledFor ?? null,
+          subtotalCents: input.subtotalCents,
+          tipCents: input.tipCents,
+          taxCents: input.taxCents,
+          totalCents: input.totalCents,
+          currency: input.currency,
+          squarePaymentId: input.squarePaymentId,
+          displayNumber: numbers.displayNumber,
+          dayTicket: numbers.dayTicket,
+          dayTicketDate: numbers.dayTicketDate,
+          placedAt: now,
+          lineItems: {
+            create: input.lineItems.map((line) => ({
+              name: line.name,
+              description: line.description,
+              unitPriceCents: line.unitPriceCents,
+              quantity: line.quantity,
+              modifiers: line.modifiers as Prisma.InputJsonValue,
+              lineTotalCents: line.lineTotalCents,
+              menuItemId: line.menuItemId,
+            })),
+          },
+          events: {
+            create: [
+              {
+                status: "pending_acceptance",
+                actor: "system",
+                note: input.scheduledFor
+                  ? `Payment received · Scheduled order`
+                  : "Payment received via Square",
+              },
+            ],
+          },
         },
-        events: {
-          create: [
-            {
-              status: "pending_acceptance",
-              actor: "system",
-              note: input.scheduledFor
-                ? `Payment received · Scheduled order`
-                : "Payment received via Square",
-            },
-          ],
-        },
-      },
-      include: orderInclude,
+        include: orderInclude,
+      });
     });
   },
 
@@ -586,38 +618,46 @@ export const orderRepository = {
           : "out_for_delivery";
     const now = new Date();
 
-    return prisma.order.create({
-      data: {
-        storeId: input.storeId,
-        customerId: input.customerId,
-        source: input.source,
-        status,
-        fulfillmentType: "delivery",
-        fulfillmentMethod: "delivergo",
-        customerName: input.customerName,
-        customerPhone: input.customerPhone,
-        dropoffAddress: input.dropoffAddress,
-        dropoffLat: input.dropoffLat,
-        dropoffLng: input.dropoffLng,
-        subtotalCents: 0,
-        tipCents: 0,
-        taxCents: 0,
-        totalCents: 0,
-        currency: "CAD",
-        squarePaymentId: null,
-        deliveryId: input.deliveryId,
-        placedAt: now,
-        events: {
-          create: [
-            {
-              status,
-              actor: input.actor,
-              note: "Courier job created",
-            },
-          ],
+    return prisma.$transaction(async (tx) => {
+      const numbers = await allocateOrderNumbers(tx, input.storeId, now, {
+        includeDayTicket: false,
+      });
+      return tx.order.create({
+        data: {
+          storeId: input.storeId,
+          customerId: input.customerId,
+          source: input.source,
+          status,
+          fulfillmentType: "delivery",
+          fulfillmentMethod: "delivergo",
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          dropoffAddress: input.dropoffAddress,
+          dropoffLat: input.dropoffLat,
+          dropoffLng: input.dropoffLng,
+          subtotalCents: 0,
+          tipCents: 0,
+          taxCents: 0,
+          totalCents: 0,
+          currency: "CAD",
+          squarePaymentId: null,
+          deliveryId: input.deliveryId,
+          displayNumber: numbers.displayNumber,
+          dayTicket: numbers.dayTicket,
+          dayTicketDate: numbers.dayTicketDate,
+          placedAt: now,
+          events: {
+            create: [
+              {
+                status,
+                actor: input.actor,
+                note: "Courier job created",
+              },
+            ],
+          },
         },
-      },
-      include: orderInclude,
+        include: orderInclude,
+      });
     });
   },
 
@@ -681,9 +721,23 @@ export const orderRepository = {
     }
 
     return prisma.$transaction(async (tx) => {
+      const numbers =
+        status === "pending_acceptance" && !existing.displayNumber
+          ? await allocateOrderNumbers(tx, existing.storeId)
+          : null;
       await tx.order.update({
         where: { id: existing.id },
-        data: { status },
+        data: {
+          status,
+          ...(numbers
+            ? {
+                displayNumber: numbers.displayNumber,
+                dayTicket: numbers.dayTicket,
+                dayTicketDate: numbers.dayTicketDate,
+                placedAt: existing.placedAt ?? new Date(),
+              }
+            : {}),
+        },
       });
       await tx.orderEvent.create({
         data: {

@@ -135,7 +135,7 @@ export function DashboardGlobalSearch() {
             );
           }
         }}
-        placeholder="Search orders or customers"
+        placeholder="Search NJ-1084, #12, name, or customer"
         className="h-10 border-border bg-surface-elevated pl-10 text-sm sm:h-11"
         autoComplete="off"
         role="combobox"
@@ -181,9 +181,14 @@ export function DashboardGlobalSearch() {
                           />
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-medium text-foreground">
-                              {item.customerName}
+                              {item.displayNumber
+                                ? `${item.displayNumber} · ${item.customerName}`
+                                : item.customerName}
                             </span>
                             <span className="block truncate text-xs text-text-secondary">
+                              {item.dayTicketIsToday && item.dayTicket != null
+                                ? `#${item.dayTicket} · `
+                                : null}
                               {getOrderStatusLabel(item.status)} ·{" "}
                               {item.itemSummary}
                             </span>

@@ -47,7 +47,9 @@ export default async function AccountOrdersPage() {
               >
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {order.statusMessage}
+                    {order.displayNumber
+                      ? `${order.displayNumber} · ${order.statusMessage}`
+                      : order.statusMessage}
                   </p>
                   <p className="mt-0.5 text-sm text-text-secondary">
                     {order.placedAt

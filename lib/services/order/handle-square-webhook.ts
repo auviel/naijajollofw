@@ -13,8 +13,9 @@ import { logger } from "@/lib/utils/logger";
 export async function handleSquareWebhook(
   rawBody: string,
   signatureHeader: string | null,
+  requestUrl?: string | null,
 ): Promise<void> {
-  await verifySquareWebhookSignature(rawBody, signatureHeader);
+  verifySquareWebhookSignature(rawBody, signatureHeader, requestUrl);
 
   const event = parseSquareWebhookEvent(rawBody);
   const payment = event.data?.object?.payment;
@@ -49,6 +50,7 @@ export async function handleSquareWebhook(
         status: "cancelled",
         fulfillmentType: updated.fulfillmentType,
         note: `Square payment ${status.toLowerCase()}`,
+        displayNumber: updated.displayNumber,
       });
       void notifyStaffOrder({
         storeId: updated.storeId,
@@ -61,6 +63,8 @@ export async function handleSquareWebhook(
         totalCents: updated.totalCents,
         itemSummary: summarizeOrderLineItems(updated.lineItems),
         note: `Square payment ${status.toLowerCase()}`,
+        displayNumber: updated.displayNumber,
+        dayTicket: updated.dayTicket,
       });
     }
     return;
@@ -89,6 +93,8 @@ export async function handleSquareWebhook(
           fulfillmentType: updated.fulfillmentType,
           totalCents: updated.totalCents,
           itemSummary: summarizeOrderLineItems(updated.lineItems),
+          displayNumber: updated.displayNumber,
+          dayTicket: updated.dayTicket,
         });
       }
     }

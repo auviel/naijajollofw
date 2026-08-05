@@ -70,6 +70,8 @@ function notifyStaffNewOrder(
     totalCents: order.totalCents,
     itemSummary: summarizeOrderLineItems(order.lineItems),
     scheduledLabel,
+    displayNumber: order.displayNumber,
+    dayTicket: order.dayTicket,
   });
 }
 
@@ -89,6 +91,7 @@ function sendOrderConfirmationEmail(
     totalLabel: formatCadFromCents(order.totalCents),
     trackUrl,
     scheduledLabel,
+    displayNumber: order.displayNumber,
   });
   sendEmailInBackground({
     to,

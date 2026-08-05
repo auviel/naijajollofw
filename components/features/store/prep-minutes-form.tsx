@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { FormBanner } from "@/components/ui/form-banner";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Unable to save.";
-}
+import { validatePrepMinutesInput } from "@/lib/domain/store/form-validation";
+import { readApiError } from "@/lib/forms/read-api-error";
 
 type PrepMinutesFormProps = {
   initialPrepMinutes: number;
@@ -20,15 +20,19 @@ export function PrepMinutesForm({
   const { success, error: toastError } = useToast();
   const [prepMinutes, setPrepMinutes] = useState(String(initialPrepMinutes));
   const [pending, setPending] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    const value = Number.parseInt(prepMinutes, 10);
-    if (!Number.isFinite(value)) {
-      toastError("Enter a valid number of minutes.");
+    const error = validatePrepMinutesInput(prepMinutes);
+    setFieldError(error);
+    setFormError(null);
+    if (error) {
       return;
     }
 
+    const value = Number.parseInt(prepMinutes, 10);
     setPending(true);
     try {
       const response = await fetch("/api/store/prep", {
@@ -37,36 +41,50 @@ export function PrepMinutesForm({
         body: JSON.stringify({ prepMinutes: value }),
       });
       if (!response.ok) {
-        toastError(await readApiError(response));
+        const message = await readApiError(response, "Unable to save.");
+        setFormError(message);
+        toastError(message);
         return;
       }
       const body = (await response.json()) as { data: { prepMinutes: number } };
       setPrepMinutes(String(body.data.prepMinutes));
+      setFieldError(null);
+      setFormError(null);
       success("Prep time updated");
     } catch {
-      toastError("Unable to save prep time.");
+      const message = "Unable to save prep time.";
+      setFormError(message);
+      toastError(message);
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <form onSubmit={(e) => void save(e)} className="max-w-md space-y-4">
+    <form onSubmit={(e) => void save(e)} className="max-w-md space-y-4" noValidate>
       <p className="text-sm text-text-secondary">
         Guests see this estimate on order tracking for{" "}
         <span className="font-medium text-foreground">{storeName}</span>.
       </p>
-      <label className="block space-y-1.5 text-sm">
-        <span className="font-medium text-foreground">Typical prep time (minutes)</span>
-        <input
+      <FormField
+        id="prepMinutes"
+        label="Typical prep time (minutes)"
+        error={fieldError}
+      >
+        <Input
           type="number"
           min={5}
           max={180}
           value={prepMinutes}
-          onChange={(e) => setPrepMinutes(e.target.value)}
-          className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3"
+          onChange={(e) => {
+            setPrepMinutes(e.target.value);
+            if (fieldError) {
+              setFieldError(null);
+            }
+          }}
         />
-      </label>
+      </FormField>
+      {formError ? <FormBanner>{formError}</FormBanner> : null}
       <button
         type="submit"
         disabled={pending}

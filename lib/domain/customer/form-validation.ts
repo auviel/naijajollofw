@@ -27,3 +27,13 @@ export function validateCustomerFormFields(input: {
 
   return errors;
 }
+
+export function validateCustomerDetailFields(input: {
+  name: string;
+}): Partial<Record<"name", string>> {
+  const errors: Partial<Record<"name", string>> = {};
+  if (!input.name.trim()) {
+    errors.name = "Enter the customer name.";
+  }
+  return errors;
+}

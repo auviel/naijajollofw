@@ -16,7 +16,11 @@ export async function generateMetadata({
   const { id } = await params;
   try {
     const order = await getStaffOrder(id);
-    return { title: `Order · ${order.customerName}` };
+    return {
+      title: order.displayNumber
+        ? `${order.displayNumber} · ${order.customerName}`
+        : `Order · ${order.customerName}`,
+    };
   } catch {
     return { title: "Order" };
   }
@@ -50,8 +54,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
   return (
     <DashboardPage>
       <PageHeader
-        title={order.customerName}
-        description={`Order · ${order.itemCount} item${order.itemCount === 1 ? "" : "s"}`}
+        title={order.displayNumber ?? order.customerName}
+        description={[
+          order.dayTicketIsToday && order.dayTicket != null
+            ? `#${order.dayTicket}`
+            : null,
+          order.displayNumber ? order.customerName : null,
+          `${order.itemCount} item${order.itemCount === 1 ? "" : "s"}`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         action={
           <Link
             href="/dashboard"

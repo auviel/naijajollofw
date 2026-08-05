@@ -64,6 +64,7 @@ export async function transitionStaffOrder(
     fulfillmentType: updated.fulfillmentType,
     courierTrackingUrl: updated.delivery?.trackingUrl,
     note: parsed.note?.trim() || null,
+    displayNumber: updated.displayNumber,
   });
 
   if (updated.status === "cancelled") {
@@ -78,6 +79,8 @@ export async function transitionStaffOrder(
       totalCents: updated.totalCents,
       itemSummary: summarizeOrderLineItems(updated.lineItems),
       note: parsed.note?.trim() || defaultTransitionNote("cancelled"),
+      displayNumber: updated.displayNumber,
+      dayTicket: updated.dayTicket,
     });
   }
 

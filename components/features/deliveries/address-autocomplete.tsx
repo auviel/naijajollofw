@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Check } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 import type { AddressSuggestion } from "@/lib/integrations/geocoding/types";
+import { readApiError } from "@/lib/forms/read-api-error";
 import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
 
 type AddressAutocompleteProps = {
@@ -18,12 +19,9 @@ type AddressAutocompleteProps = {
   verified?: boolean;
   isVerifying?: boolean;
   verifyError?: string | null;
+  "aria-invalid"?: boolean | "true" | "false";
+  "aria-describedby"?: string;
 };
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Unable to load address suggestions.";
-}
 
 export function AddressAutocomplete({
   id,
@@ -36,6 +34,8 @@ export function AddressAutocomplete({
   verified = false,
   isVerifying = false,
   verifyError = null,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: AddressAutocompleteProps) {
   const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -116,7 +116,9 @@ export function AddressAutocomplete({
         if (!response.ok) {
           setSuggestions([]);
           setIsOpen(false);
-          setSuggestError(await readApiError(response));
+          setSuggestError(
+            await readApiError(response, "Unable to load address suggestions."),
+          );
           return;
         }
 
@@ -215,14 +217,18 @@ export function AddressAutocomplete({
   }
 
   const showStatus = verified || isVerifying;
+  const invalid =
+    Boolean(verifyError) ||
+    ariaInvalid === true ||
+    ariaInvalid === "true";
 
   return (
     <div ref={containerRef} className="relative">
       <div
         className={cn(
           "flex h-12 w-full items-stretch overflow-hidden rounded-md border bg-background transition-colors",
-          verifyError
-            ? "border-error/30"
+          invalid
+            ? "border-error"
             : verified
               ? "border-success/25"
               : "border-border-strong",
@@ -239,6 +245,8 @@ export function AddressAutocomplete({
           placeholder={placeholder}
           autoComplete={autoComplete}
           role="combobox"
+          aria-invalid={invalid || undefined}
+          aria-describedby={ariaDescribedBy}
           aria-expanded={isOpen}
           aria-controls={listboxId}
           aria-autocomplete="list"

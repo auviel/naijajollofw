@@ -31,6 +31,8 @@ export type OrderEventView = {
 export type PublicOrderView = {
   id: string;
   publicToken: string;
+  displayNumber: string | null;
+  dayTicket: number | null;
   status: OrderStatus;
   fulfillmentType: "pickup" | "delivery";
   fulfillmentMethod: FulfillmentMethod;
@@ -74,6 +76,10 @@ export type PublicOrderView = {
 
 export type StaffOrderListItem = {
   id: string;
+  displayNumber: string | null;
+  dayTicket: number | null;
+  /** True when dayTicket belongs to the store's current local calendar day. */
+  dayTicketIsToday: boolean;
   status: OrderStatus;
   fulfillmentType: "pickup" | "delivery";
   fulfillmentMethod: FulfillmentMethod;
@@ -139,3 +145,11 @@ export const STAFF_ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   ...ORDER_STATUS_LABELS,
   pending_acceptance: "Needs accept",
 };
+
+const STAFF_ORDER_STATUS_LABEL_BY_STATUS = new Map<OrderStatus, string>(
+  Object.entries(STAFF_ORDER_STATUS_LABELS) as [OrderStatus, string][],
+);
+
+export function getStaffOrderStatusLabel(status: OrderStatus): string {
+  return STAFF_ORDER_STATUS_LABEL_BY_STATUS.get(status) ?? "Unknown";
+}

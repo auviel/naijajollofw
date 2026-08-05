@@ -173,7 +173,6 @@ export function CustomerForm() {
             id="customerPhone"
             label="Phone"
             error={fieldErrors.phone}
-            hint="10-digit Canadian number."
           >
             <Input
               name="phone"

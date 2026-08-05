@@ -48,6 +48,8 @@ const SEED_STORE_BASE = {
   country: "CA",
   latitude: 43.478885,
   longitude: -80.524498,
+  prepMinutes: 15,
+  orderNumberPrefix: "NJ",
 } as const;
 
 async function resolveStoreCoordinates() {
@@ -91,6 +93,7 @@ async function main() {
     create: {
       id: "seed-store-waterloo",
       ...storeData,
+      nextOrderNumber: 1001,
     },
   });
 

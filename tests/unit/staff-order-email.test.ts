@@ -47,8 +47,12 @@ describe("staff order email templates", () => {
       totalLabel: "$23.99",
       itemSummary: "Jollof Rice",
       dashboardUrl: "http://localhost:3000/dashboard/orders/ord_1",
+      displayNumber: "NJ-1084",
+      dayTicket: 12,
     });
-    expect(mail.subject).toContain("New order");
+    expect(mail.subject).toContain("NJ-1084");
+    expect(mail.subject).toContain("#12");
+    expect(mail.html).toContain("NJ-1084");
     expect(mail.html).toContain("Ada &lt;script&gt;");
     expect(mail.html).not.toContain("<script>");
     expect(mail.html).toContain("Open order");

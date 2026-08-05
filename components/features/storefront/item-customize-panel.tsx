@@ -2,17 +2,15 @@
 
 import { useMemo, useState } from "react";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
+import { modifierSelectionErrors } from "@/lib/domain/menu/form-validation";
 import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
+import { FormBanner } from "@/components/ui/form-banner";
 import { useToast } from "@/components/ui/toast";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
+import { readApiError } from "@/lib/forms/read-api-error";
 import { cn } from "@/lib/utils/cn";
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Something went wrong. Please try again.";
-}
 
 type ItemCustomizePanelProps = {
   item: MenuItemDetail;
@@ -41,6 +39,7 @@ export function ItemCustomizePanel({
   });
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [groupErrors, setGroupErrors] = useState<Record<string, string>>({});
 
   const selectedModifiers = useMemo(
     () => Array.from(selectedByGroup.values()).flat(),
@@ -64,6 +63,14 @@ export function ItemCustomizePanel({
     modifierId: string,
     maxSelect: number,
   ) {
+    setGroupErrors((current) => {
+      if (!current[groupId]) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[groupId];
+      return next;
+    });
     setSelectedByGroup((current) => {
       const next = new Map(current);
       const existing = next.get(groupId) ?? [];
@@ -91,6 +98,16 @@ export function ItemCustomizePanel({
 
   async function addToCart() {
     if (!item.available) {
+      return;
+    }
+
+    const nextGroupErrors = modifierSelectionErrors(
+      item.modifierGroups,
+      selectedByGroup,
+    );
+    setGroupErrors(nextGroupErrors);
+    if (Object.keys(nextGroupErrors).length > 0) {
+      setFormError("Choose the required options before adding to cart.");
       return;
     }
 
@@ -220,7 +237,12 @@ export function ItemCustomizePanel({
                   </span>
                 ) : null}
               </div>
-              <div className="divide-y divide-border rounded-2xl border border-border">
+              <div
+                className={cn(
+                  "divide-y divide-border rounded-2xl border",
+                  groupErrors[group.id] ? "border-error" : "border-border",
+                )}
+              >
                 {group.modifiers.map((modifier) => {
                   const checked = (selectedByGroup.get(group.id) ?? []).includes(
                     modifier.id,
@@ -270,14 +292,19 @@ export function ItemCustomizePanel({
                   );
                 })}
               </div>
+              {groupErrors[group.id] ? (
+                <p role="alert" className="text-sm text-error">
+                  {groupErrors[group.id]}
+                </p>
+              ) : null}
             </section>
           ))}
         </div>
 
         {formError ? (
-          <p className="mt-4 text-sm text-error" role="alert">
-            {formError}
-          </p>
+          <div className="mt-4">
+            <FormBanner>{formError}</FormBanner>
+          </div>
         ) : null}
       </div>
 

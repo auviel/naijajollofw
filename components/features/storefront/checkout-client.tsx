@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
 import {
   canRequestQuote,
@@ -15,20 +15,40 @@ import {
   useSquareCardForm,
 } from "@/components/features/storefront/square-card-form";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormBanner } from "@/components/ui/form-banner";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { PhoneField } from "@/components/ui/phone-field";
 import { useToast } from "@/components/ui/toast";
 import type { CartView } from "@/lib/domain/cart/types";
+import {
+  type CheckoutFormErrors,
+  type CheckoutFormField,
+  omitCheckoutFieldError,
+  validateCheckoutForm,
+} from "@/lib/domain/order/form-validation";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
 import type { StoreHoursDay, StoreOpenStatus } from "@/lib/domain/store/hours";
 import { formatScheduledForLabel } from "@/lib/domain/store/schedule-slots";
+import { readApiErrorResponse } from "@/lib/forms/read-api-error";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
-import { ChevronRight, ShoppingBag, X } from "@/components/ui/icons";
+import { ChevronRight, Scooter, ShoppingBag, Store, X } from "@/components/ui/icons";
 
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Something went wrong. Please try again.";
+const FULFILLMENT_OPTIONS = [
+  { value: "pickup" as const, label: "Pickup", icon: Store },
+  { value: "delivery" as const, label: "Delivery", icon: Scooter },
+];
+
+function checkoutIdempotencyStorageKey(cart: CartView, totalCents: number) {
+  const cartKey =
+    cart.id ??
+    `anon:${cart.storeId}:${cart.items
+      .map((item) => `${item.menuItemId}x${item.quantity}`)
+      .join(",")}`;
+  return `nj-checkout-idempotency:${cartKey}:${totalCents}`;
 }
 
 type CheckoutClientProps = {
@@ -85,6 +105,7 @@ export function CheckoutClient({
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<CheckoutFormErrors>({});
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
@@ -98,6 +119,28 @@ export function CheckoutClient({
     () => computeOrderTotals(initialCart.subtotalCents, 0, taxRateBps),
     [initialCart.subtotalCents, taxRateBps],
   );
+  const checkoutIdempotencyKeyRef = useRef<string | null>(null);
+
+  function getCheckoutIdempotencyKey() {
+    if (checkoutIdempotencyKeyRef.current) {
+      return checkoutIdempotencyKeyRef.current;
+    }
+    const storageKey = checkoutIdempotencyStorageKey(
+      initialCart,
+      totals.totalCents,
+    );
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      const next = stored ?? crypto.randomUUID();
+      sessionStorage.setItem(storageKey, next);
+      checkoutIdempotencyKeyRef.current = next;
+      return next;
+    } catch {
+      const next = crypto.randomUUID();
+      checkoutIdempotencyKeyRef.current = next;
+      return next;
+    }
+  }
 
   const squareSrc =
     environment === "production"
@@ -110,12 +153,14 @@ export function CheckoutClient({
     applicationId: applicationId ?? "",
     locationId: locationId ?? "",
     disabled:
-      !configured ||
-      simulatePayments ||
-      !scriptLoaded ||
-      initialCart.items.length === 0 ||
-      (mustSchedule && !scheduledFor),
+      !configured || simulatePayments || initialCart.items.length === 0,
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.Square) {
+      setScriptLoaded(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!configured || simulatePayments || scriptLoaded || scriptFailed) {
@@ -158,7 +203,7 @@ export function CheckoutClient({
         if (!response.ok) {
           setGeocoded(null);
           setVerifiedAddress(null);
-          setGeocodeError(await readApiError(response));
+          setGeocodeError((await readApiErrorResponse(response)).message);
           return;
         }
 
@@ -217,27 +262,32 @@ export function CheckoutClient({
     );
   }
 
+  function clearFieldError(key: CheckoutFormField) {
+    setFieldErrors((current) => omitCheckoutFieldError(current, key));
+  }
+
   async function handlePay() {
     setFormError(null);
 
-    if (mustSchedule && !scheduledFor) {
-      setFormError("Choose a time for your order.");
-      setSchedulePickerOpen(true);
+    const nextFieldErrors = validateCheckoutForm({
+      customerName,
+      customerPhone,
+      customerEmail,
+      fulfillmentType,
+      dropoffAddress: address,
+      dropoffLat: geocoded?.address.latitude,
+      dropoffLng: geocoded?.address.longitude,
+      mustSchedule,
+      scheduledFor,
+    });
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      if (nextFieldErrors.scheduledFor) {
+        setSchedulePickerOpen(true);
+      }
       return;
     }
 
-    if (!customerName.trim()) {
-      setFormError("Enter your name.");
-      return;
-    }
-    if (customerPhone.trim().length < 10) {
-      setFormError("Enter a valid phone number.");
-      return;
-    }
-    if (fulfillmentType === "delivery" && !addressVerified) {
-      setFormError("Confirm a valid delivery address.");
-      return;
-    }
     if (!canCheckout) {
       setFormError("Payments are not configured yet.");
       return;
@@ -282,7 +332,7 @@ export function CheckoutClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceId,
-          idempotencyKey: crypto.randomUUID(),
+          idempotencyKey: getCheckoutIdempotencyKey(),
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
           customerEmail: customerEmail.trim() || undefined,
@@ -308,15 +358,27 @@ export function CheckoutClient({
       });
 
       if (!response.ok) {
-        const message = await readApiError(response);
+        const { message, fieldErrors: apiFields } =
+          await readApiErrorResponse(response);
+        setFieldErrors((current) => ({
+          ...current,
+          ...apiFields,
+        }));
         setFormError(message);
-        toastError(message);
         return;
       }
 
       const body = (await response.json()) as {
         data: { id: string; publicToken: string };
       };
+      try {
+        sessionStorage.removeItem(
+          checkoutIdempotencyStorageKey(initialCart, totals.totalCents),
+        );
+      } catch {
+        // private mode / blocked storage
+      }
+      checkoutIdempotencyKeyRef.current = null;
       router.push(`/orders/${body.data.id}?token=${body.data.publicToken}`);
       router.refresh();
     } catch (err) {
@@ -330,7 +392,14 @@ export function CheckoutClient({
   }
 
   return (
-    <div className="space-y-8">
+    <form
+      className="space-y-8"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void handlePay();
+      }}
+    >
       {configured && !simulatePayments ? (
         <Script
           src={squareSrc}
@@ -488,23 +557,24 @@ export function CheckoutClient({
           How do you want it?
         </h2>
         <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              ["pickup", "Pickup"],
-              ["delivery", "Delivery"],
-            ] as const
-          ).map(([value, label]) => (
+          {FULFILLMENT_OPTIONS.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
               type="button"
-              onClick={() => setFulfillmentType(value)}
+              onClick={() => {
+                setFulfillmentType(value);
+                if (value === "pickup") {
+                  clearFieldError("dropoffAddress");
+                }
+              }}
               className={cn(
-                "h-11 rounded-md border text-sm font-medium transition-colors",
+                "inline-flex h-11 items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors",
                 fulfillmentType === value
                   ? "border-accent bg-accent text-text-inverse"
                   : "border-border bg-surface-elevated text-foreground hover:border-accent/40",
               )}
             >
+              <Icon className="h-4 w-4 shrink-0" aria-hidden />
               {label}
             </button>
           ))}
@@ -521,9 +591,11 @@ export function CheckoutClient({
             onClick={() => setSchedulePickerOpen(true)}
             className={cn(
               "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left transition-colors",
-              scheduledFor
-                ? "border-border bg-surface-elevated hover:border-border-strong"
-                : "border-foreground bg-background",
+              fieldErrors.scheduledFor
+                ? "border-error bg-background"
+                : scheduledFor
+                  ? "border-border bg-surface-elevated hover:border-border-strong"
+                  : "border-foreground bg-background",
             )}
           >
             <span>
@@ -606,93 +678,86 @@ export function CheckoutClient({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Contact
         </h2>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="checkout-name">
-            Name
-          </label>
-          <input
-            id="checkout-name"
+        <FormField
+          id="checkout-name"
+          label="Name"
+          error={fieldErrors.customerName}
+        >
+          <Input
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            onChange={(e) => {
+              setCustomerName(e.target.value);
+              clearFieldError("customerName");
+            }}
             autoComplete="name"
-            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
           />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="checkout-phone">
-            Phone
-          </label>
-          <input
-            id="checkout-phone"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            autoComplete="tel"
-            inputMode="tel"
-            placeholder="(519) 555-0100"
-            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="checkout-email">
-            Email{" "}
-            <span className="font-normal text-text-tertiary">(optional)</span>
-          </label>
-          <input
-            id="checkout-email"
+        </FormField>
+        <PhoneField
+          id="checkout-phone"
+          value={customerPhone}
+          error={fieldErrors.customerPhone}
+          onChange={(next) => {
+            setCustomerPhone(next);
+            clearFieldError("customerPhone");
+          }}
+        />
+        <FormField
+          id="checkout-email"
+          label="Email (optional)"
+          error={fieldErrors.customerEmail}
+        >
+          <Input
             type="email"
             value={customerEmail}
-            onChange={(e) => setCustomerEmail(e.target.value)}
+            onChange={(e) => {
+              setCustomerEmail(e.target.value);
+              clearFieldError("customerEmail");
+            }}
             autoComplete="email"
             placeholder="you@example.com"
-            className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
           />
-        </div>
+        </FormField>
         {fulfillmentType === "delivery" ? (
           <>
-            <div className="space-y-1.5">
-              <span className="text-sm font-medium">Delivery address</span>
+            <FormField
+              id="checkout-address"
+              label="Delivery address"
+              error={fieldErrors.dropoffAddress ?? geocodeError}
+            >
               <AddressAutocomplete
                 value={address}
-                onChange={setAddress}
+                onChange={(next) => {
+                  setAddress(next);
+                  clearFieldError("dropoffAddress");
+                }}
                 autoComplete="shipping street-address"
                 placeholder="Start typing your address"
                 verified={addressVerified && fulfillmentType === "delivery"}
                 isVerifying={isGeocoding}
-                verifyError={geocodeError}
               />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="checkout-unit">
-                Apt/Unit number{" "}
-                <span className="font-normal text-text-tertiary">(optional)</span>
-              </label>
-              <input
-                id="checkout-unit"
+            </FormField>
+            <FormField id="checkout-unit" label="Apt/Unit number (optional)">
+              <Input
                 type="text"
                 value={addressUnit}
                 onChange={(e) => setAddressUnit(e.target.value)}
                 autoComplete="shipping address-line2"
                 maxLength={40}
                 placeholder="e.g. Apt 4, Unit 12"
-                className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-base"
               />
-            </div>
+            </FormField>
           </>
         ) : null}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="checkout-notes">
-            Notes <span className="font-normal text-text-tertiary">(optional)</span>
-          </label>
+        <FormField id="checkout-notes" label="Notes (optional)">
           <textarea
-            id="checkout-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             maxLength={500}
-            className="w-full rounded-md border border-border bg-surface-elevated px-3 py-2 text-base"
+            className="w-full rounded-md border border-border-strong bg-background px-4 py-3 text-base text-foreground placeholder:text-text-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-foreground"
             placeholder="Allergies, gate code, …"
           />
-        </div>
+        </FormField>
       </section>
 
       <section className="space-y-3">
@@ -706,6 +771,7 @@ export function CheckoutClient({
         ) : configured ? (
           <SquareCardSlot
             containerId={cardForm.containerId}
+            ready={cardForm.ready}
             error={cardForm.error}
             onRetry={cardForm.retry}
           />
@@ -727,14 +793,14 @@ export function CheckoutClient({
         </div>
       </section>
 
-      {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
+      {formError ? <FormBanner>{formError}</FormBanner> : null}
+      {fieldErrors.scheduledFor ? (
+        <FormBanner>{fieldErrors.scheduledFor}</FormBanner>
+      ) : null}
 
       <button
-        type="button"
-        onClick={() => void handlePay()}
-        disabled={
-          isSubmitting || !canCheckout || (mustSchedule && !scheduledFor)
-        }
+        type="submit"
+        disabled={isSubmitting || !canCheckout}
         className="flex h-12 w-full items-center justify-center rounded-md bg-accent text-sm font-semibold text-text-inverse transition-opacity disabled:opacity-50"
       >
         {isSubmitting
@@ -760,12 +826,13 @@ export function CheckoutClient({
           setScheduledFor(iso);
           setSchedulePickerOpen(false);
           setFormError(null);
+          clearFieldError("scheduledFor");
         }}
         fulfillmentType={fulfillmentType}
         days={scheduleDays}
         timeZone={scheduleTimeZone}
         initialScheduledFor={scheduledFor}
       />
-    </div>
+    </form>
   );
 }

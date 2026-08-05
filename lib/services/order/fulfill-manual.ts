@@ -65,6 +65,7 @@ export async function fulfillOrderManual(
     publicToken: updated.publicToken,
     status: updated.status,
     fulfillmentType: updated.fulfillmentType,
+    displayNumber: updated.displayNumber,
   });
 
   return mapOrderToStaffDetail(updated);

@@ -61,6 +61,7 @@ export async function syncOrderFromLinkedDelivery(delivery: {
       fulfillmentType: updated.fulfillmentType,
       courierTrackingUrl:
         delivery.trackingUrl ?? updated.delivery?.trackingUrl ?? null,
+      displayNumber: updated.displayNumber,
     });
   }
 }

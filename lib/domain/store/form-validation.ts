@@ -1,4 +1,7 @@
 import { canRequestQuote } from "@/components/features/deliveries/address-preview";
+import type { StoreHoursDay } from "@/lib/domain/store/hours";
+import { updateStoreHoursSchema } from "@/lib/domain/store/hours-validation";
+import { updatePrepMinutesSchema } from "@/lib/domain/store/prep-validation";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 
@@ -40,4 +43,43 @@ export function validateStoreProfileFields(input: {
   }
 
   return errors;
+}
+
+export function validateHoursSchedule(days: StoreHoursDay[]): {
+  formError?: string;
+  dayErrors: Record<number, string>;
+} {
+  const parsed = updateStoreHoursSchema.safeParse({ days });
+  if (parsed.success) {
+    return { dayErrors: {} };
+  }
+
+  const dayErrors: Record<number, string> = {};
+  let formError: string | undefined;
+
+  for (const issue of parsed.error.issues) {
+    if (issue.path[0] === "days" && typeof issue.path[1] === "number") {
+      const day = days[issue.path[1]];
+      const dayOfWeek = day?.dayOfWeek ?? issue.path[1];
+      if (!dayErrors[dayOfWeek]) {
+        dayErrors[dayOfWeek] = issue.message;
+      }
+      continue;
+    }
+    formError ??= issue.message;
+  }
+
+  return { formError, dayErrors };
+}
+
+export function validatePrepMinutesInput(value: string): string | null {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    return "Enter a valid number of minutes.";
+  }
+  const result = updatePrepMinutesSchema.safeParse({ prepMinutes: parsed });
+  if (!result.success) {
+    return "Prep time must be between 5 and 180 minutes.";
+  }
+  return null;
 }

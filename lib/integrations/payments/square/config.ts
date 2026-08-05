@@ -51,28 +51,46 @@ export function getSquareWebhookSignatureKey(): string {
     throw new AppError(
       "INTERNAL_ERROR",
       "Square webhooks are not configured. Set SQUARE_WEBHOOK_SIGNATURE_KEY.",
-      500,
+      503,
     );
   }
   return key;
 }
 
 export function getSquareWebhookNotificationUrl(): string {
-  const explicit = process.env.SQUARE_WEBHOOK_NOTIFICATION_URL?.trim();
-  if (explicit) {
-    return explicit;
-  }
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
-  if (!appUrl) {
+  const candidates = getSquareWebhookNotificationUrlCandidates();
+  const configured = candidates[0];
+  if (!configured) {
     throw new AppError(
       "INTERNAL_ERROR",
       "Set NEXT_PUBLIC_APP_URL or SQUARE_WEBHOOK_NOTIFICATION_URL for Square webhooks.",
-      500,
+      503,
     );
   }
+  return configured;
+}
 
-  return `${appUrl}/api/webhooks/square`;
+/** URLs Square may have signed against, in preference order. */
+export function getSquareWebhookNotificationUrlCandidates(
+  requestUrl?: string | null,
+): string[] {
+  const urls: string[] = [];
+  const push = (value: string | null | undefined) => {
+    const trimmed = value?.trim().replace(/\/$/, "");
+    if (!trimmed || urls.includes(trimmed)) {
+      return;
+    }
+    urls.push(trimmed);
+  };
+
+  push(process.env.SQUARE_WEBHOOK_NOTIFICATION_URL);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  if (appUrl) {
+    push(`${appUrl}/api/webhooks/square`);
+  }
+  push(requestUrl);
+
+  return urls;
 }
 
 /** Ontario HST default — override with TAX_RATE_BPS (basis points, 1300 = 13%). */

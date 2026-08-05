@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { canadianPhoneSchema } from "@/lib/domain/delivery/validation";
 
 export const dinerRegisterSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(80),
   email: z.string().trim().email("Enter a valid email").max(120),
-  phone: z.string().trim().min(10, "Enter a valid phone number").max(20),
+  phone: canadianPhoneSchema,
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")

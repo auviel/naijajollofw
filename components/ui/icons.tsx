@@ -11,7 +11,6 @@ import {
   Delete02Icon,
   DrinkIcon,
   EyeIcon,
-  Facebook01Icon,
   Home01Icon,
   IceCubesIcon,
   InstagramIcon,
@@ -23,6 +22,7 @@ import {
   NoodlesIcon,
   Package01Icon,
   RiceBowl01Icon,
+  Scooter01Icon,
   Search01Icon,
   SearchRemoveIcon,
   ShoppingCart01Icon,
@@ -34,7 +34,6 @@ import {
   UserMultipleIcon,
   ViewOffIcon,
   WhatsappIcon,
-  YoutubeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import type { ComponentPropsWithoutRef } from "react";
@@ -91,6 +90,7 @@ export const Location = createIcon(Location01Icon, "Location");
 export const LogOut = createIcon(Logout01Icon, "LogOut");
 export const Bell = createIcon(Notification01Icon, "Bell");
 export const Package = createIcon(Package01Icon, "Package");
+export const Scooter = createIcon(Scooter01Icon, "Scooter");
 export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");
 export const ShoppingBag = createIcon(ShoppingCart01Icon, "ShoppingBag");
@@ -101,9 +101,7 @@ export const Users = createIcon(UserMultipleIcon, "Users");
 export const UtensilsCrossed = createIcon(SpoonAndForkIcon, "UtensilsCrossed");
 export const X = createIcon(Cancel01Icon, "X");
 export const WhatsApp = createIcon(WhatsappIcon, "WhatsApp");
-export const Facebook = createIcon(Facebook01Icon, "Facebook");
 export const Instagram = createIcon(InstagramIcon, "Instagram");
-export const YouTube = createIcon(YoutubeIcon, "YouTube");
 
 /** Menu category icons (stroke) */
 export const Star = createIcon(StarIcon, "Star");

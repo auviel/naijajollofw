@@ -6,9 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { TurnstileField } from "@/components/features/storefront/turnstile-field";
 import { Button } from "@/components/ui/button";
+import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { validateDinerSigninFields } from "@/lib/domain/diner/form-validation";
 import { safeCallbackUrl } from "@/lib/utils/safe-callback-url";
 
 type ChallengeResponse = {
@@ -33,6 +35,9 @@ export function DinerSigninForm() {
   const [requiresTurnstile, setRequiresTurnstile] = useState(false);
   const [ipBlocked, setIpBlocked] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<"email" | "password", string>>
+  >({});
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -81,8 +86,12 @@ export function DinerSigninForm() {
     const emailValue = String(formData.get("email") ?? "").trim();
     const passwordValue = String(formData.get("password") ?? "");
 
-    if (!emailValue || !passwordValue) {
-      setError("Enter your email and password.");
+    const validation = validateDinerSigninFields({
+      email: emailValue,
+      password: passwordValue,
+    });
+    setFieldErrors(validation);
+    if (Object.keys(validation).length > 0) {
       return;
     }
 
@@ -123,23 +132,34 @@ export function DinerSigninForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <FormField id="email" label="Email">
+      <FormField id="email" label="Email" error={fieldErrors.email}>
         <Input
           name="email"
           type="email"
           autoComplete="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (fieldErrors.email) {
+              setFieldErrors((current) => ({ ...current, email: undefined }));
+            }
+          }}
           placeholder="you@example.com"
-          required
         />
       </FormField>
-      <FormField id="password" label="Password">
+      <FormField id="password" label="Password" error={fieldErrors.password}>
         <PasswordInput
           name="password"
           autoComplete="current-password"
           defaultValue=""
-          required
+          onChange={() => {
+            if (fieldErrors.password) {
+              setFieldErrors((current) => ({
+                ...current,
+                password: undefined,
+              }));
+            }
+          }}
         />
       </FormField>
       <p className="-mt-2 text-right text-sm">
@@ -160,11 +180,7 @@ export function DinerSigninForm() {
         />
       ) : null}
 
-      {error ? (
-        <p className="text-sm text-error" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <FormBanner>{error}</FormBanner> : null}
 
       <Button
         type="submit"

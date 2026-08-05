@@ -80,7 +80,8 @@ export function Select({
         aria-controls={listId}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "flex h-12 w-full items-center justify-between gap-2 rounded-md border border-border-strong bg-background px-4 text-left text-base text-foreground transition-colors duration-fast",
+          "flex h-12 w-full items-center justify-between gap-2 rounded-md border bg-background px-4 text-left text-base text-foreground transition-colors duration-fast",
+          ariaInvalid ? "border-error" : "border-border-strong",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-foreground",
           "disabled:pointer-events-none disabled:opacity-50",
           open && "outline outline-2 outline-offset-0 outline-foreground",

@@ -158,7 +158,13 @@ export function StaffNotifications() {
                     onClick={() => setOpen(false)}
                   >
                     <p className="text-sm font-medium text-foreground">
-                      New order · {order.customerName}
+                      New order
+                      {order.dayTicketIsToday && order.dayTicket != null
+                        ? ` #${order.dayTicket}`
+                        : ""}
+                      {order.displayNumber ? ` · ${order.displayNumber}` : ""}
+                      {" · "}
+                      {order.customerName}
                     </p>
                     <p className="mt-0.5 line-clamp-2 text-xs text-text-secondary">
                       {formatCadFromCents(order.totalCents)}

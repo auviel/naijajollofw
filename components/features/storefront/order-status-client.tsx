@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { PublicOrderView } from "@/lib/domain/order/types";
-import { ORDER_STATUS_LABELS } from "@/lib/domain/order/types";
+import { getOrderStatusLabel } from "@/lib/domain/order/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 
@@ -81,8 +81,13 @@ export function OrderStatusClient({
     <div className="space-y-8">
       <div className="space-y-3">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {ORDER_STATUS_LABELS[order.status]}
+          {getOrderStatusLabel(order.status)}
         </h1>
+        {order.displayNumber ? (
+          <p className="text-sm font-medium tabular-nums text-foreground">
+            Order {order.displayNumber}
+          </p>
+        ) : null}
         <p className="text-base text-text-secondary">{order.statusMessage}</p>
         <p className="text-sm text-text-tertiary">
           {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} for{" "}

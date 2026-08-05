@@ -2,11 +2,9 @@ import Link from "next/link";
 import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
 import {
   Call,
-  Facebook,
   Instagram,
   Location,
   WhatsApp,
-  YouTube,
 } from "@/components/ui/icons";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import type { StoreProfile } from "@/lib/domain/store/types";
@@ -16,19 +14,9 @@ const YEAR = new Date().getFullYear();
 
 const SOCIAL_PROFILES = [
   {
-    label: "Facebook",
-    href: "https://www.facebook.com/Naijajolloftoronto",
-    Icon: Facebook,
-  },
-  {
     label: "Instagram",
-    href: "https://www.instagram.com/naijajolloftoronto/",
+    href: "https://www.instagram.com/naijajollof_waterloo/",
     Icon: Instagram,
-  },
-  {
-    label: "YouTube",
-    href: "https://www.youtube.com/@naijajolloftoronto500",
-    Icon: YouTube,
   },
 ] as const;
 

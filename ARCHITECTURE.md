@@ -1,7 +1,7 @@
 # deliverGO — Architecture & Engineering Guide
 
 > How we structure code today so v1 stays simple, and v2+ (ecommerce, multi-carrier) scales without rewrites.  
-> Companion docs: [IMPLEMENTATION.md](./IMPLEMENTATION.md) · [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md) · [STYLING.md](./STYLING.md)
+> Companion docs: [docs/ROADMAP.md](./docs/ROADMAP.md) · [STYLING.md](./STYLING.md) · (legacy) [IMPLEMENTATION.md](./IMPLEMENTATION.md) · [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md)
 
 ---
 

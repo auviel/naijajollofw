@@ -81,9 +81,15 @@ function buildWhatsAppMessage(input: {
   fulfillmentType: "pickup" | "delivery";
   trackUrl: string | null;
   courierTrackingUrl?: string | null;
+  displayNumber?: string | null;
 }): string {
   const label = orderStatusLabel(input.status);
-  const lines = [`${input.storeName}: ${label}.`];
+  const ref = input.displayNumber?.trim();
+  const lines = [
+    ref
+      ? `${input.storeName}: ${ref} · ${label}.`
+      : `${input.storeName}: ${label}.`,
+  ];
 
   if (input.status === "ready_for_pickup" || input.status === "ready") {
     if (input.fulfillmentType === "pickup") {
@@ -124,6 +130,7 @@ async function sendWhatsAppUpdate(input: {
   status: OrderStatus;
   fulfillmentType: "pickup" | "delivery";
   courierTrackingUrl?: string | null;
+  displayNumber?: string | null;
 }): Promise<void> {
   if (!isOrderWhatsAppUpdatesEnabled()) {
     return;
@@ -139,6 +146,7 @@ async function sendWhatsAppUpdate(input: {
       fulfillmentType: input.fulfillmentType,
       trackUrl: trackingUrl(input.orderId, input.publicToken),
       courierTrackingUrl: input.courierTrackingUrl,
+      displayNumber: input.displayNumber,
     });
 
     await sendTextMessage({
@@ -165,6 +173,7 @@ function sendEmailUpdate(input: {
   fulfillmentType: "pickup" | "delivery";
   courierTrackingUrl?: string | null;
   note?: string | null;
+  displayNumber?: string | null;
 }): void {
   if (!isEmailNotifyStatus(input.status)) {
     return;
@@ -195,6 +204,7 @@ function sendEmailUpdate(input: {
     trackUrl,
     courierTrackingUrl: input.courierTrackingUrl,
     note: input.note,
+    displayNumber: input.displayNumber,
   });
 
   sendEmailInBackground({
@@ -218,6 +228,7 @@ export type OrderStatusNotifyInput = {
   fulfillmentType: "pickup" | "delivery";
   courierTrackingUrl?: string | null;
   note?: string | null;
+  displayNumber?: string | null;
 };
 
 /**

@@ -1,18 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { FormBanner } from "@/components/ui/form-banner";
 import { useToast } from "@/components/ui/toast";
+import { validateHoursSchedule } from "@/lib/domain/store/form-validation";
 import {
   dayOfWeekLabel,
   type StoreHoursDay,
   type StoreHoursSchedule,
 } from "@/lib/domain/store/hours";
+import { readApiError } from "@/lib/forms/read-api-error";
 import { cn } from "@/lib/utils/cn";
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? "Unable to save.";
-}
 
 type HoursScheduleFormProps = {
   initial: StoreHoursSchedule;
@@ -22,6 +20,8 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
   const { success, error: toastError } = useToast();
   const [days, setDays] = useState<StoreHoursDay[]>(initial.days);
   const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [dayErrors, setDayErrors] = useState<Record<number, string>>({});
 
   function updateDay(dayOfWeek: number, patch: Partial<StoreHoursDay>) {
     setDays((prev) =>
@@ -29,10 +29,27 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
         day.dayOfWeek === dayOfWeek ? { ...day, ...patch } : day,
       ),
     );
+    if (dayErrors[dayOfWeek]) {
+      setDayErrors((current) => {
+        const next = { ...current };
+        delete next[dayOfWeek];
+        return next;
+      });
+    }
+    if (formError) {
+      setFormError(null);
+    }
   }
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    const validation = validateHoursSchedule(days);
+    setDayErrors(validation.dayErrors);
+    setFormError(validation.formError ?? null);
+    if (validation.formError || Object.keys(validation.dayErrors).length > 0) {
+      return;
+    }
+
     setPending(true);
     try {
       const response = await fetch("/api/store/hours", {
@@ -41,21 +58,27 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
         body: JSON.stringify({ days }),
       });
       if (!response.ok) {
-        toastError(await readApiError(response));
+        const message = await readApiError(response, "Unable to save.");
+        setFormError(message);
+        toastError(message);
         return;
       }
       const body = (await response.json()) as { data: StoreHoursSchedule };
       setDays(body.data.days);
+      setDayErrors({});
+      setFormError(null);
       success("Hours schedule saved");
     } catch {
-      toastError("Unable to save hours.");
+      const message = "Unable to save hours.";
+      setFormError(message);
+      toastError(message);
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <form onSubmit={(e) => void save(e)} className="max-w-2xl space-y-4">
+    <form onSubmit={(e) => void save(e)} className="max-w-2xl space-y-4" noValidate>
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-foreground">Weekly hours</h2>
         <p className="text-sm text-text-secondary">
@@ -98,43 +121,64 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
               </label>
             </div>
 
-            <div
-              className={cn(
-                "flex flex-wrap items-center gap-2",
-                day.closed && "pointer-events-none opacity-40",
-              )}
-            >
-              <label className="sr-only" htmlFor={`open-${day.dayOfWeek}`}>
-                Open time
-              </label>
-              <input
-                id={`open-${day.dayOfWeek}`}
-                type="time"
-                value={day.openTime ?? "11:00"}
-                disabled={day.closed}
-                onChange={(e) =>
-                  updateDay(day.dayOfWeek, { openTime: e.target.value })
-                }
-                className="h-10 rounded-md border border-border bg-surface-elevated px-2 text-sm"
-              />
-              <span className="text-sm text-text-tertiary">to</span>
-              <label className="sr-only" htmlFor={`close-${day.dayOfWeek}`}>
-                Close time
-              </label>
-              <input
-                id={`close-${day.dayOfWeek}`}
-                type="time"
-                value={day.closeTime ?? "22:00"}
-                disabled={day.closed}
-                onChange={(e) =>
-                  updateDay(day.dayOfWeek, { closeTime: e.target.value })
-                }
-                className="h-10 rounded-md border border-border bg-surface-elevated px-2 text-sm"
-              />
+            <div className="space-y-1">
+              <div
+                className={cn(
+                  "flex flex-wrap items-center gap-2",
+                  day.closed && "pointer-events-none opacity-40",
+                )}
+              >
+                <label className="sr-only" htmlFor={`open-${day.dayOfWeek}`}>
+                  Open time
+                </label>
+                <input
+                  id={`open-${day.dayOfWeek}`}
+                  type="time"
+                  value={day.openTime ?? "11:00"}
+                  disabled={day.closed}
+                  aria-invalid={dayErrors[day.dayOfWeek] ? true : undefined}
+                  onChange={(e) =>
+                    updateDay(day.dayOfWeek, { openTime: e.target.value })
+                  }
+                  className={cn(
+                    "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
+                    dayErrors[day.dayOfWeek]
+                      ? "border-error"
+                      : "border-border",
+                  )}
+                />
+                <span className="text-sm text-text-tertiary">to</span>
+                <label className="sr-only" htmlFor={`close-${day.dayOfWeek}`}>
+                  Close time
+                </label>
+                <input
+                  id={`close-${day.dayOfWeek}`}
+                  type="time"
+                  value={day.closeTime ?? "22:00"}
+                  disabled={day.closed}
+                  aria-invalid={dayErrors[day.dayOfWeek] ? true : undefined}
+                  onChange={(e) =>
+                    updateDay(day.dayOfWeek, { closeTime: e.target.value })
+                  }
+                  className={cn(
+                    "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
+                    dayErrors[day.dayOfWeek]
+                      ? "border-error"
+                      : "border-border",
+                  )}
+                />
+              </div>
+              {dayErrors[day.dayOfWeek] ? (
+                <p role="alert" className="text-sm text-error">
+                  {dayErrors[day.dayOfWeek]}
+                </p>
+              ) : null}
             </div>
           </div>
         ))}
       </div>
+
+      {formError ? <FormBanner>{formError}</FormBanner> : null}
 
       <button
         type="submit"

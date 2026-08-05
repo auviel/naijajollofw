@@ -159,12 +159,14 @@ export function useSquareCardForm({
 
 type SquareCardSlotProps = {
   containerId: string;
+  ready?: boolean;
   error: string | null;
   onRetry?: () => void;
 };
 
 export function SquareCardSlot({
   containerId,
+  ready = false,
   error,
   onRetry,
 }: SquareCardSlotProps) {
@@ -173,10 +175,17 @@ export function SquareCardSlot({
       <label className="text-sm font-medium text-foreground" htmlFor={containerId}>
         Card
       </label>
-      <div
-        id={containerId}
-        className="min-h-[56px] rounded-md border border-border bg-surface-elevated px-3 py-2"
-      />
+      <div className="relative">
+        <div
+          id={containerId}
+          className="min-h-[56px]"
+        />
+        {!ready && !error ? (
+          <p className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-text-tertiary">
+            Loading secure card form…
+          </p>
+        ) : null}
+      </div>
       {error ? (
         <div className="space-y-2">
           <p className="text-sm text-destructive" role="alert">
