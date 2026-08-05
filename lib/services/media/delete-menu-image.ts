@@ -2,6 +2,7 @@ import { requireStoreManager } from "@/lib/auth/session";
 import { menuRepository } from "@/lib/db/repositories/menu.repository";
 import { isR2Configured } from "@/lib/integrations/r2/config";
 import { deleteR2Object } from "@/lib/integrations/r2/client";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -23,6 +24,7 @@ export async function deleteMenuItemImage(
     await menuRepository.updateItem(menuItemId, user.storeId, {
       imageUrl: null,
     });
+    revalidateStorefrontCache();
     return { imageCount: 0, imageUrl: null };
   }
 
@@ -47,6 +49,7 @@ export async function deleteMenuItemImage(
     }
   }
 
+  revalidateStorefrontCache();
   return {
     imageCount: result.remaining.length,
     imageUrl: result.remaining[0]?.url ?? null,

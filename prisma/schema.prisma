@@ -388,7 +388,8 @@ model MenuCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items MenuItem[]
+  items          MenuItem[]
+  modifierGroups MenuModifierGroup[] @relation("ModifierGroupCategory")
 
   @@index([storeId, sortOrder])
 }
@@ -409,9 +410,10 @@ model MenuItem {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  images         MenuItemImage[]
-  modifierGroups MenuModifierGroup[]
-  cartItems      CartItem[]
+  images              MenuItemImage[]
+  modifierGroups      MenuModifierGroup[]
+  sourcedAsModifiers  MenuModifier[]      @relation("ModifierSourceItem")
+  cartItems           CartItem[]
 
   @@index([categoryId, sortOrder])
   @@index([storeId, available])
@@ -433,34 +435,41 @@ model MenuItemImage {
 }
 
 model MenuModifierGroup {
-  id        String   @id @default(cuid())
-  itemId    String
-  item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  name      String
-  required  Boolean  @default(false)
-  minSelect Int      @default(0)
-  maxSelect Int      @default(1)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String        @id @default(cuid())
+  itemId           String
+  item             MenuItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name             String
+  required         Boolean       @default(false)
+  minSelect        Int           @default(0)
+  maxSelect        Int           @default(1)
+  sortOrder        Int           @default(0)
+  sourceCategoryId String?
+  sourceCategory   MenuCategory? @relation("ModifierGroupCategory", fields: [sourceCategoryId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   modifiers MenuModifier[]
 
   @@index([itemId, sortOrder])
+  @@index([sourceCategoryId])
 }
 
 model MenuModifier {
-  id             String           @id @default(cuid())
-  groupId        String
-  group          MenuModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  name           String
-  priceDeltaCents Int             @default(0)
-  available      Boolean          @default(true)
-  sortOrder      Int              @default(0)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id              String            @id @default(cuid())
+  groupId         String
+  group           MenuModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name            String
+  priceDeltaCents Int               @default(0)
+  available       Boolean           @default(true)
+  sortOrder       Int               @default(0)
+  sourceItemId    String?
+  sourceItem      MenuItem?         @relation("ModifierSourceItem", fields: [sourceItemId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
+  @@unique([groupId, sourceItemId])
   @@index([groupId, sortOrder])
+  @@index([sourceItemId])
 }
 
 model Cart {

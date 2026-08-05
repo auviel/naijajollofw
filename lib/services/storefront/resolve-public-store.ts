@@ -1,9 +1,10 @@
+import { cache } from "react";
 import { prisma } from "@/lib/db/client";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import { AppError } from "@/lib/utils/errors";
 
 /** Single-restaurant public storefront — resolve which Store serves the shop. */
-export async function resolvePublicStoreId(): Promise<string> {
+export const resolvePublicStoreId = cache(async function resolvePublicStoreId(): Promise<string> {
   const configured = process.env.PUBLIC_STORE_ID?.trim();
   if (configured) {
     const store = await storeRepository.findById(configured);
@@ -22,4 +23,4 @@ export async function resolvePublicStoreId(): Promise<string> {
   }
 
   return first.id;
-}
+});

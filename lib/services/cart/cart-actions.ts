@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   cartRepository,
   mapCartToView,
@@ -19,7 +20,7 @@ import {
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 import { AppError } from "@/lib/utils/errors";
 
-export async function getCart(): Promise<CartView> {
+export const getCart = cache(async function getCart(): Promise<CartView> {
   const storeId = await resolvePublicStoreId();
   const sessionId = await readCartSessionId();
   if (!sessionId) {
@@ -30,7 +31,7 @@ export async function getCart(): Promise<CartView> {
   // (header, pages). Sliding refresh belongs in Route Handlers / mutations.
   const cart = await cartRepository.findByStoreAndSession(storeId, sessionId);
   return mapCartToView(storeId, cart);
-}
+});
 
 export async function addCartItem(input: unknown): Promise<CartView> {
   const storeId = await resolvePublicStoreId();

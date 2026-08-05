@@ -1,8 +1,9 @@
-import { Colors } from "@/constants/theme";
 import { apiFetch } from "@/lib/api";
+import { useCart } from "@/lib/cart";
 import { formatCadFromCents, type CartView } from "@naijajollof/api-types";
+import { Button, Colors, Radii, Screen, Type } from "@naijajollof/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +27,7 @@ type ItemPayload = {
       id: string;
       name: string;
       required: boolean;
+      minSelect: number;
       maxSelect: number;
       modifiers: Array<{
         id: string;
@@ -40,20 +42,33 @@ type ItemPayload = {
 export default function ItemScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { refresh } = useCart();
   const [data, setData] = useState<ItemPayload | null>(null);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
+  const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    apiFetch<ItemPayload>(`/api/storefront/menu/${id}`).then(setData).catch(() => undefined);
+    apiFetch<ItemPayload>(`/api/storefront/menu/${id}`)
+      .then(setData)
+      .catch(() => undefined);
   }, [id]);
+
+  const extraCents = useMemo(() => {
+    if (!data) return 0;
+    const chosen = new Set(Object.values(selected).flat());
+    return data.item.modifierGroups
+      .flatMap((group) => group.modifiers)
+      .filter((mod) => chosen.has(mod.id))
+      .reduce((sum, mod) => sum + mod.priceDeltaCents, 0);
+  }, [data, selected]);
 
   if (!data) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center}>
         <ActivityIndicator color={Colors.accent} />
-      </View>
+      </Screen>
     );
   }
 
@@ -63,7 +78,7 @@ export default function ItemScreen() {
     setSelected((prev) => {
       const current = prev[groupId] ?? [];
       if (current.includes(modifierId)) {
-        return { ...prev, [groupId]: current.filter((id) => id !== modifierId) };
+        return { ...prev, [groupId]: current.filter((value) => value !== modifierId) };
       }
       const next = maxSelect <= 1 ? [modifierId] : [...current, modifierId].slice(-maxSelect);
       return { ...prev, [groupId]: next };
@@ -73,7 +88,7 @@ export default function ItemScreen() {
   async function addToCart() {
     for (const group of item.modifierGroups) {
       const count = selected[group.id]?.length ?? 0;
-      if (group.required && count === 0) {
+      if ((group.required || group.minSelect > 0) && count < Math.max(1, group.minSelect)) {
         Alert.alert("Choose options", `Select ${group.name} first.`);
         return;
       }
@@ -84,10 +99,11 @@ export default function ItemScreen() {
         method: "POST",
         body: JSON.stringify({
           menuItemId: item.id,
-          quantity: 1,
+          quantity: qty,
           modifierIds: Object.values(selected).flat(),
         }),
       });
+      await refresh();
       router.push("/cart");
     } catch (err) {
       Alert.alert("Could not add", err instanceof Error ? err.message : "Try again");
@@ -97,17 +113,20 @@ export default function ItemScreen() {
   }
 
   return (
+    <Screen>
     <ScrollView contentContainerStyle={styles.content}>
       {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.hero} /> : null}
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.price}>{formatCadFromCents(item.priceCents)}</Text>
-      {item.description ? <Text style={styles.desc}>{item.description}</Text> : null}
+      <Text style={Type.display}>{item.name}</Text>
+      <Text style={styles.price}>
+        {formatCadFromCents((item.priceCents + extraCents) * qty)}
+      </Text>
+      {item.description ? <Text style={Type.meta}>{item.description}</Text> : null}
 
       {item.modifierGroups.map((group) => (
         <View key={group.id} style={styles.group}>
           <Text style={styles.groupName}>
             {group.name}
-            {group.required ? " *" : ""}
+            {group.required || group.minSelect > 0 ? " *" : ""}
           </Text>
           {group.modifiers.map((mod) => {
             const on = (selected[group.id] ?? []).includes(mod.id);
@@ -116,7 +135,7 @@ export default function ItemScreen() {
                 key={mod.id}
                 disabled={!mod.available}
                 onPress={() => toggle(group.id, mod.id, group.maxSelect)}
-                style={[styles.mod, on && styles.modOn]}
+                style={[styles.mod, on && styles.modOn, !mod.available && { opacity: 0.45 }]}
               >
                 <Text style={styles.modName}>{mod.name}</Text>
                 <Text style={styles.modPrice}>
@@ -128,46 +147,54 @@ export default function ItemScreen() {
         </View>
       ))}
 
-      <Pressable
+      <View style={styles.qtyRow}>
+        <Pressable onPress={() => setQty((value) => Math.max(1, value - 1))} style={styles.qtyBtn}>
+          <Text style={styles.qtyLabel}>−</Text>
+        </Pressable>
+        <Text style={styles.qty}>{qty}</Text>
+        <Pressable onPress={() => setQty((value) => Math.min(99, value + 1))} style={styles.qtyBtn}>
+          <Text style={styles.qtyLabel}>+</Text>
+        </Pressable>
+      </View>
+
+      <Button
         disabled={!item.available || busy}
+        label={!item.available ? "Sold out" : busy ? "Adding…" : "Add to cart"}
         onPress={() => void addToCart()}
-        style={[styles.button, (!item.available || busy) && { opacity: 0.5 }]}
-      >
-        <Text style={styles.buttonText}>
-          {!item.available ? "Sold out" : busy ? "Adding…" : "Add to cart"}
-        </Text>
-      </Pressable>
+      />
     </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
-  hero: { width: "100%", height: 200, borderRadius: 16, backgroundColor: "#eee" },
-  name: { fontSize: 26, fontWeight: "800" },
-  price: { fontSize: 18, fontWeight: "700", color: Colors.accent },
-  desc: { color: Colors.textSecondary },
+  hero: { width: "100%", height: 220, borderRadius: Radii.lg, backgroundColor: "#eee" },
+  price: { fontSize: 18, fontWeight: "800", color: Colors.accent },
   group: { gap: 8, marginTop: 8 },
   groupName: { fontWeight: "800" },
   mod: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: Radii.sm,
+    padding: 14,
     flexDirection: "row",
     justifyContent: "space-between",
     borderWidth: 1,
     borderColor: Colors.border,
   },
   modOn: { borderColor: Colors.accent, backgroundColor: "#fff1e8" },
-  modName: { fontWeight: "600" },
+  modName: { fontWeight: "600", flex: 1, paddingRight: 8 },
   modPrice: { color: Colors.textSecondary },
-  button: {
-    marginTop: 12,
-    backgroundColor: Colors.accent,
-    borderRadius: 12,
-    paddingVertical: 16,
+  qtyRow: { flexDirection: "row", alignItems: "center", gap: 16, marginTop: 8 },
+  qtyBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.accentSoft,
     alignItems: "center",
+    justifyContent: "center",
   },
-  buttonText: { color: Colors.inverse, fontWeight: "800", fontSize: 16 },
+  qtyLabel: { fontSize: 22, fontWeight: "800", color: Colors.accent },
+  qty: { fontSize: 18, fontWeight: "800", minWidth: 24, textAlign: "center" },
 });

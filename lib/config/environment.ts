@@ -53,5 +53,9 @@ export function isProviderLiveMode(providerId: DeliveryProviderId): boolean {
 
 /** Store timezone for date display — configurable via env later. */
 export function getStoreTimeZone(): string {
-  return process.env.STORE_TIMEZONE?.trim() || "America/Toronto";
+  return (
+    process.env.NEXT_PUBLIC_STORE_TIMEZONE?.trim() ||
+    process.env.STORE_TIMEZONE?.trim() ||
+    "America/Toronto"
+  );
 }

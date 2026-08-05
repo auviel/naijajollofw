@@ -2,11 +2,15 @@ import { requireStoreManager } from "@/lib/auth/session";
 import {
   mapMenuItemToDetail,
   menuRepository,
-  type ModifierGroupWriteInput,
 } from "@/lib/db/repositories/menu.repository";
 import { updateMenuItemSchema } from "@/lib/domain/menu/validation";
 import { isR2Configured } from "@/lib/integrations/r2/config";
 import { deleteR2Object } from "@/lib/integrations/r2/client";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
+import {
+  assertModifierSources,
+  toModifierGroupWriteInput,
+} from "@/lib/services/menu/normalize-modifier-groups";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -18,26 +22,6 @@ function normalizeImageUrl(value: string | null | undefined): string | null | un
     return null;
   }
   return value.trim();
-}
-
-function normalizeModifierGroups(
-  groups: NonNullable<ReturnType<typeof updateMenuItemSchema.parse>["modifierGroups"]>,
-): ModifierGroupWriteInput[] {
-  return groups.map((group) => ({
-    id: group.id,
-    name: group.name,
-    required: group.required,
-    minSelect: group.minSelect,
-    maxSelect: group.maxSelect,
-    sortOrder: group.sortOrder,
-    modifiers: (group.modifiers ?? []).map((modifier) => ({
-      id: modifier.id,
-      name: modifier.name,
-      priceDeltaCents: modifier.priceDeltaCents,
-      available: modifier.available,
-      sortOrder: modifier.sortOrder,
-    })),
-  }));
 }
 
 export async function updateMenuItem(id: string, input: unknown) {
@@ -57,6 +41,17 @@ export async function updateMenuItem(id: string, input: unknown) {
   const existing = await menuRepository.findItemByIdAndStoreId(id, user.storeId);
   if (!existing) {
     throw new AppError("NOT_FOUND", "Menu item not found", 404);
+  }
+
+  const modifierGroups = parsed.modifierGroups
+    ? toModifierGroupWriteInput(parsed.modifierGroups)
+    : undefined;
+  if (modifierGroups) {
+    await assertModifierSources({
+      storeId: user.storeId,
+      hostItemId: id,
+      groups: modifierGroups,
+    });
   }
 
   const nextImageUrl = normalizeImageUrl(parsed.imageUrl);
@@ -92,14 +87,13 @@ export async function updateMenuItem(id: string, input: unknown) {
     imageUrl: nextImageUrl === null ? undefined : nextImageUrl,
     available: parsed.available,
     sortOrder: parsed.sortOrder,
-    modifierGroups: parsed.modifierGroups
-      ? normalizeModifierGroups(parsed.modifierGroups)
-      : undefined,
+    modifierGroups,
   });
 
   if (!item) {
     throw new AppError("NOT_FOUND", "Menu item not found", 404);
   }
 
+  revalidateStorefrontCache();
   return mapMenuItemToDetail(item);
 }

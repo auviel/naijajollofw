@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { PublicOrderView } from "@/lib/domain/order/types";
 import { getGuestOrderHeadline } from "@/lib/domain/order/guest-timeline";
@@ -22,42 +21,79 @@ export function OrderStatusClient({
   initialOrder,
   initialError,
 }: OrderStatusClientProps) {
-  const router = useRouter();
   const [order, setOrder] = useState(initialOrder);
   const error = initialError;
 
   useEffect(() => {
-    if (!token || !order) {
+    if (!token || !initialOrder) {
+      return;
+    }
+    if (
+      initialOrder.status === "completed" ||
+      initialOrder.status === "cancelled"
+    ) {
       return;
     }
 
-    const terminal =
-      order.status === "completed" || order.status === "cancelled";
-    if (terminal) {
-      return;
-    }
+    let intervalId: number | undefined;
 
-    const interval = window.setInterval(() => {
-      void (async () => {
-        try {
-          const response = await fetch(
-            `/api/orders/${orderId}?token=${encodeURIComponent(token)}`,
-            { cache: "no-store" },
-          );
-          if (!response.ok) {
-            return;
-          }
-          const body = (await response.json()) as { data: PublicOrderView };
-          setOrder(body.data);
-          router.refresh();
-        } catch {
-          // Keep showing last known status.
+    async function poll() {
+      try {
+        const response = await fetch(
+          `/api/orders/${orderId}?token=${encodeURIComponent(token)}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) {
+          return;
         }
-      })();
-    }, 12_000);
+        const body = (await response.json()) as { data: PublicOrderView };
+        setOrder(body.data);
+        if (
+          body.data.status === "completed" ||
+          body.data.status === "cancelled"
+        ) {
+          stop();
+        }
+      } catch {
+        // Keep showing last known status.
+      }
+    }
 
-    return () => window.clearInterval(interval);
-  }, [orderId, token, order, router]);
+    function start() {
+      if (intervalId !== undefined) {
+        return;
+      }
+      intervalId = window.setInterval(() => {
+        void poll();
+      }, 12_000);
+    }
+
+    function stop() {
+      if (intervalId === undefined) {
+        return;
+      }
+      window.clearInterval(intervalId);
+      intervalId = undefined;
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === "visible") {
+        void poll();
+        start();
+        return;
+      }
+      stop();
+    }
+
+    if (document.visibilityState === "visible") {
+      start();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [initialOrder, orderId, token]);
 
   if (error || !order) {
     return (

@@ -1,3 +1,6 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
+import { STOREFRONT_CACHE_TAG } from "@/lib/cache/storefront";
 import {
   mapMenuItemToDetail,
   menuRepository,
@@ -17,20 +20,32 @@ export type PublicStorefront = {
   prepMinutes: number;
 };
 
-export async function getPublicStorefront(): Promise<PublicStorefront> {
+const loadPublicStorefront = unstable_cache(
+  async (storeId: string): Promise<PublicStorefront | null> => {
+    const storeRow = await storeRepository.findById(storeId);
+    if (!storeRow) {
+      return null;
+    }
+
+    const catalog = await menuRepository.getPublicCatalogForStore(storeId);
+    return {
+      store: mapStoreToProfile(storeRow),
+      catalog,
+      prepMinutes: storeRow.prepMinutes,
+    };
+  },
+  ["public-storefront"],
+  { revalidate: 60, tags: [STOREFRONT_CACHE_TAG] },
+);
+
+export const getPublicStorefront = cache(async function getPublicStorefront(): Promise<PublicStorefront> {
   const storeId = await resolvePublicStoreId();
-  const storeRow = await storeRepository.findById(storeId);
-  if (!storeRow) {
+  const data = await loadPublicStorefront(storeId);
+  if (!data) {
     throw new AppError("NOT_FOUND", "Restaurant is not set up yet.", 404);
   }
-
-  const catalog = await menuRepository.getPublicCatalogForStore(storeId);
-  return {
-    store: mapStoreToProfile(storeRow),
-    catalog,
-    prepMinutes: storeRow.prepMinutes,
-  };
-}
+  return data;
+});
 
 export async function getPublicMenuItem(id: string): Promise<{
   store: StoreProfile;

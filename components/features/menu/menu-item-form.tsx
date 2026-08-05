@@ -8,21 +8,24 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
-import { ArrowLeft, Plus } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
+import { ArrowLeft, Plus, X } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ModifierSourcePicker } from "@/components/features/menu/modifier-source-picker";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
 import {
   formatCentsAsDollarsInput,
   parseDollarsToCents,
 } from "@/lib/domain/menu/format";
+import { MODIFIER_GROUP_MAX_SELECT_DEFAULT } from "@/lib/domain/menu/limits";
 import {
+  clearMenuItemGroupError,
   hasMenuItemFormErrors,
   validateMenuItemForm,
   type MenuItemFieldErrors,
   type MenuItemGroupErrors,
-  type MenuItemModifierErrors,
 } from "@/lib/domain/menu/form-validation";
 import { readApiError, readApiErrorResponse } from "@/lib/forms/read-api-error";
 import {
@@ -31,11 +34,16 @@ import {
   MENU_IMAGE_MAX_BYTES,
   MENU_IMAGE_MAX_COUNT,
 } from "@/lib/domain/menu/media";
-import type { MenuItemDetail, MenuItemImageView } from "@/lib/domain/menu/types";
+import type {
+  MenuItemDetail,
+  MenuItemImageView,
+  MenuPickerItem,
+} from "@/lib/domain/menu/types";
 import {
   MENU_ITEM_DESCRIPTION_MAX,
   MENU_ITEM_NAME_MAX,
 } from "@/lib/domain/menu/limits";
+import { formatCadFromCents } from "@/lib/utils/currency";
 
 type CategoryOption = {
   id: string;
@@ -43,32 +51,32 @@ type CategoryOption = {
   active: boolean;
 };
 
-type ModifierDraft = {
+type LegacyModifierDraft = {
   key: string;
   name: string;
-  priceDollars: string;
-  available: boolean;
+  priceDeltaCents: number;
 };
 
 type ModifierGroupDraft = {
   key: string;
   name: string;
-  required: boolean;
-  minSelect: string;
   maxSelect: string;
-  modifiers: ModifierDraft[];
+  source: "items" | "category";
+  sourceCategoryId: string;
+  sourceItemIds: string[];
+  legacyModifiers: LegacyModifierDraft[];
 };
 
 type MenuItemFormProps = {
   mode: "create" | "edit";
   categories: CategoryOption[];
+  pickerItems: MenuPickerItem[];
   item?: MenuItemDetail;
 };
 
 type DestroyTarget =
   | { type: "photo"; id: string }
-  | { type: "group"; key: string; name: string }
-  | { type: "modifier"; groupKey: string; modifierKey: string; name: string };
+  | { type: "group"; key: string; name: string };
 
 function newKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -79,22 +87,36 @@ function groupsFromItem(item?: MenuItemDetail): ModifierGroupDraft[] {
     return [];
   }
 
-  return item.modifierGroups.map((group) => ({
-    key: group.id,
-    name: group.name,
-    required: group.required,
-    minSelect: String(group.minSelect),
-    maxSelect: String(group.maxSelect),
-    modifiers: group.modifiers.map((modifier) => ({
-      key: modifier.id,
-      name: modifier.name,
-      priceDollars: formatCentsAsDollarsInput(modifier.priceDeltaCents),
-      available: modifier.available,
-    })),
-  }));
+  return item.modifierGroups.map((group) => {
+    const linkedIds = group.modifiers
+      .map((modifier) => modifier.sourceItemId)
+      .filter((id): id is string => Boolean(id));
+    const legacyModifiers = group.modifiers
+      .filter((modifier) => !modifier.sourceItemId)
+      .map((modifier) => ({
+        key: modifier.id,
+        name: modifier.name,
+        priceDeltaCents: modifier.priceDeltaCents,
+      }));
+
+    return {
+      key: group.id,
+      name: group.name,
+      maxSelect: String(group.maxSelect),
+      source: group.sourceCategoryId ? "category" : "items",
+      sourceCategoryId: group.sourceCategoryId ?? "",
+      sourceItemIds: group.sourceCategoryId ? [] : linkedIds,
+      legacyModifiers: group.sourceCategoryId ? [] : legacyModifiers,
+    };
+  });
 }
 
-export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
+export function MenuItemForm({
+  mode,
+  categories,
+  pickerItems,
+  item,
+}: MenuItemFormProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,9 +137,8 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
   const [groups, setGroups] = useState<ModifierGroupDraft[]>(() => groupsFromItem(item));
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<MenuItemFieldErrors>({});
-  const [groupErrors, setGroupErrors] = useState<MenuItemGroupErrors>({});
-  const [modifierErrors, setModifierErrors] = useState<MenuItemModifierErrors>(
-    {},
+  const [groupErrors, setGroupErrors] = useState<MenuItemGroupErrors>(
+    () => new Map(),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [destroyTarget, setDestroyTarget] = useState<DestroyTarget | null>(null);
@@ -129,26 +150,6 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
   function updateGroup(key: string, patch: Partial<ModifierGroupDraft>) {
     setGroups((current) =>
       current.map((group) => (group.key === key ? { ...group, ...patch } : group)),
-    );
-  }
-
-  function updateModifier(
-    groupKey: string,
-    modifierKey: string,
-    patch: Partial<ModifierDraft>,
-  ) {
-    setGroups((current) =>
-      current.map((group) => {
-        if (group.key !== groupKey) {
-          return group;
-        }
-        return {
-          ...group,
-          modifiers: group.modifiers.map((modifier) =>
-            modifier.key === modifierKey ? { ...modifier, ...patch } : modifier,
-          ),
-        };
-      }),
     );
   }
 
@@ -171,33 +172,31 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
         throw new Error("Each modifier group needs a name");
       }
 
-      const minSelect = Number.parseInt(group.minSelect || "0", 10);
-      const maxSelect = Number.parseInt(group.maxSelect || "1", 10);
-      if (!Number.isFinite(minSelect) || !Number.isFinite(maxSelect) || maxSelect < 1) {
-        throw new Error("Check modifier group min/max select values");
+      const maxSelect = Number.parseInt(
+        group.maxSelect || String(MODIFIER_GROUP_MAX_SELECT_DEFAULT),
+        10,
+      );
+      if (!Number.isFinite(maxSelect) || maxSelect < 1) {
+        throw new Error("Check modifier group max");
       }
 
       return {
         name: group.name.trim(),
-        required: group.required,
-        minSelect,
+        required: false,
+        minSelect: 0,
         maxSelect,
         sortOrder: groupIndex,
-        modifiers: group.modifiers.map((modifier, modifierIndex) => {
-          if (!modifier.name.trim()) {
-            throw new Error("Each modifier needs a name");
-          }
-          const priceDeltaCents = parseDollarsToCents(modifier.priceDollars || "0");
-          if (priceDeltaCents === null) {
-            throw new Error(`Invalid price on modifier “${modifier.name}”`);
-          }
-          return {
-            name: modifier.name.trim(),
-            priceDeltaCents,
-            available: modifier.available,
-            sortOrder: modifierIndex,
-          };
-        }),
+        sourceCategoryId:
+          group.source === "category" ? group.sourceCategoryId || null : null,
+        sourceItemIds: group.source === "items" ? group.sourceItemIds : [],
+        modifiers:
+          group.source === "items"
+            ? group.legacyModifiers.map((modifier, modifierIndex) => ({
+                name: modifier.name,
+                priceDeltaCents: modifier.priceDeltaCents,
+                sortOrder: group.sourceItemIds.length + modifierIndex,
+              }))
+            : [],
       };
     });
 
@@ -301,20 +300,6 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
       setDestroyTarget(null);
       return;
     }
-
-    setGroups((current) =>
-      current.map((group) =>
-        group.key === destroyTarget.groupKey
-          ? {
-              ...group,
-              modifiers: group.modifiers.filter(
-                (entry) => entry.key !== destroyTarget.modifierKey,
-              ),
-            }
-          : group,
-      ),
-    );
-    setDestroyTarget(null);
   }
 
   async function toggleAvailability() {
@@ -354,7 +339,6 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
     });
     setFieldErrors(validation.fieldErrors);
     setGroupErrors(validation.groupErrors);
-    setModifierErrors(validation.modifierErrors);
     if (hasMenuItemFormErrors(validation)) {
       setFormError("Fix the highlighted fields first.");
       return;
@@ -631,16 +615,15 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                           alt=""
                           className="h-full w-full object-cover"
                         />
-                        <button
-                          type="button"
+                        <IconButton
                           onClick={() =>
                             setDestroyTarget({ type: "photo", id: image.id })
                           }
-                          className="absolute top-1 right-1 rounded-full bg-background/90 px-1.5 text-xs font-medium text-foreground"
+                          className="absolute top-1 right-1 h-7 w-7 bg-background/90 text-foreground hover:bg-background"
                           aria-label="Remove photo"
                         >
-                          ×
-                        </button>
+                          <X className="h-3.5 w-3.5" aria-hidden />
+                        </IconButton>
                       </div>
                     ))}
                 {pendingFiles.map((pending) => (
@@ -654,14 +637,13 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                       alt=""
                       className="h-full w-full object-cover"
                     />
-                    <button
-                      type="button"
+                    <IconButton
                       onClick={() => removePendingFile(pending.key)}
-                      className="absolute top-1 right-1 rounded-full bg-background/90 px-1.5 text-xs font-medium text-foreground"
+                      className="absolute top-1 right-1 h-7 w-7 bg-background/90 text-foreground hover:bg-background"
                       aria-label="Remove pending photo"
                     >
-                      ×
-                    </button>
+                      <X className="h-3.5 w-3.5" aria-hidden />
+                    </IconButton>
                   </div>
                 ))}
                 {totalPhotoCount < MENU_IMAGE_MAX_COUNT ? (
@@ -699,7 +681,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
           <div>
             <h2 className="text-base font-semibold text-foreground">Options</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Add-ons or required choices like size and toppings.
+              Link products or a category so prices stay in sync.
             </p>
           </div>
           <Button
@@ -712,10 +694,11 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                 {
                   key: newKey(),
                   name: "",
-                  required: false,
-                  minSelect: "0",
-                  maxSelect: "1",
-                  modifiers: [],
+                  maxSelect: String(MODIFIER_GROUP_MAX_SELECT_DEFAULT),
+                  source: "items",
+                  sourceCategoryId: "",
+                  sourceItemIds: [],
+                  legacyModifiers: [],
                 },
               ])
             }
@@ -732,35 +715,56 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                 key={group.key}
                 className="space-y-3 rounded-2xl bg-surface-elevated p-4"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <FormField
                       id={`group-name-${group.key}`}
                       label="Group name"
-                      error={groupErrors[group.key]?.name}
+                      error={groupErrors.get(group.key)?.name}
                     >
                       <Input
                         value={group.name}
                         onChange={(event) => {
                           updateGroup(group.key, { name: event.target.value });
-                          if (groupErrors[group.key]?.name) {
-                            setGroupErrors((current) => ({
-                              ...current,
-                              [group.key]: {
-                                ...current[group.key],
-                                name: undefined,
-                              },
-                            }));
+                          if (groupErrors.get(group.key)?.name) {
+                            setGroupErrors((current) =>
+                              clearMenuItemGroupError(current, group.key, "name"),
+                            );
                           }
                         }}
                         placeholder="Toppings"
                       />
                     </FormField>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full sm:w-auto"
+                  <FormField
+                    id={`max-${group.key}`}
+                    label="Max"
+                    className="w-20 shrink-0 sm:w-24"
+                    error={groupErrors.get(group.key)?.maxSelect}
+                  >
+                    <Input
+                      value={group.maxSelect}
+                      onChange={(event) => {
+                        updateGroup(group.key, {
+                          maxSelect: event.target.value,
+                        });
+                        if (groupErrors.get(group.key)?.maxSelect) {
+                          setGroupErrors((current) =>
+                            clearMenuItemGroupError(
+                              current,
+                              group.key,
+                              "maxSelect",
+                            ),
+                          );
+                        }
+                      }}
+                      inputMode="numeric"
+                      aria-label="Max selections"
+                    />
+                  </FormField>
+                  <IconButton
+                    className="mt-7 h-12 w-12"
+                    aria-label="Remove group"
                     onClick={() =>
                       setDestroyTarget({
                         type: "group",
@@ -769,202 +773,154 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                       })
                     }
                   >
-                    Remove group
-                  </Button>
+                    <X className="h-5 w-5" aria-hidden />
+                  </IconButton>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-1">
-                    <input
-                      type="checkbox"
-                      checked={group.required}
-                      onChange={(event) =>
-                        updateGroup(group.key, { required: event.target.checked })
+                <FormField
+                  id={`source-${group.key}`}
+                  label="Options"
+                  error={groupErrors.get(group.key)?.sourceCategoryId}
+                >
+                  <ModifierSourcePicker
+                    id={`source-${group.key}`}
+                    source={group.source}
+                    sourceCategoryId={group.sourceCategoryId}
+                    sourceItemIds={group.sourceItemIds}
+                    categories={categories}
+                    pickerItems={pickerItems}
+                    excludeItemId={item?.id}
+                    error={groupErrors.get(group.key)?.sourceCategoryId}
+                    onSourceChange={(nextSource) =>
+                      updateGroup(group.key, { source: nextSource })
+                    }
+                    onToggleProduct={(itemId) => {
+                      const selected = group.sourceItemIds.includes(itemId);
+                      updateGroup(group.key, {
+                        source: "items",
+                        sourceItemIds: selected
+                          ? group.sourceItemIds.filter((id) => id !== itemId)
+                          : [...group.sourceItemIds, itemId],
+                      });
+                    }}
+                    onSelectCategory={(categoryId) => {
+                      updateGroup(group.key, {
+                        source: "category",
+                        sourceCategoryId: categoryId,
+                      });
+                      if (groupErrors.get(group.key)?.sourceCategoryId) {
+                        setGroupErrors((current) =>
+                          clearMenuItemGroupError(
+                            current,
+                            group.key,
+                            "sourceCategoryId",
+                          ),
+                        );
                       }
-                      className="h-4 w-4 rounded-md border-border-strong"
-                    />
-                    Required
-                  </label>
-                  <FormField
-                    id={`min-${group.key}`}
-                    label="Min select"
-                    error={groupErrors[group.key]?.minSelect}
-                  >
-                    <Input
-                      value={group.minSelect}
-                      onChange={(event) => {
-                        updateGroup(group.key, {
-                          minSelect: event.target.value,
-                        });
-                        if (groupErrors[group.key]?.minSelect) {
-                          setGroupErrors((current) => ({
-                            ...current,
-                            [group.key]: {
-                              ...current[group.key],
-                              minSelect: undefined,
-                            },
-                          }));
-                        }
-                      }}
-                      inputMode="numeric"
-                    />
-                  </FormField>
-                  <FormField
-                    id={`max-${group.key}`}
-                    label="Max select"
-                    error={groupErrors[group.key]?.maxSelect}
-                  >
-                    <Input
-                      value={group.maxSelect}
-                      onChange={(event) => {
-                        updateGroup(group.key, {
-                          maxSelect: event.target.value,
-                        });
-                        if (groupErrors[group.key]?.maxSelect) {
-                          setGroupErrors((current) => ({
-                            ...current,
-                            [group.key]: {
-                              ...current[group.key],
-                              maxSelect: undefined,
-                            },
-                          }));
-                        }
-                      }}
-                      inputMode="numeric"
-                    />
-                  </FormField>
-                </div>
+                    }}
+                  />
+                </FormField>
 
-                <div className="space-y-2">
-                  {group.modifiers.map((modifier) => (
-                    <div
-                      key={modifier.key}
-                      className="grid gap-2 rounded-2xl bg-surface p-3 sm:grid-cols-[1fr_7rem_auto_auto]"
-                    >
-                      <div className="space-y-1">
-                        <Input
-                          value={modifier.name}
-                          onChange={(event) => {
-                            updateModifier(group.key, modifier.key, {
-                              name: event.target.value,
-                            });
-                            if (modifierErrors[modifier.key]?.name) {
-                              setModifierErrors((current) => ({
-                                ...current,
-                                [modifier.key]: {
-                                  ...current[modifier.key],
-                                  name: undefined,
-                                },
-                              }));
-                            }
-                          }}
-                          placeholder="Extra cheese"
-                          aria-label="Modifier name"
-                          aria-invalid={
-                            modifierErrors[modifier.key]?.name
-                              ? true
-                              : undefined
-                          }
-                        />
-                        {modifierErrors[modifier.key]?.name ? (
-                          <p role="alert" className="text-sm text-error">
-                            {modifierErrors[modifier.key]?.name}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="relative">
-                          <span
-                            className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-base text-text-secondary"
-                            aria-hidden
-                          >
-                            $
+                {group.source === "category" && group.sourceCategoryId ? (
+                  <ul className="space-y-1 rounded-2xl bg-surface p-3">
+                    {pickerItems
+                      .filter(
+                        (entry) =>
+                          entry.categoryId === group.sourceCategoryId &&
+                          entry.id !== item?.id,
+                      )
+                      .map((entry) => (
+                        <li
+                          key={entry.id}
+                          className="flex items-center justify-between gap-3 text-sm"
+                        >
+                          <span className="min-w-0 truncate text-foreground">
+                            {entry.name}
+                            {!entry.available ? (
+                              <span className="text-text-tertiary"> · sold out</span>
+                            ) : null}
                           </span>
-                          <Input
-                            value={modifier.priceDollars}
-                            onChange={(event) => {
-                              updateModifier(group.key, modifier.key, {
-                                priceDollars: event.target.value,
-                              });
-                              if (modifierErrors[modifier.key]?.priceDollars) {
-                                setModifierErrors((current) => ({
-                                  ...current,
-                                  [modifier.key]: {
-                                    ...current[modifier.key],
-                                    priceDollars: undefined,
-                                  },
-                                }));
-                              }
-                            }}
-                            inputMode="decimal"
-                            placeholder="1.50"
-                            className="pl-8"
-                            aria-label="Modifier price"
-                            aria-invalid={
-                              modifierErrors[modifier.key]?.priceDollars
-                                ? true
-                                : undefined
+                          <span className="shrink-0 text-text-secondary">
+                            {formatCadFromCents(entry.priceCents)}
+                          </span>
+                        </li>
+                      ))}
+                    {pickerItems.every(
+                      (entry) =>
+                        entry.categoryId !== group.sourceCategoryId ||
+                        entry.id === item?.id,
+                    ) ? (
+                      <li className="text-sm text-text-secondary">
+                        No products in this category yet.
+                      </li>
+                    ) : null}
+                  </ul>
+                ) : null}
+
+                {group.source === "items" &&
+                (group.sourceItemIds.length > 0 ||
+                  group.legacyModifiers.length > 0) ? (
+                  <ul className="space-y-1">
+                    {group.sourceItemIds.map((sourceItemId) => {
+                      const entry = pickerItems.find(
+                        (row) => row.id === sourceItemId,
+                      );
+                      return (
+                        <li
+                          key={sourceItemId}
+                          className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2"
+                        >
+                          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                            {entry?.name ?? "Unavailable product"}
+                          </span>
+                          <span className="shrink-0 text-sm text-text-secondary">
+                            {entry ? formatCadFromCents(entry.priceCents) : "—"}
+                          </span>
+                          <IconButton
+                            className="h-8 w-8"
+                            aria-label={`Remove ${entry?.name ?? "product"}`}
+                            onClick={() =>
+                              updateGroup(group.key, {
+                                sourceItemIds: group.sourceItemIds.filter(
+                                  (id) => id !== sourceItemId,
+                                ),
+                              })
                             }
-                          />
-                        </div>
-                        {modifierErrors[modifier.key]?.priceDollars ? (
-                          <p role="alert" className="text-sm text-error">
-                            {modifierErrors[modifier.key]?.priceDollars}
-                          </p>
-                        ) : null}
-                      </div>
-                      <label className="flex items-center gap-2 text-xs text-foreground">
-                        <input
-                          type="checkbox"
-                          checked={modifier.available}
-                          onChange={(event) =>
-                            updateModifier(group.key, modifier.key, {
-                              available: event.target.checked,
+                          >
+                            <X className="h-4 w-4" aria-hidden />
+                          </IconButton>
+                        </li>
+                      );
+                    })}
+                    {group.legacyModifiers.map((modifier) => (
+                      <li
+                        key={modifier.key}
+                        className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                          {modifier.name}
+                          <span className="text-text-tertiary"> · custom</span>
+                        </span>
+                        <span className="shrink-0 text-sm text-text-secondary">
+                          {formatCadFromCents(modifier.priceDeltaCents)}
+                        </span>
+                        <IconButton
+                          className="h-8 w-8"
+                          aria-label={`Remove ${modifier.name}`}
+                          onClick={() =>
+                            updateGroup(group.key, {
+                              legacyModifiers: group.legacyModifiers.filter(
+                                (row) => row.key !== modifier.key,
+                              ),
                             })
                           }
-                          className="h-4 w-4 rounded-md border-border-strong"
-                        />
-                        On
-                      </label>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="w-full sm:w-auto"
-                        onClick={() =>
-                          setDestroyTarget({
-                            type: "modifier",
-                            groupKey: group.key,
-                            modifierKey: modifier.key,
-                            name: modifier.name.trim(),
-                          })
-                        }
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full sm:w-auto"
-                    onClick={() =>
-                      updateGroup(group.key, {
-                        modifiers: [
-                          ...group.modifiers,
-                          {
-                            key: newKey(),
-                            name: "",
-                            priceDollars: "0.00",
-                            available: true,
-                          },
-                        ],
-                      })
-                    }
-                  >
-                    Add option
-                  </Button>
-                </div>
+                        >
+                          <X className="h-4 w-4" aria-hidden />
+                        </IconButton>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             ))
           )}
@@ -992,25 +948,15 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
         title={
           destroyTarget?.type === "photo"
             ? "Remove this photo?"
-            : destroyTarget?.type === "group"
-              ? "Remove this group?"
-              : "Remove this modifier?"
+            : "Remove this group?"
         }
         description={
           destroyTarget?.type === "photo"
             ? "This photo will be deleted from the item."
-            : destroyTarget?.type === "group"
-              ? `${destroyTarget.name || "This group"} and its modifiers will be removed.`
-              : destroyTarget?.type === "modifier"
-                ? `${destroyTarget.name || "This modifier"} will be removed from the group.`
-                : undefined
+            : `${destroyTarget?.name || "This group"} and its options will be removed.`
         }
         confirmLabel={
-          destroyTarget?.type === "photo"
-            ? "Remove photo"
-            : destroyTarget?.type === "group"
-              ? "Remove group"
-              : "Remove modifier"
+          destroyTarget?.type === "photo" ? "Remove photo" : "Remove group"
         }
         cancelLabel="Keep"
         pending={destroyPending}

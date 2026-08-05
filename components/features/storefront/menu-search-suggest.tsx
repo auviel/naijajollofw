@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { MenuItemThumb } from "@/components/features/storefront/menu-item-thumb";
 import { Search } from "@/components/ui/icons";
 import {
   buildSearchSuggestions,
@@ -131,12 +132,7 @@ export function MenuSearchSuggest({
                 >
                   <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface">
                     {row.item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={row.item.imageUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
+                      <MenuItemThumb src={row.item.imageUrl} sizes="44px" />
                     ) : (
                       <span className="absolute inset-0 bg-gradient-to-br from-surface to-border/50" />
                     )}

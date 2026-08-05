@@ -12,7 +12,7 @@ type LiveRefreshOptions = {
   refreshOnMount?: boolean;
 };
 
-/** Poll on an interval and refresh when the tab becomes visible again. */
+/** Poll on an interval while the tab is visible; refresh when it becomes visible again. */
 export function useLiveRefresh({
   enabled,
   intervalMs = ACTIVE_DELIVERY_POLL_MS,
@@ -28,28 +28,48 @@ export function useLiveRefresh({
       void onRefresh();
     };
 
+    let intervalId: number | undefined;
     let mountTimeoutId: number | undefined;
+
+    function startInterval() {
+      if (intervalId !== undefined) {
+        return;
+      }
+      intervalId = window.setInterval(refresh, intervalMs);
+    }
+
+    function stopInterval() {
+      if (intervalId === undefined) {
+        return;
+      }
+      window.clearInterval(intervalId);
+      intervalId = undefined;
+    }
+
     if (refreshOnMount) {
       mountTimeoutId = window.setTimeout(refresh, 0);
     }
 
-    const intervalId = window.setInterval(refresh, intervalMs);
+    if (document.visibilityState === "visible") {
+      startInterval();
+    }
 
     function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
         refresh();
+        startInterval();
+        return;
       }
+      stopInterval();
     }
 
-    window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       if (mountTimeoutId !== undefined) {
         window.clearTimeout(mountTimeoutId);
       }
-      window.clearInterval(intervalId);
-      window.removeEventListener("focus", refresh);
+      stopInterval();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [enabled, intervalMs, onRefresh, refreshOnMount]);

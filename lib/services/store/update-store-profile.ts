@@ -1,3 +1,4 @@
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import { updateStoreProfileSchema } from "@/lib/domain/store/validation";
 import { isDoorDashEnabled } from "@/lib/config/environment";
 import {
@@ -73,5 +74,6 @@ export async function updateStoreProfile(
       : {}),
   });
 
+  revalidateStorefrontCache();
   return mapStoreToProfile(updated);
 }

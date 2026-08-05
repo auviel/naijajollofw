@@ -9,6 +9,8 @@ import {
 import { verifyUserCredentials } from "@/lib/auth/verify-credentials";
 import { refreshTokenRepository } from "@/lib/db/repositories/refresh-token.repository";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
+import { isTurnstileEnabled } from "@/lib/integrations/turnstile/config";
+import { verifyTurnstileToken } from "@/lib/integrations/turnstile/verify";
 import {
   MOBILE_LOGIN_LIMIT,
   MOBILE_LOGIN_WINDOW_MS,
@@ -67,6 +69,7 @@ export async function mobileLogin(input: {
   email: string;
   password: string;
   app: MobileApp;
+  turnstileToken?: string;
 }) {
   const ip = await getRequestIp();
   await assertDurableRateLimit({
@@ -80,6 +83,15 @@ export async function mobileLogin(input: {
   const challenge = await getLoginChallengeState(email, ip);
   if (challenge.ipBlocked) {
     throw new AppError("UNAUTHORIZED", "Too many login attempts. Try again later.", 401);
+  }
+
+  if (input.app === "diner" && challenge.requiresTurnstile && isTurnstileEnabled()) {
+    try {
+      await verifyTurnstileToken(input.turnstileToken, ip);
+    } catch (error) {
+      await recordLoginFailure(email, ip);
+      throw error;
+    }
   }
 
   const user = await verifyUserCredentials(email, input.password);

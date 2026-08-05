@@ -1,0 +1,106 @@
+import { Colors, Radii, Shadows } from "@naijajollof/ui";
+import { useCart } from "@/lib/cart";
+import { Ionicons } from "@expo/vector-icons";
+import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
+import { Tabs } from "expo-router";
+import { DynamicColorIOS, Platform } from "react-native";
+
+export default function TabsLayout() {
+  const { cart } = useCart();
+  const badge = cart.itemCount > 0 ? String(cart.itemCount) : undefined;
+
+  if (Platform.OS === "ios") {
+    return (
+      <NativeTabs
+        minimizeBehavior="onScrollDown"
+        tintColor={Colors.accent}
+        labelStyle={{
+          color: DynamicColorIOS({ light: Colors.text, dark: "#fff" }),
+        }}
+      >
+        <NativeTabs.Trigger name="index">
+          <Icon sf={{ default: "fork.knife", selected: "fork.knife" }} />
+          <Label>Menu</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="cart">
+          <Icon sf={{ default: "bag", selected: "bag.fill" }} />
+          <Label>Cart</Label>
+          {badge ? <Badge>{badge}</Badge> : null}
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="orders">
+          <Icon sf={{ default: "list.clipboard", selected: "list.clipboard.fill" }} />
+          <Label>Orders</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="account">
+          <Icon sf={{ default: "person", selected: "person.fill" }} />
+          <Label>Account</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    );
+  }
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: Colors.background },
+        headerTintColor: Colors.text,
+        headerTitleStyle: { fontWeight: "800" },
+        tabBarActiveTintColor: Colors.accent,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarLabelStyle: { fontWeight: "700", fontSize: 12 },
+        tabBarStyle: {
+          position: "absolute",
+          left: 16,
+          right: 16,
+          bottom: 16,
+          height: 72,
+          borderRadius: Radii.lg,
+          backgroundColor: Colors.surfaceElevated,
+          borderTopWidth: 0,
+          ...Shadows.float,
+        },
+        tabBarItemStyle: { paddingVertical: 8 },
+        sceneStyle: { backgroundColor: Colors.background },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Menu",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="restaurant" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="cart"
+        options={{
+          title: "Cart",
+          tabBarBadge: badge,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bag" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: "Orders",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="receipt" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: "Account",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}

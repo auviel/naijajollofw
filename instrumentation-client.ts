@@ -27,14 +27,8 @@ Sentry.init({
       process.env.NODE_ENV === "development" ? 1.0 : 0.1,
     );
   },
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
-  integrations: [
-    Sentry.replayIntegration({
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
-  ],
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 0,
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

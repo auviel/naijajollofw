@@ -1,6 +1,7 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import { updatePrepMinutesSchema } from "@/lib/domain/store/prep-validation";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import { AppError } from "@/lib/utils/errors";
 
 export async function updateStorePrepMinutes(input: unknown): Promise<{
@@ -18,6 +19,7 @@ export async function updateStorePrepMinutes(input: unknown): Promise<{
     user.storeId,
     parsed.prepMinutes,
   );
+  revalidateStorefrontCache();
 
   return { prepMinutes: updated.prepMinutes };
 }

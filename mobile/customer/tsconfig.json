@@ -9,6 +9,12 @@
       "@naijajollof/api-types": [
         "../packages/api-types/src/index.ts"
       ],
+      "@naijajollof/ui": [
+        "../packages/ui/src/index.ts"
+      ],
+      "react-native": ["./node_modules/react-native"],
+      "expo-blur": ["./node_modules/expo-blur"],
+      "expo-glass-effect": ["./node_modules/expo-glass-effect"],
       "@/assets/*": [
         "./assets/*"
       ]

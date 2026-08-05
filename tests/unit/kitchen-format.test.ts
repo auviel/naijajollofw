@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatKitchenWait } from "@/lib/domain/order/kitchen-format";
+import {
+  formatKitchenScheduled,
+  formatKitchenWait,
+} from "@/lib/domain/order/kitchen-format";
 
 describe("formatKitchenWait", () => {
   const now = Date.parse("2026-08-05T12:00:00.000Z");
@@ -12,5 +15,13 @@ describe("formatKitchenWait", () => {
 
   it("returns Just now under a minute", () => {
     expect(formatKitchenWait("2026-08-05T11:59:30.000Z", now)).toBe("Just now");
+  });
+});
+
+describe("formatKitchenScheduled", () => {
+  it("uses a stable en-US 12-hour clock in the store timezone", () => {
+    expect(formatKitchenScheduled("2026-07-13T16:00:00.000Z")).toMatch(
+      /Mon.*12:00\sPM/,
+    );
   });
 });

@@ -1,5 +1,8 @@
 import { parseDollarsToCents } from "@/lib/domain/menu/format";
-import { MENU_ITEM_NAME_MAX } from "@/lib/domain/menu/limits";
+import {
+  MENU_ITEM_NAME_MAX,
+  MODIFIER_GROUP_MAX_SELECT_DEFAULT,
+} from "@/lib/domain/menu/limits";
 import type { MenuModifierGroupView } from "@/lib/domain/menu/types";
 
 export type MenuItemFieldErrors = {
@@ -8,15 +11,15 @@ export type MenuItemFieldErrors = {
   priceDollars?: string;
 };
 
-export type MenuItemGroupErrors = Record<
-  string,
-  { name?: string; minSelect?: string; maxSelect?: string }
->;
+export type MenuItemGroupErrorFields = {
+  name?: string;
+  maxSelect?: string;
+  sourceCategoryId?: string;
+};
 
-export type MenuItemModifierErrors = Record<
-  string,
-  { name?: string; priceDollars?: string }
->;
+export type MenuItemGroupErrors = Map<string, MenuItemGroupErrorFields>;
+
+export type MenuItemModifierErrors = Map<string, { name?: string; priceDollars?: string }>;
 
 export type MenuItemFormValidation = {
   fieldErrors: MenuItemFieldErrors;
@@ -31,18 +34,15 @@ export function validateMenuItemForm(input: {
   groups: Array<{
     key: string;
     name: string;
-    minSelect: string;
     maxSelect: string;
-    modifiers: Array<{
-      key: string;
-      name: string;
-      priceDollars: string;
-    }>;
+    source: "items" | "category";
+    sourceCategoryId: string;
+    sourceItemIds: string[];
   }>;
 }): MenuItemFormValidation {
   const fieldErrors: MenuItemFieldErrors = {};
-  const groupErrors: MenuItemGroupErrors = {};
-  const modifierErrors: MenuItemModifierErrors = {};
+  const groupErrors: MenuItemGroupErrors = new Map();
+  const modifierErrors: MenuItemModifierErrors = new Map();
 
   if (!input.categoryId) {
     fieldErrors.categoryId = "Choose a category.";
@@ -57,35 +57,24 @@ export function validateMenuItemForm(input: {
   }
 
   for (const group of input.groups) {
-    const nextGroup: MenuItemGroupErrors[string] = {};
+    const nextGroup: MenuItemGroupErrorFields = {};
     if (!group.name.trim()) {
       nextGroup.name = "Each modifier group needs a name.";
     }
-    const minSelect = Number.parseInt(group.minSelect || "0", 10);
-    const maxSelect = Number.parseInt(group.maxSelect || "1", 10);
-    if (!Number.isFinite(minSelect) || minSelect < 0) {
-      nextGroup.minSelect = "Enter a valid minimum.";
-    }
+    const maxSelect = Number.parseInt(
+      group.maxSelect || String(MODIFIER_GROUP_MAX_SELECT_DEFAULT),
+      10,
+    );
     if (!Number.isFinite(maxSelect) || maxSelect < 1) {
-      nextGroup.maxSelect = "Max select must be at least 1.";
-    } else if (Number.isFinite(minSelect) && minSelect > maxSelect) {
-      nextGroup.maxSelect = "Max select must be at least the minimum.";
+      nextGroup.maxSelect = "Max must be at least 1.";
+    } else if (maxSelect > 20) {
+      nextGroup.maxSelect = "Max can be at most 20.";
     }
-    if (Object.keys(nextGroup).length > 0) {
-      groupErrors[group.key] = nextGroup;
+    if (group.source === "category" && !group.sourceCategoryId) {
+      nextGroup.sourceCategoryId = "Choose a category.";
     }
-
-    for (const modifier of group.modifiers) {
-      const nextModifier: MenuItemModifierErrors[string] = {};
-      if (!modifier.name.trim()) {
-        nextModifier.name = "Modifier name is required.";
-      }
-      if (parseDollarsToCents(modifier.priceDollars || "0") === null) {
-        nextModifier.priceDollars = "Enter a valid price.";
-      }
-      if (Object.keys(nextModifier).length > 0) {
-        modifierErrors[modifier.key] = nextModifier;
-      }
+    if (nextGroup.name || nextGroup.maxSelect || nextGroup.sourceCategoryId) {
+      groupErrors.set(group.key, nextGroup);
     }
   }
 
@@ -95,16 +84,16 @@ export function validateMenuItemForm(input: {
 export function hasMenuItemFormErrors(result: MenuItemFormValidation): boolean {
   return (
     Object.keys(result.fieldErrors).length > 0 ||
-    Object.keys(result.groupErrors).length > 0 ||
-    Object.keys(result.modifierErrors).length > 0
+    result.groupErrors.size > 0 ||
+    result.modifierErrors.size > 0
   );
 }
 
 export function modifierSelectionErrors(
   groups: MenuModifierGroupView[],
   selectedByGroup: Map<string, string[]>,
-): Record<string, string> {
-  const errors: Record<string, string> = {};
+): Map<string, string> {
+  const errors = new Map<string, string>();
 
   for (const group of groups) {
     const chosenIds = new Set(selectedByGroup.get(group.id) ?? []);
@@ -114,17 +103,46 @@ export function modifierSelectionErrors(
     const minRequired = Math.max(group.minSelect, group.required ? 1 : 0);
 
     if (chosen.length < minRequired) {
-      errors[group.id] =
+      errors.set(
+        group.id,
         minRequired <= 1
           ? `Choose ${group.name}.`
-          : `Choose at least ${minRequired} for ${group.name}.`;
+          : `Choose at least ${minRequired} for ${group.name}.`,
+      );
       continue;
     }
 
     if (chosen.length > group.maxSelect) {
-      errors[group.id] = `Choose at most ${group.maxSelect} for ${group.name}.`;
+      errors.set(
+        group.id,
+        `Choose at most ${group.maxSelect} for ${group.name}.`,
+      );
     }
   }
 
   return errors;
+}
+
+export function clearMenuItemGroupError(
+  current: MenuItemGroupErrors,
+  key: string,
+  field: keyof MenuItemGroupErrorFields,
+): MenuItemGroupErrors {
+  const existing = current.get(key);
+  if (!existing) {
+    return current;
+  }
+  const nextFields: MenuItemGroupErrorFields = {
+    name: field === "name" ? undefined : existing.name,
+    maxSelect: field === "maxSelect" ? undefined : existing.maxSelect,
+    sourceCategoryId:
+      field === "sourceCategoryId" ? undefined : existing.sourceCategoryId,
+  };
+  const next = new Map(current);
+  if (nextFields.name || nextFields.maxSelect || nextFields.sourceCategoryId) {
+    next.set(key, nextFields);
+  } else {
+    next.delete(key);
+  }
+  return next;
 }

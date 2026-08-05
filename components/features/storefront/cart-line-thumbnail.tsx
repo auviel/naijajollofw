@@ -1,3 +1,4 @@
+import { MenuItemThumb } from "@/components/features/storefront/menu-item-thumb";
 import type { CartLineView } from "@/lib/domain/cart/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -21,11 +22,9 @@ export function CartLineThumbnail({
       )}
     >
       {line.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <MenuItemThumb
           src={line.imageUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
+          sizes={size === "sm" ? "56px" : "(max-width: 640px) 64px, 72px"}
         />
       ) : (
         <div

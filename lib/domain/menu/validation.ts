@@ -21,17 +21,35 @@ const modifierInputSchema = z.object({
   priceDeltaCents: z.number().int().min(0).max(100_000),
   available: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
+  sourceItemId: z.string().cuid().nullable().optional(),
 });
 
-const modifierGroupInputSchema = z.object({
-  id: z.string().cuid().optional(),
-  name: z.string().trim().min(1, "Group name is required").max(80),
-  required: z.boolean().optional(),
-  minSelect: z.number().int().min(0).max(20).optional(),
-  maxSelect: z.number().int().min(1).max(20).optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  modifiers: z.array(modifierInputSchema).max(30).optional(),
-});
+const modifierGroupInputSchema = z
+  .object({
+    id: z.string().cuid().optional(),
+    name: z.string().trim().min(1, "Group name is required").max(80),
+    required: z.boolean().optional(),
+    minSelect: z.number().int().min(0).max(20).optional(),
+    maxSelect: z.number().int().min(1).max(20).optional(),
+    sortOrder: z.number().int().min(0).optional(),
+    sourceCategoryId: z.string().cuid().nullable().optional(),
+    sourceItemIds: z.array(z.string().cuid()).max(30).optional(),
+    modifiers: z.array(modifierInputSchema).max(30).optional(),
+  })
+  .superRefine((group, ctx) => {
+    const hasCategory = Boolean(group.sourceCategoryId);
+    const sourceItemIds = group.sourceItemIds ?? [];
+    const linkedFromModifiers = (group.modifiers ?? []).some(
+      (modifier) => modifier.sourceItemId,
+    );
+    if (hasCategory && (sourceItemIds.length > 0 || linkedFromModifiers)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Choose a category or products, not both.",
+        path: ["sourceCategoryId"],
+      });
+    }
+  });
 
 /** Absolute https URL (R2/CDN) or site-relative path (legacy `/brand/...`). */
 const imageUrlSchema = z

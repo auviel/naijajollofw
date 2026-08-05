@@ -3,3 +3,6 @@ export const MENU_ITEM_NAME_MAX = 80;
 
 /** Short dish copy for mobile menus. Uber/DoorDash leave description largely uncapped. */
 export const MENU_ITEM_DESCRIPTION_MAX = 500;
+
+/** Prefill for staff modifier groups — optional add-ons, lower if needed. */
+export const MODIFIER_GROUP_MAX_SELECT_DEFAULT = 10;

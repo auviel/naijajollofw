@@ -21,7 +21,9 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
   const [days, setDays] = useState<StoreHoursDay[]>(initial.days);
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [dayErrors, setDayErrors] = useState<Record<number, string>>({});
+  const [dayErrors, setDayErrors] = useState<Map<number, string>>(
+    () => new Map(),
+  );
 
   function updateDay(dayOfWeek: number, patch: Partial<StoreHoursDay>) {
     setDays((prev) =>
@@ -29,10 +31,10 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
         day.dayOfWeek === dayOfWeek ? { ...day, ...patch } : day,
       ),
     );
-    if (dayErrors[dayOfWeek]) {
+    if (dayErrors.has(dayOfWeek)) {
       setDayErrors((current) => {
-        const next = { ...current };
-        delete next[dayOfWeek];
+        const next = new Map(current);
+        next.delete(dayOfWeek);
         return next;
       });
     }
@@ -46,7 +48,7 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
     const validation = validateHoursSchedule(days);
     setDayErrors(validation.dayErrors);
     setFormError(validation.formError ?? null);
-    if (validation.formError || Object.keys(validation.dayErrors).length > 0) {
+    if (validation.formError || validation.dayErrors.size > 0) {
       return;
     }
 
@@ -65,7 +67,7 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
       }
       const body = (await response.json()) as { data: StoreHoursSchedule };
       setDays(body.data.days);
-      setDayErrors({});
+      setDayErrors(new Map());
       setFormError(null);
       success("Hours schedule saved");
     } catch {
@@ -94,88 +96,87 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
       </div>
 
       <div className="divide-y divide-border rounded-2xl bg-surface-elevated">
-        {days.map((day) => (
-          <div
-            key={day.dayOfWeek}
-            className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex min-w-[8rem] items-center gap-3">
-              <span className="text-sm font-medium text-foreground">
-                {dayOfWeekLabel(day.dayOfWeek)}
-              </span>
-              <label className="flex items-center gap-2 text-sm text-text-secondary">
-                <input
-                  type="checkbox"
-                  checked={day.closed}
-                  onChange={(e) => {
-                    const closed = e.target.checked;
-                    updateDay(day.dayOfWeek, {
-                      closed,
-                      openTime: closed ? null : (day.openTime ?? "11:00"),
-                      closeTime: closed ? null : (day.closeTime ?? "22:00"),
-                    });
-                  }}
-                  className="rounded-md border-border"
-                />
-                Closed
-              </label>
-            </div>
-
-            <div className="space-y-1">
-              <div
-                className={cn(
-                  "flex flex-wrap items-center gap-2",
-                  day.closed && "pointer-events-none opacity-40",
-                )}
-              >
-                <label className="sr-only" htmlFor={`open-${day.dayOfWeek}`}>
-                  Open time
+        {days.map((day) => {
+          const dayError = dayErrors.get(day.dayOfWeek);
+          return (
+            <div
+              key={day.dayOfWeek}
+              className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex min-w-[8rem] items-center gap-3">
+                <span className="text-sm font-medium text-foreground">
+                  {dayOfWeekLabel(day.dayOfWeek)}
+                </span>
+                <label className="flex items-center gap-2 text-sm text-text-secondary">
+                  <input
+                    type="checkbox"
+                    checked={day.closed}
+                    onChange={(e) => {
+                      const closed = e.target.checked;
+                      updateDay(day.dayOfWeek, {
+                        closed,
+                        openTime: closed ? null : (day.openTime ?? "10:00"),
+                        closeTime: closed ? null : (day.closeTime ?? "22:00"),
+                      });
+                    }}
+                    className="rounded-md border-border"
+                  />
+                  Closed
                 </label>
-                <input
-                  id={`open-${day.dayOfWeek}`}
-                  type="time"
-                  value={day.openTime ?? "11:00"}
-                  disabled={day.closed}
-                  aria-invalid={dayErrors[day.dayOfWeek] ? true : undefined}
-                  onChange={(e) =>
-                    updateDay(day.dayOfWeek, { openTime: e.target.value })
-                  }
-                  className={cn(
-                    "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
-                    dayErrors[day.dayOfWeek]
-                      ? "border-error"
-                      : "border-border",
-                  )}
-                />
-                <span className="text-sm text-text-tertiary">to</span>
-                <label className="sr-only" htmlFor={`close-${day.dayOfWeek}`}>
-                  Close time
-                </label>
-                <input
-                  id={`close-${day.dayOfWeek}`}
-                  type="time"
-                  value={day.closeTime ?? "22:00"}
-                  disabled={day.closed}
-                  aria-invalid={dayErrors[day.dayOfWeek] ? true : undefined}
-                  onChange={(e) =>
-                    updateDay(day.dayOfWeek, { closeTime: e.target.value })
-                  }
-                  className={cn(
-                    "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
-                    dayErrors[day.dayOfWeek]
-                      ? "border-error"
-                      : "border-border",
-                  )}
-                />
               </div>
-              {dayErrors[day.dayOfWeek] ? (
-                <p role="alert" className="text-sm text-error">
-                  {dayErrors[day.dayOfWeek]}
-                </p>
-              ) : null}
+
+              <div className="space-y-1">
+                <div
+                  className={cn(
+                    "flex flex-wrap items-center gap-2",
+                    day.closed && "pointer-events-none opacity-40",
+                  )}
+                >
+                  <label className="sr-only" htmlFor={`open-${day.dayOfWeek}`}>
+                    Open time
+                  </label>
+                  <input
+                    id={`open-${day.dayOfWeek}`}
+                    type="time"
+                    value={day.openTime ?? "10:00"}
+                    disabled={day.closed}
+                    aria-invalid={dayError ? true : undefined}
+                    onChange={(e) =>
+                      updateDay(day.dayOfWeek, { openTime: e.target.value })
+                    }
+                    className={cn(
+                      "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
+                      dayError ? "border-error" : "border-border",
+                    )}
+                  />
+                  <span className="text-sm text-text-tertiary">to</span>
+                  <label className="sr-only" htmlFor={`close-${day.dayOfWeek}`}>
+                    Close time
+                  </label>
+                  <input
+                    id={`close-${day.dayOfWeek}`}
+                    type="time"
+                    value={day.closeTime ?? "22:00"}
+                    disabled={day.closed}
+                    aria-invalid={dayError ? true : undefined}
+                    onChange={(e) =>
+                      updateDay(day.dayOfWeek, { closeTime: e.target.value })
+                    }
+                    className={cn(
+                      "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
+                      dayError ? "border-error" : "border-border",
+                    )}
+                  />
+                </div>
+                {dayError ? (
+                  <p role="alert" className="text-sm text-error">
+                    {dayError}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {formError ? <FormBanner>{formError}</FormBanner> : null}

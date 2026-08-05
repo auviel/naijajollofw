@@ -113,8 +113,11 @@ function r2RemotePatterns(): NonNullable<
 }
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
   env: {
     NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? "",
+    NEXT_PUBLIC_STORE_TIMEZONE:
+      process.env.STORE_TIMEZONE ?? "America/Toronto",
   },
   images: {
     remotePatterns: r2RemotePatterns(),
@@ -133,7 +136,7 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG ?? "naija-jollof-waterloo",
   project: process.env.SENTRY_PROJECT ?? "naijajollofw-web",
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  widenClientFileUpload: true,
+  widenClientFileUpload: false,
   tunnelRoute: "/monitoring",
   silent: !process.env.CI,
 });

@@ -5,10 +5,13 @@
   "private": true,
   "dependencies": {
     "@naijajollof/api-types": "file:../packages/api-types",
+    "@naijajollof/ui": "file:../packages/ui",
     "expo": "~54.0.33",
+    "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
     "expo-device": "~8.0.10",
     "expo-font": "~14.0.12",
+    "expo-glass-effect": "~0.1.10",
     "expo-image": "~3.0.11",
     "expo-linking": "~8.0.12",
     "expo-notifications": "~0.32.17",
@@ -36,6 +39,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   }
 }

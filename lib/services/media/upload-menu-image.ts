@@ -15,6 +15,7 @@ import { isR2Configured } from "@/lib/integrations/r2/config";
 import { putR2Object } from "@/lib/integrations/r2/client";
 import { menuItemImageKey } from "@/lib/integrations/r2/keys";
 import { publicUrlForObjectKey } from "@/lib/integrations/r2/public-url";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -130,6 +131,7 @@ export async function uploadMenuItemImage(
     key,
     imageId: created.id,
   });
+  revalidateStorefrontCache();
 
   return {
     imageUrl,

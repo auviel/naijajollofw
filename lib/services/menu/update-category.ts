@@ -1,6 +1,7 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import { menuRepository } from "@/lib/db/repositories/menu.repository";
 import { updateCategorySchema } from "@/lib/domain/menu/validation";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import { AppError } from "@/lib/utils/errors";
 
 export async function updateMenuCategory(id: string, input: unknown) {
@@ -17,6 +18,7 @@ export async function updateMenuCategory(id: string, input: unknown) {
     throw new AppError("NOT_FOUND", "Category not found", 404);
   }
 
+  revalidateStorefrontCache();
   return {
     id: category.id,
     name: category.name,

@@ -2,9 +2,13 @@ import { requireStoreManager } from "@/lib/auth/session";
 import {
   mapMenuItemToDetail,
   menuRepository,
-  type ModifierGroupWriteInput,
 } from "@/lib/db/repositories/menu.repository";
 import { createMenuItemSchema } from "@/lib/domain/menu/validation";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
+import {
+  assertModifierSources,
+  toModifierGroupWriteInput,
+} from "@/lib/services/menu/normalize-modifier-groups";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -13,26 +17,6 @@ function normalizeImageUrl(value: string | null | undefined): string | null {
     return null;
   }
   return value.trim();
-}
-
-function normalizeModifierGroups(
-  groups: ReturnType<typeof createMenuItemSchema.parse>["modifierGroups"],
-): ModifierGroupWriteInput[] {
-  return (groups ?? []).map((group) => ({
-    id: group.id,
-    name: group.name,
-    required: group.required,
-    minSelect: group.minSelect,
-    maxSelect: group.maxSelect,
-    sortOrder: group.sortOrder,
-    modifiers: (group.modifiers ?? []).map((modifier) => ({
-      id: modifier.id,
-      name: modifier.name,
-      priceDeltaCents: modifier.priceDeltaCents,
-      available: modifier.available,
-      sortOrder: modifier.sortOrder,
-    })),
-  }));
 }
 
 export async function createMenuItem(input: unknown) {
@@ -51,6 +35,12 @@ export async function createMenuItem(input: unknown) {
     parsed.sortOrder ??
     (await menuRepository.nextItemSortOrder(user.storeId, parsed.categoryId));
 
+  const modifierGroups = toModifierGroupWriteInput(parsed.modifierGroups);
+  await assertModifierSources({
+    storeId: user.storeId,
+    groups: modifierGroups,
+  });
+
   const item = await menuRepository.createItem({
     storeId: user.storeId,
     categoryId: parsed.categoryId,
@@ -60,13 +50,14 @@ export async function createMenuItem(input: unknown) {
     imageUrl: normalizeImageUrl(parsed.imageUrl),
     available: parsed.available ?? true,
     sortOrder,
-    modifierGroups: normalizeModifierGroups(parsed.modifierGroups),
+    modifierGroups,
   });
 
   logger.info("menu.item.created", {
     itemId: item.id,
     storeId: user.storeId,
   });
+  revalidateStorefrontCache();
 
   return mapMenuItemToDetail(item);
 }

@@ -9,7 +9,8 @@ import {
 } from "@/components/features/storefront/square-card-form";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Trash } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
+import { X } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { SavedCardView } from "@/lib/integrations/payments/square/cards";
 import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
@@ -176,15 +177,14 @@ export function AccountPaymentClient({
                   </p>
                 ) : null}
               </div>
-              <button
-                type="button"
+              <IconButton
+                className="h-9 w-9"
                 disabled={pending}
                 onClick={() => setDeleteTarget(card)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-text-tertiary hover:bg-surface hover:text-foreground"
                 aria-label="Remove card"
               >
-                <Trash className="h-4 w-4" aria-hidden />
-              </button>
+                <X className="h-4 w-4" aria-hidden />
+              </IconButton>
             </li>
           ))
         )}

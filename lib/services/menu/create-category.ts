@@ -1,6 +1,7 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import { menuRepository } from "@/lib/db/repositories/menu.repository";
 import { createCategorySchema } from "@/lib/domain/menu/validation";
+import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import { logger } from "@/lib/utils/logger";
 
 export async function createMenuCategory(input: unknown) {
@@ -19,6 +20,7 @@ export async function createMenuCategory(input: unknown) {
     categoryId: category.id,
     storeId: user.storeId,
   });
+  revalidateStorefrontCache();
 
   return {
     id: category.id,

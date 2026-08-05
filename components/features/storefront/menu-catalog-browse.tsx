@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { displayCategoryName } from "@/components/features/storefront/category-icon";
 import { CategoryRail } from "@/components/features/storefront/category-rail";
 import { ItemDetailModal } from "@/components/features/storefront/item-detail-modal";
+import { MenuItemThumb } from "@/components/features/storefront/menu-item-thumb";
 import { ChevronLeft, ChevronRight, Plus } from "@/components/ui/icons";
 import type { MenuCategoryView, MenuItemListItem } from "@/lib/domain/menu/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
@@ -189,11 +190,9 @@ function FeaturedItemCard({
     <>
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface">
         {item.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <MenuItemThumb
             src={item.imageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            sizes="(max-width: 640px) 152px, 176px"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-surface to-border/50" />
@@ -264,11 +263,9 @@ function MenuItemCard({
   const media = (
     <div className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-2xl bg-surface sm:h-[112px] sm:w-[112px]">
       {item.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <MenuItemThumb
           src={item.imageUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
+          sizes="(max-width: 640px) 104px, 112px"
         />
       ) : (
         <div

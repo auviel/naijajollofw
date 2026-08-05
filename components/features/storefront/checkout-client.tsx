@@ -27,6 +27,13 @@ import {
   omitCheckoutFieldError,
   validateCheckoutForm,
 } from "@/lib/domain/order/form-validation";
+import {
+  matchingTipPercent,
+  parseTipDollarsToCents,
+  TIP_PERCENTS,
+  tipCentsFromPercent,
+  type TipPercent,
+} from "@/lib/domain/order/tip";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
 import type { StoreHoursDay, StoreOpenStatus } from "@/lib/domain/store/hours";
 import { formatScheduledForLabel } from "@/lib/domain/store/schedule-slots";
@@ -67,6 +74,8 @@ type CheckoutClientProps = {
   initialCustomerEmail?: string;
   initialDeliveryAddress?: string;
   initialDeliveryUnit?: string;
+  initialFulfillmentType?: "pickup" | "delivery";
+  initialTipCents?: number;
 };
 
 export function CheckoutClient({
@@ -85,6 +94,8 @@ export function CheckoutClient({
   initialCustomerEmail = "",
   initialDeliveryAddress = "",
   initialDeliveryUnit = "",
+  initialFulfillmentType = "pickup",
+  initialTipCents = 0,
 }: CheckoutClientProps) {
   const router = useRouter();
   const { error: toastError } = useToast();
@@ -96,7 +107,16 @@ export function CheckoutClient({
   const [customerPhone, setCustomerPhone] = useState(initialCustomerPhone);
   const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(
-    "pickup",
+    initialFulfillmentType,
+  );
+  const [tipSelection, setTipSelection] = useState<TipPercent | "custom">(() =>
+    matchingTipPercent(initialCart.subtotalCents, initialTipCents),
+  );
+  const [customTipInput, setCustomTipInput] = useState(() =>
+    matchingTipPercent(initialCart.subtotalCents, initialTipCents) === "custom" &&
+    initialTipCents > 0
+      ? (initialTipCents / 100).toFixed(2)
+      : "",
   );
   const [notes, setNotes] = useState("");
   const [address, setAddress] = useState(initialDeliveryAddress);
@@ -117,11 +137,21 @@ export function CheckoutClient({
     ? formatScheduledForLabel(scheduledFor, scheduleTimeZone)
     : null;
 
+  const tipCents =
+    tipSelection === "custom"
+      ? parseTipDollarsToCents(customTipInput)
+      : tipCentsFromPercent(initialCart.subtotalCents, tipSelection);
+
   const totals = useMemo(
-    () => computeOrderTotals(initialCart.subtotalCents, 0, taxRateBps),
-    [initialCart.subtotalCents, taxRateBps],
+    () => computeOrderTotals(initialCart.subtotalCents, tipCents, taxRateBps),
+    [initialCart.subtotalCents, taxRateBps, tipCents],
   );
   const checkoutIdempotencyKeyRef = useRef<string | null>(null);
+  const restoredCartSidRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    checkoutIdempotencyKeyRef.current = null;
+  }, [totals.totalCents]);
 
   function getCheckoutIdempotencyKey() {
     if (checkoutIdempotencyKeyRef.current) {
@@ -157,6 +187,20 @@ export function CheckoutClient({
     disabled:
       !configured || simulatePayments || initialCart.items.length === 0,
   });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const cartSid = new URLSearchParams(window.location.search).get("cartSid");
+    if (!cartSid || restoredCartSidRef.current === cartSid) return;
+    restoredCartSidRef.current = cartSid;
+    void fetch("/api/cart/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: cartSid }),
+    }).then((response) => {
+      if (response.ok) router.refresh();
+    });
+  }, [router]);
 
   useEffect(() => {
     if (!configured || simulatePayments || scriptLoaded || scriptFailed) {
@@ -333,7 +377,7 @@ export function CheckoutClient({
           customerPhone: customerPhone.trim(),
           customerEmail: customerEmail.trim(),
           fulfillmentType,
-          tipCents: 0,
+          tipCents,
           notes: notes.trim() || undefined,
           scheduledFor: scheduledFor ?? undefined,
           dropoffAddress:
@@ -771,11 +815,72 @@ export function CheckoutClient({
         ) : null}
       </section>
 
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          Tip
+        </h2>
+        <p className="text-sm text-text-secondary">
+          Optional — goes to the kitchen. Tax is on food only.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {TIP_PERCENTS.map((percent) => {
+            const selected = tipSelection === percent;
+            const label =
+              percent === 0
+                ? "No tip"
+                : `${percent}% · ${formatCadFromCents(tipCentsFromPercent(initialCart.subtotalCents, percent))}`;
+            return (
+              <button
+                key={percent}
+                type="button"
+                onClick={() => setTipSelection(percent)}
+                className={cn(
+                  "inline-flex h-11 items-center justify-center rounded-full border px-3 text-sm font-medium transition-colors",
+                  selected
+                    ? "border-accent bg-accent text-text-inverse"
+                    : "border-border bg-surface-elevated text-foreground hover:border-accent/40",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => setTipSelection("custom")}
+            className={cn(
+              "inline-flex h-11 items-center justify-center rounded-full border px-3 text-sm font-medium transition-colors",
+              tipSelection === "custom"
+                ? "border-accent bg-accent text-text-inverse"
+                : "border-border bg-surface-elevated text-foreground hover:border-accent/40",
+            )}
+          >
+            Custom
+          </button>
+        </div>
+        {tipSelection === "custom" ? (
+          <FormField id="checkout-tip" label="Custom tip (CAD)">
+            <Input
+              inputMode="decimal"
+              value={customTipInput}
+              onChange={(event) => setCustomTipInput(event.target.value)}
+              placeholder="0.00"
+            />
+          </FormField>
+        ) : null}
+      </section>
+
       <section className="space-y-2 rounded-2xl bg-surface-elevated px-4 py-3 text-sm">
         <div className="flex justify-between text-text-secondary">
           <span>Subtotal</span>
           <span>{formatCadFromCents(totals.subtotalCents)}</span>
         </div>
+        {totals.tipCents > 0 ? (
+          <div className="flex justify-between text-text-secondary">
+            <span>Tip</span>
+            <span>{formatCadFromCents(totals.tipCents)}</span>
+          </div>
+        ) : null}
         <div className="flex justify-between text-text-secondary">
           <span>Tax</span>
           <span>{formatCadFromCents(totals.taxCents)}</span>

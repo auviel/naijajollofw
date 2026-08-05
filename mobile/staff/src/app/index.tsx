@@ -1,4 +1,3 @@
-import { Colors } from "@/constants/theme";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import {
@@ -8,9 +7,12 @@ import {
   type ListStaffOrdersResult,
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
+import { Card, Colors, GlassSurface, Radii, Screen, Type } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AppState,
+  type AppStateStatus,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -42,8 +44,32 @@ export default function KitchenBoardScreen() {
 
   useEffect(() => {
     void load();
-    const id = setInterval(() => void load(), POLL_MS);
-    return () => clearInterval(id);
+    let id: ReturnType<typeof setInterval> | null = setInterval(
+      () => void load(),
+      POLL_MS,
+    );
+
+    function onAppState(state: AppStateStatus) {
+      if (state === "active") {
+        void load();
+        if (!id) {
+          id = setInterval(() => void load(), POLL_MS);
+        }
+        return;
+      }
+      if (id) {
+        clearInterval(id);
+        id = null;
+      }
+    }
+
+    const sub = AppState.addEventListener("change", onAppState);
+    return () => {
+      if (id) {
+        clearInterval(id);
+      }
+      sub.remove();
+    };
   }, [load]);
 
   const prepMinutes = data?.prepMinutes ?? 15;
@@ -61,73 +87,76 @@ export default function KitchenBoardScreen() {
   }, [data?.items, prepMinutes]);
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setRefreshing(true);
-            await load();
-            setRefreshing(false);
-          }}
-        />
-      }
-    >
-      <View style={styles.topRow}>
-        <View>
-          <Text style={styles.store}>{store?.name ?? "Kitchen"}</Text>
-          <Text style={styles.meta}>
-            {data?.pendingAcceptanceCount ?? 0} new · refreshes every 10s
-          </Text>
-        </View>
-        <Pressable onPress={() => router.push("/account")} style={styles.accountBtn}>
-          <Text style={styles.accountText}>Account</Text>
-        </Pressable>
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {KITCHEN_BOARD_COLUMNS.map((column) => {
-        const items = grouped.live.filter((order) =>
-          (column.statuses as readonly string[]).includes(order.status),
-        );
-        return (
-          <View key={column.id} style={styles.column}>
-            <Text style={styles.columnTitle}>
-              {column.title} · {items.length}
+    <Screen>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await load();
+              setRefreshing(false);
+            }}
+          />
+        }
+      >
+        <View style={styles.topRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={Type.display}>{store?.name ?? "Kitchen"}</Text>
+            <Text style={Type.meta}>
+              {data?.pendingAcceptanceCount ?? 0} new · refreshes every 10s
             </Text>
-            {items.length === 0 ? (
-              <Text style={styles.empty}>None</Text>
-            ) : (
-              items.map((order) => (
-                <TicketCard
-                  key={order.id}
-                  order={order}
-                  onPress={() => router.push(`/orders/${order.id}`)}
-                />
-              ))
-            )}
           </View>
-        );
-      })}
+          <Pressable onPress={() => router.push("/account")}>
+            <GlassSurface interactive style={styles.accountBtn}>
+              <Text style={styles.accountText}>Account</Text>
+            </GlassSurface>
+          </Pressable>
+        </View>
 
-      <View style={styles.column}>
-        <Text style={styles.columnTitle}>Later · {grouped.later.length}</Text>
-        {grouped.later.length === 0 ? (
-          <Text style={styles.empty}>No scheduled tickets waiting</Text>
-        ) : (
-          grouped.later.map((order) => (
-            <TicketCard
-              key={order.id}
-              order={order}
-              onPress={() => router.push(`/orders/${order.id}`)}
-            />
-          ))
-        )}
-      </View>
-    </ScrollView>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {KITCHEN_BOARD_COLUMNS.map((column) => {
+          const items = grouped.live.filter((order) =>
+            (column.statuses as readonly string[]).includes(order.status),
+          );
+          return (
+            <View key={column.id} style={styles.column}>
+              <Text style={Type.headline}>
+                {column.title} · {items.length}
+              </Text>
+              {items.length === 0 ? (
+                <Text style={Type.meta}>None</Text>
+              ) : (
+                items.map((order) => (
+                  <TicketCard
+                    key={order.id}
+                    order={order}
+                    onPress={() => router.push(`/orders/${order.id}`)}
+                  />
+                ))
+              )}
+            </View>
+          );
+        })}
+
+        <View style={styles.column}>
+          <Text style={Type.headline}>Later · {grouped.later.length}</Text>
+          {grouped.later.length === 0 ? (
+            <Text style={Type.meta}>No scheduled tickets waiting</Text>
+          ) : (
+            grouped.later.map((order) => (
+              <TicketCard
+                key={order.id}
+                order={order}
+                onPress={() => router.push(`/orders/${order.id}`)}
+              />
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }
 
@@ -139,7 +168,7 @@ function TicketCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <Card onPress={onPress}>
       <View style={styles.cardTop}>
         <Text style={styles.ticket}>
           {order.displayNumber ?? (order.dayTicket ? `#${order.dayTicket}` : "Order")}
@@ -147,50 +176,33 @@ function TicketCard({
         <Text style={styles.total}>{formatCadFromCents(order.totalCents)}</Text>
       </View>
       <Text style={styles.customer}>{order.customerName}</Text>
-      <Text style={styles.summary} numberOfLines={2}>
+      <Text style={Type.meta} numberOfLines={2}>
         {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} · {order.itemSummary}
       </Text>
-    </Pressable>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 48, gap: 16 },
+  content: { padding: 20, paddingBottom: 48, gap: 16 },
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 12,
   },
-  store: { fontSize: 22, fontWeight: "700", color: Colors.text },
-  meta: { color: Colors.textSecondary, marginTop: 4 },
   accountBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: Colors.surface,
+    borderRadius: Radii.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 48,
+    justifyContent: "center",
   },
-  accountText: { fontWeight: "600" },
+  accountText: { fontWeight: "800", color: Colors.text },
   error: { color: Colors.danger },
-  column: { gap: 8 },
-  columnTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  empty: { color: Colors.textSecondary },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    gap: 4,
-  },
-  cardTop: { flexDirection: "row", justifyContent: "space-between" },
-  ticket: { fontWeight: "700", fontSize: 16 },
-  total: { fontWeight: "700" },
-  customer: { color: Colors.text },
-  summary: { color: Colors.textSecondary },
+  column: { gap: 10 },
+  cardTop: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+  ticket: { fontWeight: "800", fontSize: 17, color: Colors.text },
+  total: { fontWeight: "800", color: Colors.text },
+  customer: { color: Colors.text, fontWeight: "600", marginBottom: 2 },
 });

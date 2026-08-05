@@ -4,6 +4,7 @@ export type MenuModifierView = {
   priceDeltaCents: number;
   available: boolean;
   sortOrder: number;
+  sourceItemId: string | null;
 };
 
 export type MenuModifierGroupView = {
@@ -13,7 +14,17 @@ export type MenuModifierGroupView = {
   minSelect: number;
   maxSelect: number;
   sortOrder: number;
+  sourceCategoryId: string | null;
   modifiers: MenuModifierView[];
+};
+
+export type MenuPickerItem = {
+  id: string;
+  name: string;
+  priceCents: number;
+  categoryId: string;
+  categoryName: string;
+  available: boolean;
 };
 
 export type MenuItemListItem = {

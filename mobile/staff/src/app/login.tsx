@@ -1,15 +1,7 @@
-import { Colors } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
+import { Button, Colors, Field, GlassSurface, Screen, Type } from "@naijajollof/ui";
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -31,84 +23,43 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.wrap}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.card}>
-        <Text style={styles.kicker}>Staff</Text>
-        <Text style={styles.title}>Naija Jollof Kitchen</Text>
-        <Text style={styles.sub}>Sign in to run the board from your phone.</Text>
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          placeholder="Email"
-          placeholderTextColor={Colors.textSecondary}
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          secureTextEntry
-          placeholder="Password"
-          placeholderTextColor={Colors.textSecondary}
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Pressable
-          disabled={busy || !email || !password}
-          onPress={() => void onSubmit()}
-          style={[styles.button, (busy || !email || !password) && styles.buttonDisabled]}
-        >
-          <Text style={styles.buttonText}>{busy ? "Signing in…" : "Sign in"}</Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+    <Screen>
+      <KeyboardAvoidingView
+        style={styles.wrap}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <GlassSurface style={styles.card} interactive>
+          <Text style={Type.kicker}>Staff</Text>
+          <Text style={Type.display}>Kitchen</Text>
+          <Text style={Type.meta}>Sign in to run the board from your phone.</Text>
+          <Field
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Field
+            secureTextEntry
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+          />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <Button
+            disabled={busy || !email || !password}
+            label={busy ? "Signing in…" : "Sign in"}
+            onPress={() => void onSubmit()}
+          />
+        </GlassSurface>
+      </KeyboardAvoidingView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: "center",
-    padding: 24,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 24,
-    gap: 12,
-  },
-  kicker: {
-    color: Colors.accent,
-    fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    fontSize: 12,
-  },
-  title: { fontSize: 28, fontWeight: "700", color: Colors.text },
-  sub: { color: Colors.textSecondary, marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: Colors.text,
-  },
-  error: { color: Colors.danger },
-  button: {
-    backgroundColor: Colors.accent,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: Colors.inverse, fontWeight: "700", fontSize: 16 },
+  wrap: { flex: 1, justifyContent: "center", padding: 24 },
+  card: { padding: 24, gap: 12 },
+  error: { color: Colors.danger, fontWeight: "600" },
 });

@@ -21,7 +21,7 @@ Build in this order:
 | 3 | [Coupons and discounts](#3-coupons-and-discounts) | Not started | M–L | Checkout totals + #2 |
 | 4 | [Blog](#4-setup-blog) | Placeholder `/blog` | S–M | None |
 | 5 | [Google review widgets](#5-google-review-widgets) | Maps link only | S | Place ID |
-| 6 | [Native apps](#6-native-apps-staff-then-diner) | Backend + Expo scaffolds | L | Dual auth + push |
+| 6 | [Native apps](#6-native-apps-staff-then-diner) | Staff Expo Go ready; diner app v1 (pickup + history) | L | Dual auth + push |
 
 ---
 
@@ -273,6 +273,8 @@ Out of v1: menu CRUD, customers, hours, store profile, Delivergo quotes (web / W
 | History | `GET /api/diner/orders` |
 | Cart on native | `X-Cart-Sid` header (+ cookie for web) |
 | Pay | Square In-App Payments → `sourceId` → existing `POST /api/checkout` |
+
+**v1 in Expo Go:** menu · modifiers · cart · pickup + delivery checkout · tip · schedule · track · sign-in / in-app signup (Turnstile WebView) · addresses / security / cards · history · diner push. Square In-App Payments runs in a dev/store build; Expo Go falls back to website card pay. Courier quotes stay staff-side after the order.
 
 Website stays the SEO / first-order surface.
 

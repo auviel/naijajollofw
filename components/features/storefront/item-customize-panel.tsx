@@ -39,7 +39,7 @@ export function ItemCustomizePanel({
   });
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [groupErrors, setGroupErrors] = useState<Record<string, string>>({});
+  const [groupErrors, setGroupErrors] = useState(() => new Map<string, string>());
 
   const selectedModifiers = useMemo(
     () => Array.from(selectedByGroup.values()).flat(),
@@ -64,11 +64,11 @@ export function ItemCustomizePanel({
     maxSelect: number,
   ) {
     setGroupErrors((current) => {
-      if (!current[groupId]) {
+      if (!current.has(groupId)) {
         return current;
       }
-      const next = { ...current };
-      delete next[groupId];
+      const next = new Map(current);
+      next.delete(groupId);
       return next;
     });
     setSelectedByGroup((current) => {
@@ -106,7 +106,7 @@ export function ItemCustomizePanel({
       selectedByGroup,
     );
     setGroupErrors(nextGroupErrors);
-    if (Object.keys(nextGroupErrors).length > 0) {
+    if (nextGroupErrors.size > 0) {
       setFormError("Choose the required options before adding to cart.");
       return;
     }
@@ -251,7 +251,7 @@ export function ItemCustomizePanel({
                 className={cn(
                   "divide-y divide-border rounded-2xl",
                   isModal ? "bg-surface" : "bg-surface-elevated",
-                  groupErrors[group.id] && "ring-1 ring-error",
+                  groupErrors.has(group.id) && "ring-1 ring-error",
                 )}
               >
                 {group.modifiers.map((modifier) => {
@@ -309,9 +309,9 @@ export function ItemCustomizePanel({
                   );
                 })}
               </div>
-              {groupErrors[group.id] ? (
+              {groupErrors.get(group.id) ? (
                 <p role="alert" className="text-sm text-error">
-                  {groupErrors[group.id]}
+                  {groupErrors.get(group.id)}
                 </p>
               ) : null}
             </section>

@@ -47,26 +47,28 @@ export function validateStoreProfileFields(input: {
 
 export function validateHoursSchedule(days: StoreHoursDay[]): {
   formError?: string;
-  dayErrors: Record<number, string>;
+  dayErrors: Map<number, string>;
 } {
   const parsed = updateStoreHoursSchema.safeParse({ days });
   if (parsed.success) {
-    return { dayErrors: {} };
+    return { dayErrors: new Map() };
   }
 
-  const dayErrors: Record<number, string> = {};
+  const dayErrors = new Map<number, string>();
   let formError: string | undefined;
 
   for (const issue of parsed.error.issues) {
-    if (issue.path[0] === "days" && typeof issue.path[1] === "number") {
-      const day = days[issue.path[1]];
-      const dayOfWeek = day?.dayOfWeek ?? issue.path[1];
-      if (!dayErrors[dayOfWeek]) {
-        dayErrors[dayOfWeek] = issue.message;
-      }
+    const [root, dayIndex] = issue.path;
+    if (root !== "days" || typeof dayIndex !== "number") {
+      formError ??= issue.message;
       continue;
     }
-    formError ??= issue.message;
+
+    const day = days.find((_, index) => index === dayIndex);
+    const dayOfWeek = day?.dayOfWeek ?? dayIndex;
+    if (!dayErrors.has(dayOfWeek)) {
+      dayErrors.set(dayOfWeek, issue.message);
+    }
   }
 
   return { formError, dayErrors };

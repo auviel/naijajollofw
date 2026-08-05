@@ -7,17 +7,29 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
+import { MODIFIER_GROUP_MAX_SELECT_DEFAULT } from "@/lib/domain/menu/limits";
+import { resolveModifierGroupView } from "@/lib/domain/menu/resolve-modifiers";
 import type {
   MenuCatalog,
   MenuCategoryView,
   MenuItemDetail,
   MenuItemImageView,
   MenuItemListItem,
-  MenuModifierGroupView,
+  MenuPickerItem,
 } from "@/lib/domain/menu/types";
 
+type SourceItemRow = Pick<
+  MenuItem,
+  "id" | "name" | "priceCents" | "available" | "sortOrder"
+>;
+
+type ModifierWithSource = MenuModifier & {
+  sourceItem: SourceItemRow | null;
+};
+
 type ModifierGroupWithModifiers = MenuModifierGroup & {
-  modifiers: MenuModifier[];
+  sourceCategory: { items: SourceItemRow[] } | null;
+  modifiers: ModifierWithSource[];
 };
 
 type ItemWithRelations = MenuItem & {
@@ -30,7 +42,7 @@ type CategoryWithItems = MenuCategory & {
   items: Array<
     MenuItem & {
       modifierGroups: Array<{ id: string }>;
-      images: Array<{ id: string }>;
+      images: Array<{ id: string; url: string }>;
     }
   >;
 };
@@ -39,14 +51,33 @@ const itemImagesInclude = {
   orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
 } satisfies Prisma.MenuItem$imagesArgs;
 
+const sourceItemSelect = {
+  id: true,
+  name: true,
+  priceCents: true,
+  available: true,
+  sortOrder: true,
+} satisfies Prisma.MenuItemSelect;
+
 const itemDetailInclude = {
   category: true,
   images: itemImagesInclude,
   modifierGroups: {
     orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
     include: {
+      sourceCategory: {
+        include: {
+          items: {
+            select: sourceItemSelect,
+            orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
+          },
+        },
+      },
       modifiers: {
         orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
+        include: {
+          sourceItem: { select: sourceItemSelect },
+        },
       },
     },
   },
@@ -69,29 +100,38 @@ function mapImages(
   return [];
 }
 
-function mapModifierGroup(group: ModifierGroupWithModifiers): MenuModifierGroupView {
-  return {
-    id: group.id,
-    name: group.name,
-    required: group.required,
-    minSelect: group.minSelect,
-    maxSelect: group.maxSelect,
-    sortOrder: group.sortOrder,
-    modifiers: group.modifiers.map((modifier) => ({
-      id: modifier.id,
-      name: modifier.name,
-      priceDeltaCents: modifier.priceDeltaCents,
-      available: modifier.available,
-      sortOrder: modifier.sortOrder,
-    })),
-  };
+function mapModifierGroup(
+  group: ModifierGroupWithModifiers,
+  hostItemId: string,
+) {
+  return resolveModifierGroupView(
+    {
+      id: group.id,
+      name: group.name,
+      required: group.required,
+      minSelect: group.minSelect,
+      maxSelect: group.maxSelect,
+      sortOrder: group.sortOrder,
+      sourceCategoryId: group.sourceCategoryId,
+      sourceCategoryItems: group.sourceCategory?.items ?? null,
+      modifiers: group.modifiers.map((modifier) => ({
+        id: modifier.id,
+        name: modifier.name,
+        priceDeltaCents: modifier.priceDeltaCents,
+        available: modifier.available,
+        sortOrder: modifier.sortOrder,
+        sourceItem: modifier.sourceItem,
+      })),
+    },
+    hostItemId,
+  );
 }
 
 export function mapMenuItemToListItem(
   item: MenuItem & {
     category: MenuCategory;
     modifierGroups: Array<{ id: string }>;
-    images: Array<{ id: string }>;
+    images: Array<{ id: string; url: string }>;
   },
 ): MenuItemListItem {
   return {
@@ -101,7 +141,7 @@ export function mapMenuItemToListItem(
     name: item.name,
     description: item.description,
     priceCents: item.priceCents,
-    imageUrl: item.imageUrl,
+    imageUrl: item.images[0]?.url ?? item.imageUrl,
     available: item.available,
     sortOrder: item.sortOrder,
     modifierGroupCount: item.modifierGroups.length,
@@ -122,7 +162,9 @@ export function mapMenuItemToDetail(item: ItemWithRelations): MenuItemDetail {
     images: mapImages(item.images, item.imageUrl),
     available: item.available,
     sortOrder: item.sortOrder,
-    modifierGroups: item.modifierGroups.map(mapModifierGroup),
+    modifierGroups: item.modifierGroups.map((group) =>
+      mapModifierGroup(group, item.id),
+    ),
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
@@ -150,8 +192,11 @@ export type ModifierGroupWriteInput = {
   minSelect?: number;
   maxSelect?: number;
   sortOrder?: number;
+  sourceCategoryId?: string | null;
+  sourceItemIds?: string[];
   modifiers?: Array<{
     id?: string;
+    sourceItemId?: string | null;
     name: string;
     priceDeltaCents: number;
     available?: boolean;
@@ -169,7 +214,10 @@ export const menuRepository = {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           include: {
             modifierGroups: { select: { id: true } },
-            images: { select: { id: true } },
+            images: {
+              select: { id: true, url: true },
+              orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+            },
           },
         },
       },
@@ -190,7 +238,10 @@ export const menuRepository = {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           include: {
             modifierGroups: { select: { id: true } },
-            images: { select: { id: true } },
+            images: {
+              select: { id: true, url: true },
+              orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+            },
           },
         },
       },
@@ -218,6 +269,34 @@ export const menuRepository = {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       select: { id: true, name: true, sortOrder: true, active: true },
     });
+  },
+
+  async listPickerItemsForStore(storeId: string): Promise<MenuPickerItem[]> {
+    const items = await prisma.menuItem.findMany({
+      where: { storeId },
+      orderBy: [
+        { category: { sortOrder: "asc" } },
+        { sortOrder: "asc" },
+        { createdAt: "asc" },
+      ],
+      select: {
+        id: true,
+        name: true,
+        priceCents: true,
+        categoryId: true,
+        available: true,
+        category: { select: { name: true } },
+      },
+    });
+
+    return items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      priceCents: item.priceCents,
+      categoryId: item.categoryId,
+      categoryName: item.category.name,
+      available: item.available,
+    }));
   },
 
   async findCategoryByIdAndStoreId(id: string, storeId: string) {
@@ -487,31 +566,80 @@ async function replaceModifierGroups(
 ) {
   await tx.menuModifierGroup.deleteMany({ where: { itemId } });
 
+  const host = await tx.menuItem.findUniqueOrThrow({
+    where: { id: itemId },
+    select: { storeId: true },
+  });
+
   for (const [groupIndex, group] of groups.entries()) {
+    const sourceCategoryId = group.sourceCategoryId || null;
     const createdGroup = await tx.menuModifierGroup.create({
       data: {
         itemId,
         name: group.name,
         required: group.required ?? false,
         minSelect: group.minSelect ?? 0,
-        maxSelect: group.maxSelect ?? 1,
+        maxSelect: group.maxSelect ?? MODIFIER_GROUP_MAX_SELECT_DEFAULT,
         sortOrder: group.sortOrder ?? groupIndex,
+        sourceCategoryId,
       },
     });
 
-    const modifiers = group.modifiers ?? [];
-    if (modifiers.length === 0) {
+    if (sourceCategoryId) {
       continue;
     }
 
-    await tx.menuModifier.createMany({
-      data: modifiers.map((modifier, modifierIndex) => ({
+    const sourceItemIds = [
+      ...new Set(
+        (group.sourceItemIds ?? []).filter((id) => id && id !== itemId),
+      ),
+    ];
+    const sourceItems =
+      sourceItemIds.length > 0
+        ? await tx.menuItem.findMany({
+            where: { storeId: host.storeId, id: { in: sourceItemIds } },
+            select: {
+              id: true,
+              name: true,
+              priceCents: true,
+            },
+          })
+        : [];
+    const sourceById = new Map(sourceItems.map((row) => [row.id, row]));
+
+    const linkedRows = sourceItemIds.flatMap((sourceItemId, index) => {
+      const source = sourceById.get(sourceItemId);
+      if (!source) {
+        return [];
+      }
+      return [
+        {
+          groupId: createdGroup.id,
+          sourceItemId: source.id,
+          name: source.name,
+          priceDeltaCents: source.priceCents,
+          available: true,
+          sortOrder: index,
+        },
+      ];
+    });
+
+    const legacyRows = (group.modifiers ?? [])
+      .filter((modifier) => !modifier.sourceItemId)
+      .map((modifier, index) => ({
         groupId: createdGroup.id,
+        sourceItemId: null as string | null,
         name: modifier.name,
         priceDeltaCents: modifier.priceDeltaCents,
         available: modifier.available ?? true,
-        sortOrder: modifier.sortOrder ?? modifierIndex,
-      })),
-    });
+        sortOrder: linkedRows.length + (modifier.sortOrder ?? index),
+      }));
+
+    const rows = [...linkedRows, ...legacyRows];
+    if (rows.length === 0) {
+      continue;
+    }
+
+    await tx.menuModifier.createMany({ data: rows });
   }
 }

@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -27,8 +27,30 @@ jobs:
       - run: npm run test:coverage
       - run: npm run audit
 
+  mobile:
+    name: Mobile typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            mobile/customer/package-lock.json
+            mobile/staff/package-lock.json
+      - name: Install diner app
+        run: npm ci
+        working-directory: mobile/customer
+      - name: Install kitchen app
+        run: npm ci
+        working-directory: mobile/staff
+      - name: Typecheck diner + kitchen
+        run: npm run typecheck:mobile
+
   e2e:
-    name: Playwright smoke
+    name: Playwright e2e
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -48,21 +70,29 @@ jobs:
     env:
       DATABASE_URL: postgresql://delivergo:delivergo@localhost:5433/delivergo?schema=public
       AUTH_SECRET: ci-test-auth-secret-not-for-production
-      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
+      SEED_STAFF_PASSWORD: ci-seed-staff-password
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+      CHECKOUT_SIMULATE_PAYMENTS: "true"
+      STORE_TIMEZONE: America/Toronto
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ""
+      TURNSTILE_SECRET_KEY: ""
+      SQUARE_ACCESS_TOKEN: ""
+      SQUARE_LOCATION_ID: ""
+      NEXT_PUBLIC_SQUARE_LOCATION_ID: ""
+      NEXT_PUBLIC_SQUARE_APPLICATION_ID: ""
       CI: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
       - run: npm ci
       - run: npx prisma migrate deploy
       - run: npm run db:seed
-        continue-on-error: true
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: playwright-report

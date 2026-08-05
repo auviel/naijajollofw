@@ -149,7 +149,7 @@ export function defaultWeeklySchedule(): StoreHoursDay[] {
   return DAY_OF_WEEK_LABELS.map((_, dayOfWeek) => ({
     dayOfWeek: dayOfWeek as DayOfWeek,
     closed: dayOfWeek === 0, // Sunday closed by default
-    openTime: dayOfWeek === 0 ? null : "11:00",
+    openTime: dayOfWeek === 0 ? null : "10:00",
     closeTime: dayOfWeek === 0 ? null : "22:00",
   }));
 }

@@ -14,6 +14,7 @@ import {
   modifierSelectionErrors,
   validateMenuItemForm,
 } from "@/lib/domain/menu/form-validation";
+import { MODIFIER_GROUP_MAX_SELECT_DEFAULT } from "@/lib/domain/menu/limits";
 import { validateCheckoutForm } from "@/lib/domain/order/form-validation";
 import {
   validateHoursSchedule,
@@ -114,6 +115,22 @@ describe("validateCheckoutForm", () => {
       }),
     ).toEqual({});
   });
+
+  it("accepts a geocoded delivery checkout", () => {
+    expect(
+      validateCheckoutForm({
+        customerName: "Ada Okonkwo",
+        customerPhone: "5195550100",
+        customerEmail: "ada@example.com",
+        fulfillmentType: "delivery",
+        dropoffAddress: "200 University Ave W, Waterloo, ON N2L 3G1",
+        dropoffLat: 43.4723,
+        dropoffLng: -80.5449,
+        mustSchedule: false,
+        scheduledFor: null,
+      }),
+    ).toEqual({});
+  });
 });
 
 describe("diner form validation", () => {
@@ -159,9 +176,10 @@ describe("menu form validation", () => {
         {
           key: "g1",
           name: "",
-          minSelect: "2",
-          maxSelect: "1",
-          modifiers: [{ key: "m1", name: "", priceDollars: "x" }],
+          maxSelect: String(MODIFIER_GROUP_MAX_SELECT_DEFAULT),
+          source: "items",
+          sourceCategoryId: "",
+          sourceItemIds: [],
         },
       ],
     });
@@ -170,8 +188,27 @@ describe("menu form validation", () => {
     expect(result.fieldErrors.categoryId).toBeTruthy();
     expect(result.fieldErrors.name).toBeTruthy();
     expect(result.fieldErrors.priceDollars).toBeTruthy();
-    expect(result.groupErrors.g1?.name).toBeTruthy();
-    expect(result.modifierErrors.m1?.name).toBeTruthy();
+    expect(result.groupErrors.get("g1")?.name).toBeTruthy();
+  });
+
+  it("requires a category when the group source is category", () => {
+    const result = validateMenuItemForm({
+      categoryId: "cat1",
+      name: "Jollof",
+      priceDollars: "12.50",
+      groups: [
+        {
+          key: "g1",
+          name: "Sides",
+          maxSelect: "10",
+          source: "category",
+          sourceCategoryId: "",
+          sourceItemIds: [],
+        },
+      ],
+    });
+
+    expect(result.groupErrors.get("g1")?.sourceCategoryId).toBeTruthy();
   });
 
   it("flags missing required modifiers", () => {
@@ -184,6 +221,7 @@ describe("menu form validation", () => {
           minSelect: 1,
           maxSelect: 1,
           sortOrder: 0,
+          sourceCategoryId: null,
           modifiers: [
             {
               id: "mild",
@@ -191,6 +229,7 @@ describe("menu form validation", () => {
               priceDeltaCents: 0,
               available: true,
               sortOrder: 0,
+              sourceItemId: null,
             },
           ],
         },
@@ -198,7 +237,7 @@ describe("menu form validation", () => {
       new Map([["spice", []]]),
     );
 
-    expect(errors.spice).toMatch(/Spice level/);
+    expect(errors.get("spice")).toMatch(/Spice level/);
   });
 });
 
@@ -259,6 +298,6 @@ describe("staff form validation", () => {
       },
     ]);
 
-    expect(result.dayErrors[0]).toBeTruthy();
+    expect(result.dayErrors.get(0)).toBeTruthy();
   });
 });

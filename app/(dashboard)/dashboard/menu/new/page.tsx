@@ -4,19 +4,23 @@ import {
   DashboardPageBody,
 } from "@/components/layout/dashboard-page";
 import { MenuItemForm } from "@/components/features/menu/menu-item-form";
-import { listMenuCategories } from "@/lib/services/menu/list-categories";
+import { getMenuItemFormOptions } from "@/lib/services/menu/list-categories";
 
 export const metadata: Metadata = {
   title: "New item",
 };
 
 export default async function NewMenuItemPage() {
-  const categories = await listMenuCategories();
+  const { categories, pickerItems } = await getMenuItemFormOptions();
 
   return (
     <DashboardPage>
       <DashboardPageBody>
-        <MenuItemForm mode="create" categories={categories} />
+        <MenuItemForm
+          mode="create"
+          categories={categories}
+          pickerItems={pickerItems}
+        />
       </DashboardPageBody>
     </DashboardPage>
   );

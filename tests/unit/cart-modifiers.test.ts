@@ -15,6 +15,7 @@ const groups: MenuModifierGroupView[] = [
     minSelect: 0,
     maxSelect: 2,
     sortOrder: 0,
+    sourceCategoryId: null,
     modifiers: [
       {
         id: "mod-bacon",
@@ -22,6 +23,7 @@ const groups: MenuModifierGroupView[] = [
         priceDeltaCents: 200,
         available: true,
         sortOrder: 0,
+        sourceItemId: "item-bacon",
       },
       {
         id: "mod-egg",
@@ -29,6 +31,7 @@ const groups: MenuModifierGroupView[] = [
         priceDeltaCents: 150,
         available: true,
         sortOrder: 1,
+        sourceItemId: "item-egg",
       },
     ],
   },

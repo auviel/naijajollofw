@@ -1,4 +1,7 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { requireStoreManager } from "@/lib/auth/session";
+import { revalidateStorefrontCache, STOREFRONT_CACHE_TAG } from "@/lib/cache/storefront";
 import { getStoreTimeZone } from "@/lib/config/environment";
 import { storeHoursRepository } from "@/lib/db/repositories/store-hours.repository";
 import {
@@ -11,6 +14,27 @@ import {
 } from "@/lib/domain/store/hours";
 import { updateStoreHoursSchema } from "@/lib/domain/store/hours-validation";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
+
+type CachedHoursRow = {
+  dayOfWeek: number;
+  closed: boolean;
+  openMinute: number | null;
+  closeMinute: number | null;
+};
+
+const loadPublicHoursRows = unstable_cache(
+  async (storeId: string): Promise<CachedHoursRow[]> => {
+    const rows = await storeHoursRepository.findByStoreId(storeId);
+    return rows.map((row) => ({
+      dayOfWeek: row.dayOfWeek,
+      closed: row.closed,
+      openMinute: row.openMinute,
+      closeMinute: row.closeMinute,
+    }));
+  },
+  ["public-store-hours"],
+  { revalidate: 60, tags: [STOREFRONT_CACHE_TAG] },
+);
 
 export async function getStaffStoreHours(): Promise<StoreHoursSchedule> {
   const user = await requireStoreManager();
@@ -61,6 +85,8 @@ export async function updateStaffStoreHours(
     }),
   );
 
+  revalidateStorefrontCache();
+
   return {
     timezone,
     configured: true,
@@ -68,32 +94,36 @@ export async function updateStaffStoreHours(
   };
 }
 
-export async function getPublicStoreHoursSchedule(
-  storeId?: string,
-): Promise<StoreHoursSchedule> {
-  const id = storeId ?? (await resolvePublicStoreId());
-  const rows = await storeHoursRepository.findByStoreId(id);
-  const timezone = getStoreTimeZone();
+export const getPublicStoreHoursSchedule = cache(
+  async function getPublicStoreHoursSchedule(
+    storeId?: string,
+  ): Promise<StoreHoursSchedule> {
+    const id = storeId ?? (await resolvePublicStoreId());
+    const rows = await loadPublicHoursRows(id);
+    const timezone = getStoreTimeZone();
 
-  if (rows.length === 0) {
+    if (rows.length === 0) {
+      return {
+        timezone,
+        configured: false,
+        days: defaultWeeklySchedule(),
+      };
+    }
+
     return {
       timezone,
-      configured: false,
-      days: defaultWeeklySchedule(),
+      configured: true,
+      days: mapRowsToScheduleDays(rows),
     };
-  }
+  },
+);
 
-  return {
-    timezone,
-    configured: true,
-    days: mapRowsToScheduleDays(rows),
-  };
-}
-
-export async function getPublicStoreOpenStatus(
-  storeId?: string,
-): Promise<StoreOpenStatus> {
-  const id = storeId ?? (await resolvePublicStoreId());
-  const rows = await storeHoursRepository.findByStoreId(id);
-  return evaluateStoreOpenStatus(rows, getStoreTimeZone());
-}
+export const getPublicStoreOpenStatus = cache(
+  async function getPublicStoreOpenStatus(
+    storeId?: string,
+  ): Promise<StoreOpenStatus> {
+    const id = storeId ?? (await resolvePublicStoreId());
+    const rows = await loadPublicHoursRows(id);
+    return evaluateStoreOpenStatus(rows, getStoreTimeZone());
+  },
+);

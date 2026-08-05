@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { registerDinerPushDevice } from "@/lib/push";
 import { clearTokens, loadTokens, saveTokens } from "@/lib/storage";
+import type { DinerMe } from "@naijajollof/api-types";
 import React, {
   createContext,
   useCallback,
@@ -10,21 +11,14 @@ import React, {
   useState,
 } from "react";
 
-export type DinerUser = {
-  id: string;
-  email: string;
-  name: string;
-  phoneE164: string | null;
-  storeId: string;
-  storeName: string;
-  emailVerified: boolean;
-};
+export type DinerUser = DinerMe;
 
 type AuthContextValue = {
   loading: boolean;
   user: DinerUser | null;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, turnstileToken?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -56,7 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void hydrate();
   }, [hydrate]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (
+    email: string,
+    password: string,
+    turnstileToken?: string,
+  ) => {
     const data = await apiFetch<{
       accessToken: string;
       refreshToken: string;
@@ -70,7 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }>("/api/auth/mobile/login", {
       method: "POST",
-      body: JSON.stringify({ email, password, app: "diner" }),
+      body: JSON.stringify({
+        email,
+        password,
+        app: "diner",
+        turnstileToken,
+      }),
     });
     await saveTokens(data.accessToken, data.refreshToken);
     const me = await apiFetch<DinerUser>("/api/diner/me");
@@ -92,9 +95,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const me = await apiFetch<DinerUser>("/api/diner/me");
+    setUser(me);
+  }, []);
+
   const value = useMemo(
-    () => ({ loading, user, signIn, signOut }),
-    [loading, user, signIn, signOut],
+    () => ({ loading, user, signIn, signOut, refreshUser }),
+    [loading, user, signIn, signOut, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

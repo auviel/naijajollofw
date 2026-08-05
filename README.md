@@ -76,12 +76,11 @@ npm run db:migrate
 npm run db:seed
 ```
 
-**Seed credentials (local dev only):**
+**Seed credentials:**
 
 | Account | Email | Password | Notes |
 |---------|-------|----------|-------|
-| Staff | `store.manager@delivergo.local` | `DeliverGODev2026!` | `/login` (or `/staff` → login) |
-| Diner | `diner@delivergo.local` | `DeliverGODev2026!` | Storefront `/signin` — verified email + default address |
+| Staff | `hello@naijajollofw.ca` | `SEED_STAFF_PASSWORD` in `.env` | `/login` (or `/staff` → login) |
 
 | Field | Value |
 |-------|-------|
@@ -114,7 +113,7 @@ Open [http://localhost:3000](http://localhost:3000) for the storefront.
 - Geocode API: `POST /api/geocode` (auth required, Canada only)
 - Health check: `/api/health`
 
-**Expo apps** live in [`mobile/`](./mobile) (`staff` kitchen first, then `customer`). Point `EXPO_PUBLIC_API_URL` at this Next.js origin (use your LAN IP on a physical device).
+**Expo apps** live in [`mobile/`](./mobile) (`staff` kitchen first, then `customer`). Point `EXPO_PUBLIC_API_URL` at this Next.js origin (use your LAN IP on a physical device). Checks, EAS profiles, and store rules: [`mobile/README.md`](./mobile/README.md).
 
 ## Scripts
 
@@ -124,14 +123,33 @@ Open [http://localhost:3000](http://localhost:3000) for the storefront.
 | `npm run build` | Production build |
 | `npm run test` | Run unit tests (Vitest) |
 | `npm run test:coverage` | Unit + integration tests with coverage gates |
+| `npm run test:e2e` | Playwright (signup/checkout user errors + smokes). Needs DB seed; CI sets `CHECKOUT_SIMULATE_PAYMENTS=true`. |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `npm run typecheck` | Web TypeScript (`tsc --noEmit`) |
+| `npm run typecheck:mobile` | Diner + kitchen app TypeScript |
 | `npm run audit` | Fail on high/critical npm advisories |
-| `npm run prepush` | Lint, typecheck, Prisma validate, coverage, audit (no e2e). Also runs automatically on `git push` via Husky. |
+| `npm run prepush` | Lint, web typecheck, Prisma validate, coverage, audit (no e2e). Also runs automatically on `git push` via Husky. |
 | `npm run db:generate` | Generate Prisma client |
 | `npm run db:migrate` | Run migrations |
 | `npm run db:studio` | Open Prisma Studio |
 | `docker compose up -d` | Start local Postgres |
+
+## Checks & builds
+
+CI (`.github/workflows/ci.yml`) runs three jobs on every PR:
+
+| Job | Catches |
+|-----|---------|
+| Lint & unit coverage | Bad validation copy, tip/tax math, schema regressions, high npm advisories |
+| Mobile typecheck | Broken diner/kitchen TypeScript |
+| Playwright e2e | Guest-visible signup/checkout errors and a simulated pickup order |
+
+Native binaries (Square IAP, push, splash) are **not** in PR CI — use EAS:
+
+- Local: `eas build --profile development` / `preview` in `mobile/customer` or `mobile/staff`
+- GitHub: Actions → **EAS preview** (needs repo secret `EXPO_TOKEN`) after `eas init` replaces the placeholder `projectId`
+
+Kitchen app stays internal-only. Diner `production` is the public store build.
 
 ## Project structure
 

@@ -7,10 +7,7 @@ import { ClipboardList } from "@/components/ui/icons";
 import { KitchenDeliveryFulfill } from "@/components/features/orders/kitchen-delivery-fulfill";
 import { OrderTransitionButtons } from "@/components/features/orders/order-transition-buttons";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  ACTIVE_DELIVERY_POLL_MS,
-  useLiveRefresh,
-} from "@/components/hooks/use-live-refresh";
+import { useStaffKitchenLive } from "@/components/providers/staff-kitchen-live-context";
 import {
   formatKitchenScheduled,
   formatKitchenWait,
@@ -25,35 +22,35 @@ import {
 import { easeOut, listItem, motionDuration } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils/cn";
 
-const BOARD_POLL_MS = ACTIVE_DELIVERY_POLL_MS;
-
-const TAB_LABELS: Record<(typeof KITCHEN_BOARD_COLUMNS)[number]["id"], string> =
-  {
-    new: "New",
-    cooking: "Cooking",
-    ready: "Ready",
-  };
-
-const BOARD_ACTION_LABELS: Partial<Record<TransitionAction["to"], string>> = {
-  preparing: "Start",
-  ready: "Ready",
-  ready_for_pickup: "Ready",
-};
-
 type ColumnId = (typeof KITCHEN_BOARD_COLUMNS)[number]["id"];
+
+function tabLabel(id: ColumnId): string {
+  switch (id) {
+    case "new":
+      return "New";
+    case "cooking":
+      return "Cooking";
+    case "ready":
+      return "Ready";
+  }
+}
+
+function boardActionLabel(to: TransitionAction["to"], fallback: string): string {
+  switch (to) {
+    case "preparing":
+      return "Start";
+    case "ready":
+    case "ready_for_pickup":
+      return "Ready";
+    default:
+      return fallback;
+  }
+}
 
 type KitchenBoardProps = {
   initialItems: StaffOrderListItem[];
   initialPendingCount: number;
   prepMinutes: number;
-};
-
-type ListApiResponse = {
-  data: {
-    items: StaffOrderListItem[];
-    pendingAcceptanceCount: number;
-    prepMinutes: number;
-  };
 };
 
 function orderTimeMs(order: StaffOrderListItem): number {
@@ -87,11 +84,17 @@ export function KitchenBoard({
   initialPendingCount,
   prepMinutes: initialPrepMinutes,
 }: KitchenBoardProps) {
-  const [items, setItems] = useState(initialItems);
-  const [pendingCount, setPendingCount] = useState(initialPendingCount);
-  const [prepMinutes, setPrepMinutes] = useState(initialPrepMinutes);
+  const {
+    seeded,
+    items: liveItemsRaw,
+    pendingCount: livePendingCount,
+    prepMinutes: livePrepMinutes,
+    hydrate,
+  } = useStaffKitchenLive();
+  const items = seeded ? liveItemsRaw : initialItems;
+  const pendingCount = seeded ? livePendingCount : initialPendingCount;
+  const prepMinutes = seeded ? livePrepMinutes : initialPrepMinutes;
   const [laterOpen, setLaterOpen] = useState(false);
-  const [prevInitial, setPrevInitial] = useState(initialItems);
   const [activeColumnId, setActiveColumnId] = useState<ColumnId>(() =>
     firstColumnWithWork(
       initialItems.filter(
@@ -113,12 +116,13 @@ export function KitchenBoard({
   const [flashNew, setFlashNew] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  if (initialItems !== prevInitial) {
-    setPrevInitial(initialItems);
-    setItems(initialItems);
-    setPendingCount(initialPendingCount);
-    setPrepMinutes(initialPrepMinutes);
-  }
+  useEffect(() => {
+    hydrate({
+      items: initialItems,
+      pendingCount: initialPendingCount,
+      prepMinutes: initialPrepMinutes,
+    });
+  }, [initialItems, initialPendingCount, initialPrepMinutes, hydrate]);
 
   const { liveItems, laterItems } = useMemo(() => {
     const later: StaffOrderListItem[] = [];
@@ -139,15 +143,14 @@ export function KitchenBoard({
   }, [items, prepMinutes]);
 
   const columnCounts = useMemo(() => {
-    return Object.fromEntries(
-      KITCHEN_BOARD_COLUMNS.map((column) => [
-        column.id,
-        ordersForColumn(liveItems, column).length,
-      ]),
-    ) as Record<ColumnId, number>;
+    const counts = new Map<ColumnId, number>();
+    for (const column of KITCHEN_BOARD_COLUMNS) {
+      counts.set(column.id, ordersForColumn(liveItems, column).length);
+    }
+    return counts;
   }, [liveItems]);
 
-  if (columnCounts[activeColumnId] === 0) {
+  if ((columnCounts.get(activeColumnId) ?? 0) === 0) {
     const next = firstColumnWithWork(liveItems);
     if (next !== activeColumnId) {
       setActiveColumnId(next);
@@ -179,47 +182,24 @@ export function KitchenBoard({
     }
   }, []);
 
-  const refresh = useCallback(async () => {
-    try {
-      const response = await fetch(
-        "/api/orders?filter=active&channel=kitchen&limit=80",
-        { cache: "no-store" },
-      );
-      if (!response.ok) {
-        return;
-      }
-      const body = (await response.json()) as ListApiResponse;
-      const nextItems = body.data.items;
-      const nextPrep = body.data.prepMinutes ?? prepMinutes;
-      const nextPending = nextItems.filter(
-        (order) =>
-          order.status === "pending_acceptance" &&
-          !isKitchenBoardDeferred(order, nextPrep),
-      );
-      const newIds = nextPending.filter(
-        (order) => !knownPendingIds.current.has(order.id),
-      );
-
-      if (newIds.length > 0 && knownPendingIds.current.size > 0) {
-        playChime();
-        setFlashNew(true);
-        window.setTimeout(() => setFlashNew(false), 2500);
-      }
-
+  useEffect(() => {
+    const nextPending = items.filter(
+      (order) =>
+        order.status === "pending_acceptance" &&
+        !isKitchenBoardDeferred(order, prepMinutes),
+    );
+    const newIds = nextPending.filter(
+      (order) => !knownPendingIds.current.has(order.id),
+    );
+    if (newIds.length > 0 && knownPendingIds.current.size > 0) {
+      playChime();
+      setFlashNew(true);
+      const timeoutId = window.setTimeout(() => setFlashNew(false), 2500);
       knownPendingIds.current = new Set(nextPending.map((order) => order.id));
-      setItems(nextItems);
-      setPrepMinutes(nextPrep);
-      setPendingCount(body.data.pendingAcceptanceCount);
-    } catch {
-      // Ignore transient poll errors.
+      return () => window.clearTimeout(timeoutId);
     }
-  }, [playChime, prepMinutes]);
-
-  useLiveRefresh({
-    enabled: true,
-    intervalMs: BOARD_POLL_MS,
-    onRefresh: refresh,
-  });
+    knownPendingIds.current = new Set(nextPending.map((order) => order.id));
+  }, [items, prepMinutes, playChime]);
 
   useEffect(() => {
     document.title =
@@ -272,7 +252,7 @@ export function KitchenBoard({
           className="flex gap-1 overflow-x-auto rounded-2xl bg-surface p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {KITCHEN_BOARD_COLUMNS.map((column) => {
-            const count = columnCounts[column.id];
+            const count = columnCounts.get(column.id) ?? 0;
             const selected = column.id === activeColumnId;
             return (
               <button
@@ -288,7 +268,7 @@ export function KitchenBoard({
                     : "text-text-secondary",
                 )}
               >
-                {TAB_LABELS[column.id]}
+                {tabLabel(column.id)}
                 <span
                   className={cn(
                     "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
@@ -400,7 +380,7 @@ function kitchenActions(order: StaffOrderListItem): TransitionAction[] {
     .slice(0, 1)
     .map((action) => ({
       ...action,
-      label: BOARD_ACTION_LABELS[action.to] ?? action.label,
+      label: boardActionLabel(action.to, action.label),
     }));
 }
 

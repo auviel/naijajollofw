@@ -5,36 +5,27 @@ import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/
 
 const prisma = new PrismaClient();
 
-/** Dev-only credentials — documented in README.md */
+/** Staff login — password from SEED_STAFF_PASSWORD (see README / .env.example). */
 const SEED_USER = {
-  email: "store.manager@delivergo.local",
-  password: "DeliverGODev2026!",
+  email: "hello@naijajollofw.ca",
   name: "Store Manager",
   role: UserRole.STORE_MANAGER,
 } as const;
 
-/** Storefront diner for account / checkout tests */
-const SEED_DINER = {
-  email: "diner@delivergo.local",
-  password: "DeliverGODev2026!",
-  name: "Demo Diner",
-  phoneE164: "+15195550100",
-  role: UserRole.DINER,
-} as const;
+function requireSeedPassword(): string {
+  const password = process.env.SEED_STAFF_PASSWORD?.trim();
+  if (!password) {
+    throw new Error(
+      "SEED_STAFF_PASSWORD is required to seed the staff account.",
+    );
+  }
+  return password;
+}
 
-const SEED_DINER_ADDRESS = {
-  line1: "200 University Ave W",
-  line2: null as string | null,
-  city: "Waterloo",
-  province: "ON",
-  postalCode: "N2L 3G1",
-  country: "CA",
-  latitude: 43.4723,
-  longitude: -80.5449,
-  formatted: "200 University Ave W, Waterloo, ON N2L 3G1, Canada",
-  label: "Home",
-  isPrimary: true,
-} as const;
+const LEGACY_SEED_EMAILS = [
+  "store.manager@delivergo.local",
+  "diner@delivergo.local",
+] as const;
 
 const SEED_STORE_BASE = {
   name: "Naija Jollof Waterloo",
@@ -84,7 +75,7 @@ async function resolveStoreCoordinates() {
 }
 
 async function main() {
-  const passwordHash = await bcrypt.hash(SEED_USER.password, 12);
+  const passwordHash = await bcrypt.hash(requireSeedPassword(), 12);
   const storeData = await resolveStoreCoordinates();
 
   const store = await prisma.store.upsert({
@@ -114,87 +105,18 @@ async function main() {
     },
   });
 
-  const dinerPasswordHash = await bcrypt.hash(SEED_DINER.password, 12);
-  const existingDiner = await prisma.user.findUnique({
-    where: { email: SEED_DINER.email },
-    select: { id: true, customerId: true },
-  });
-
-  let dinerCustomerId = existingDiner?.customerId ?? null;
-  if (!dinerCustomerId) {
-    const phoneRow = await prisma.customerPhone.findUnique({
-      where: {
-        storeId_phoneE164: {
-          storeId: store.id,
-          phoneE164: SEED_DINER.phoneE164,
-        },
-      },
-      select: { customerId: true },
+  for (const email of LEGACY_SEED_EMAILS) {
+    const legacy = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, customerId: true },
     });
-    dinerCustomerId = phoneRow?.customerId ?? null;
-  }
-
-  if (!dinerCustomerId) {
-    const customer = await prisma.customer.create({
-      data: {
-        storeId: store.id,
-        name: SEED_DINER.name,
-        phones: {
-          create: {
-            storeId: store.id,
-            phoneE164: SEED_DINER.phoneE164,
-            isPrimary: true,
-            label: "Mobile",
-          },
-        },
-      },
-    });
-    dinerCustomerId = customer.id;
-  } else {
-    await prisma.customer.update({
-      where: { id: dinerCustomerId },
-      data: { name: SEED_DINER.name },
-    });
-  }
-
-  const diner = await prisma.user.upsert({
-    where: { email: SEED_DINER.email },
-    update: {
-      name: SEED_DINER.name,
-      role: SEED_DINER.role,
-      passwordHash: dinerPasswordHash,
-      storeId: store.id,
-      phoneE164: SEED_DINER.phoneE164,
-      customerId: dinerCustomerId,
-      emailVerifiedAt: new Date(),
-    },
-    create: {
-      email: SEED_DINER.email,
-      name: SEED_DINER.name,
-      role: SEED_DINER.role,
-      passwordHash: dinerPasswordHash,
-      storeId: store.id,
-      phoneE164: SEED_DINER.phoneE164,
-      customerId: dinerCustomerId,
-      emailVerifiedAt: new Date(),
-    },
-  });
-
-  const primaryAddress = await prisma.customerAddress.findFirst({
-    where: { customerId: dinerCustomerId, isPrimary: true },
-  });
-  if (primaryAddress) {
-    await prisma.customerAddress.update({
-      where: { id: primaryAddress.id },
-      data: { ...SEED_DINER_ADDRESS },
-    });
-  } else {
-    await prisma.customerAddress.create({
-      data: {
-        customerId: dinerCustomerId,
-        ...SEED_DINER_ADDRESS,
-      },
-    });
+    if (!legacy) {
+      continue;
+    }
+    await prisma.user.delete({ where: { id: legacy.id } });
+    if (legacy.customerId) {
+      await prisma.customer.delete({ where: { id: legacy.customerId } });
+    }
   }
 
   // Reset and seed menu matching Naija Jollof Waterloo (Uber Eats layout).
@@ -205,7 +127,7 @@ async function main() {
   await prisma.menuItem.deleteMany({ where: { storeId: store.id } });
   await prisma.menuCategory.deleteMany({ where: { storeId: store.id } });
 
-  // Weekly hours: Sun closed, Mon–Sat 11:00–22:00 (America/Toronto via STORE_TIMEZONE).
+  // Weekly hours: Sun closed, Mon–Sat 10:00–22:00 (America/Toronto via STORE_TIMEZONE).
   await prisma.storeHours.deleteMany({ where: { storeId: store.id } });
   await prisma.storeHours.createMany({
     data: [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
@@ -214,7 +136,7 @@ async function main() {
         storeId: store.id,
         dayOfWeek,
         closed,
-        openMinute: closed ? null : 11 * 60,
+        openMinute: closed ? null : 10 * 60,
         closeMinute: closed ? null : 22 * 60,
       };
     }),
@@ -223,14 +145,16 @@ async function main() {
   const HERO = "/brand/naija-jollof-hero.png";
 
   const categoryDefs = [
-    { key: "featured", name: "Featured items", sortOrder: 0 },
-    { key: "popular", name: "Popular Picks", sortOrder: 1 },
-    { key: "rice", name: "Rice & Combos", sortOrder: 2 },
-    { key: "soups", name: "Soups & Stews", sortOrder: 3 },
-    { key: "sides", name: "Add-Ons & Sides", sortOrder: 4 },
-    { key: "family", name: "Family Trays & Bulk Orders", sortOrder: 5 },
-    { key: "drinks", name: "Drinks", sortOrder: 6 },
-    { key: "special", name: "Special Orders (Pre order only)", sortOrder: 7 },
+    { key: "featured", name: "Featured items", sortOrder: 0, active: true },
+    { key: "popular", name: "Popular Picks", sortOrder: 1, active: true },
+    { key: "rice", name: "Rice & Combos", sortOrder: 2, active: true },
+    { key: "soups", name: "Soups & Stews", sortOrder: 3, active: true },
+    { key: "sides", name: "Add-Ons & Sides", sortOrder: 4, active: true },
+    { key: "family", name: "Family Trays & Bulk Orders", sortOrder: 5, active: true },
+    { key: "drinks", name: "Drinks", sortOrder: 6, active: true },
+    { key: "special", name: "Special Orders (Pre order only)", sortOrder: 7, active: true },
+    { key: "riceTypes", name: "Rice types", sortOrder: 90, active: false },
+    { key: "chickenQty", name: "Chicken quantity", sortOrder: 91, active: false },
   ] as const;
 
   const categories = new Map<string, string>();
@@ -240,7 +164,7 @@ async function main() {
         storeId: store.id,
         name: def.name,
         sortOrder: def.sortOrder,
-        active: true,
+        active: def.active,
       },
     });
     categories.set(def.key, row.id);
@@ -430,6 +354,48 @@ async function main() {
     },
     // Special
     {
+      category: "riceTypes",
+      name: "Jollof Rice Only",
+      description: "Half tray with jollof rice only.",
+      priceCents: 0,
+      sortOrder: 0,
+    },
+    {
+      category: "riceTypes",
+      name: "Fried Rice Only",
+      description: "Half tray with fried rice only.",
+      priceCents: 0,
+      sortOrder: 1,
+    },
+    {
+      category: "riceTypes",
+      name: "Mix of Jollof and Fried Rice",
+      description: "Half tray with a mix of jollof and fried rice.",
+      priceCents: 0,
+      sortOrder: 2,
+    },
+    {
+      category: "chickenQty",
+      name: "No chicken, rice only",
+      description: "Half tray without chicken.",
+      priceCents: 0,
+      sortOrder: 0,
+    },
+    {
+      category: "chickenQty",
+      name: "Regular Combo (5 Chicken)",
+      description: "Half tray with five pieces of chicken.",
+      priceCents: 1500,
+      sortOrder: 1,
+    },
+    {
+      category: "chickenQty",
+      name: "Extra Chicken (8 pieces)",
+      description: "Half tray with eight pieces of chicken.",
+      priceCents: 2800,
+      sortOrder: 2,
+    },
+    {
       category: "special",
       name: "Custom Party Order",
       description:
@@ -462,8 +428,10 @@ async function main() {
   }
 
   const halfTrayId = createdItems.get("popular:Half Tray Party Rice");
-  if (halfTrayId) {
-    const riceGroup = await prisma.menuModifierGroup.create({
+  const riceTypesId = categories.get("riceTypes");
+  const chickenQtyId = categories.get("chickenQty");
+  if (halfTrayId && riceTypesId && chickenQtyId) {
+    await prisma.menuModifierGroup.create({
       data: {
         itemId: halfTrayId,
         name: "Choose Rice Type - Half Tray",
@@ -471,32 +439,10 @@ async function main() {
         minSelect: 1,
         maxSelect: 1,
         sortOrder: 0,
+        sourceCategoryId: riceTypesId,
       },
     });
-    await prisma.menuModifier.createMany({
-      data: [
-        {
-          groupId: riceGroup.id,
-          name: "Jollof Rice Only",
-          priceDeltaCents: 0,
-          sortOrder: 0,
-        },
-        {
-          groupId: riceGroup.id,
-          name: "Fried Rice Only",
-          priceDeltaCents: 0,
-          sortOrder: 1,
-        },
-        {
-          groupId: riceGroup.id,
-          name: "Mix of Jollof and Fried Rice",
-          priceDeltaCents: 0,
-          sortOrder: 2,
-        },
-      ],
-    });
-
-    const chickenGroup = await prisma.menuModifierGroup.create({
+    await prisma.menuModifierGroup.create({
       data: {
         itemId: halfTrayId,
         name: "Choose Chicken Quantity - Half Tray",
@@ -504,29 +450,8 @@ async function main() {
         minSelect: 1,
         maxSelect: 1,
         sortOrder: 1,
+        sourceCategoryId: chickenQtyId,
       },
-    });
-    await prisma.menuModifier.createMany({
-      data: [
-        {
-          groupId: chickenGroup.id,
-          name: "No chicken, Jollof Rice Only",
-          priceDeltaCents: 0,
-          sortOrder: 0,
-        },
-        {
-          groupId: chickenGroup.id,
-          name: "Regular Combo (5 Chicken)",
-          priceDeltaCents: 1500,
-          sortOrder: 1,
-        },
-        {
-          groupId: chickenGroup.id,
-          name: "Extra Chicken (8 pieces)",
-          priceDeltaCents: 2800,
-          sortOrder: 2,
-        },
-      ],
     });
   }
 
@@ -535,12 +460,11 @@ async function main() {
   console.log(`  DoorDash external_store_id: ${getDoorDashExternalStoreIdFromEnv() ?? store.id}`);
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
   console.log(`  Staff:  ${SEED_USER.email}`);
-  console.log(`  Diner:  ${SEED_DINER.email} (${diner.id})`);
-  console.log(`  Login password: ${SEED_USER.password} (dev only — both accounts)`);
+  console.log("  Login password: SEED_STAFF_PASSWORD");
   console.log(
     `  Menu: ${categoryDefs.length} categories · ${items.length} items`,
   );
-  console.log("  Hours: Sun closed · Mon–Sat 11:00–22:00");
+  console.log("  Hours: Sun closed · Mon–Sat 10:00–22:00");
 }
 
 main()

@@ -6,7 +6,7 @@ import {
 } from "@/components/layout/dashboard-page";
 import { MenuItemForm } from "@/components/features/menu/menu-item-form";
 import { getMenuItem } from "@/lib/services/menu/get-menu-item";
-import { listMenuCategories } from "@/lib/services/menu/list-categories";
+import { getMenuItemFormOptions } from "@/lib/services/menu/list-categories";
 import { isAppError } from "@/lib/utils/errors";
 
 type PageProps = {
@@ -43,12 +43,17 @@ export default async function MenuItemAdminPage({ params }: PageProps) {
     throw error;
   }
 
-  const categories = await listMenuCategories();
+  const { categories, pickerItems } = await getMenuItemFormOptions();
 
   return (
     <DashboardPage>
       <DashboardPageBody>
-        <MenuItemForm mode="edit" categories={categories} item={item} />
+        <MenuItemForm
+          mode="edit"
+          categories={categories}
+          pickerItems={pickerItems}
+          item={item}
+        />
       </DashboardPageBody>
     </DashboardPage>
   );

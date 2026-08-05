@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CartLineThumbnail } from "@/components/features/storefront/cart-line-thumbnail";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ShoppingBag, Trash } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
+import { ShoppingBag, X } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { CartView } from "@/lib/domain/cart/types";
 import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
@@ -184,15 +185,14 @@ export function CartPanel({
                       {formatCadFromCents(line.lineTotalCents)}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-surface hover:text-foreground"
+                  <IconButton
+                    className="h-8 w-8"
                     disabled={pendingLineId === line.id}
                     onClick={() => removeLine(line.id)}
                     aria-label={`Remove ${line.name}`}
                   >
-                    <Trash className="h-4 w-4" aria-hidden />
-                  </button>
+                    <X className="h-4 w-4" aria-hidden />
+                  </IconButton>
                 </div>
 
                 <div className="mt-3 flex w-fit items-center rounded-md border border-border">

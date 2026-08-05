@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint --max-warnings 0",
     "typecheck": "tsc --noEmit",
+    "typecheck:mobile": "npm run typecheck --prefix mobile/customer && npm run typecheck --prefix mobile/staff",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

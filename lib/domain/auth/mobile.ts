@@ -6,6 +6,7 @@ export const mobileLoginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
   app: mobileAppSchema,
+  turnstileToken: z.string().trim().max(2048).optional(),
 });
 
 export const mobileRefreshSchema = z.object({

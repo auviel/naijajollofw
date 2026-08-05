@@ -26,9 +26,16 @@ export function formatKitchenWait(
 }
 
 export function formatKitchenScheduled(iso: string): string {
-  return new Date(iso).toLocaleString("en-CA", {
+  const timeZone =
+    process.env.NEXT_PUBLIC_STORE_TIMEZONE?.trim() ||
+    process.env.STORE_TIMEZONE?.trim() ||
+    "America/Toronto";
+
+  return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
-  });
+    hour12: true,
+    timeZone,
+  }).format(new Date(iso));
 }

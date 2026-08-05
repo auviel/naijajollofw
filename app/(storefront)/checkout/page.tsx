@@ -1,6 +1,7 @@
 import { CheckoutClient } from "@/components/features/storefront/checkout-client";
 import { getOptionalSessionUser } from "@/lib/auth/session";
 import { phoneE164ToFormValue } from "@/lib/domain/customer/format";
+import { clampTipCents } from "@/lib/domain/order/tip";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
 import { customerRepository } from "@/lib/db/repositories/customer.repository";
 import { userRepository } from "@/lib/db/repositories/user.repository";
@@ -19,7 +20,16 @@ import {
 } from "@/lib/services/store/store-hours";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
 
-export default async function CheckoutPage() {
+type PageProps = {
+  searchParams: Promise<{
+    cartSid?: string;
+    fulfillment?: string;
+    tipCents?: string;
+  }>;
+};
+
+export default async function CheckoutPage({ searchParams }: PageProps) {
+  const params = await searchParams;
   const storeId = await resolvePublicStoreId();
   const [cart, openStatus, hours, sessionUser] = await Promise.all([
     getCart(),
@@ -79,6 +89,10 @@ export default async function CheckoutPage() {
         initialCustomerEmail={diner?.email ?? ""}
         initialDeliveryAddress={defaultAddress?.formatted ?? ""}
         initialDeliveryUnit={defaultAddress?.line2 ?? ""}
+        initialFulfillmentType={
+          params.fulfillment === "delivery" ? "delivery" : "pickup"
+        }
+        initialTipCents={clampTipCents(Number(params.tipCents ?? 0))}
       />
     </div>
   );

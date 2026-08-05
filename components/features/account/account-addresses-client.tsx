@@ -6,7 +6,8 @@ import { AddressAutocomplete } from "@/components/features/deliveries/address-au
 import { canRequestQuote } from "@/components/features/deliveries/address-preview";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Trash } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
+import { X } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { CustomerAddressView } from "@/lib/services/diner/addresses";
 import type { GeocodedAddress } from "@/lib/integrations/geocoding/types";
@@ -203,15 +204,14 @@ export function AccountAddressesClient({
                   </button>
                 ) : null}
               </div>
-              <button
-                type="button"
+              <IconButton
+                className="h-9 w-9"
                 disabled={pending}
                 onClick={() => setDeleteTarget(address)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-text-tertiary hover:bg-surface hover:text-foreground"
                 aria-label="Remove address"
               >
-                <Trash className="h-4 w-4" aria-hidden />
-              </button>
+                <X className="h-4 w-4" aria-hidden />
+              </IconButton>
             </li>
           ))
         )}

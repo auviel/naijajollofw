@@ -1,11 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import {
-  ACTIVE_DELIVERY_POLL_MS,
-  useLiveRefresh,
-} from "@/components/hooks/use-live-refresh";
+import { useEffect, useId, useRef, useState } from "react";
+import { useStaffKitchenLive } from "@/components/providers/staff-kitchen-live-context";
 import { Bell } from "@/components/ui/icons";
 import {
   countUnreadStaffNotifications,
@@ -13,16 +10,7 @@ import {
   readStaffNotifLastSeenAt,
   writeStaffNotifLastSeenAt,
 } from "@/lib/domain/order/staff-notifications";
-import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
-
-type ListApiResponse = {
-  data: {
-    items: StaffOrderListItem[];
-    pendingAcceptanceCount: number;
-    prepMinutes?: number;
-  };
-};
 
 function formatAge(iso: string | null): string {
   if (!iso) return "";
@@ -38,38 +26,15 @@ export function StaffNotifications() {
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonId = useId();
   const panelId = useId();
+  const { items, prepMinutes } = useStaffKitchenLive();
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<StaffOrderListItem[]>([]);
-  const [prepMinutes, setPrepMinutes] = useState(15);
-  const [lastSeenAt, setLastSeenAt] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null;
-    return readStaffNotifLastSeenAt();
-  });
-  const [hydrated] = useState(() => typeof window !== "undefined");
+  const [lastSeenAt, setLastSeenAt] = useState<number | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  const refresh = useCallback(async () => {
-    try {
-      const response = await fetch(
-        "/api/orders?filter=active&channel=kitchen&limit=80",
-        { cache: "no-store" },
-      );
-      if (!response.ok) return;
-      const body = (await response.json()) as ListApiResponse;
-      setItems(body.data.items);
-      if (typeof body.data.prepMinutes === "number") {
-        setPrepMinutes(body.data.prepMinutes);
-      }
-    } catch {
-      // Ignore transient poll errors.
-    }
-  }, []);
-
-  useLiveRefresh({
-    enabled: true,
-    intervalMs: ACTIVE_DELIVERY_POLL_MS,
-    onRefresh: refresh,
-    refreshOnMount: true,
-  });
+  if (typeof window !== "undefined" && !hydrated) {
+    setHydrated(true);
+    setLastSeenAt(readStaffNotifLastSeenAt());
+  }
 
   useEffect(() => {
     if (!open) return;

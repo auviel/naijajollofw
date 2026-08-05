@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -25,7 +25,17 @@ export default defineConfig({
     : {
         command: `npm run dev -- --port ${port}`,
         url: baseURL,
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
         timeout: 120_000,
+        env: {
+          ...process.env,
+          CHECKOUT_SIMULATE_PAYMENTS: "true",
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
+          TURNSTILE_SECRET_KEY: "",
+          SQUARE_ACCESS_TOKEN: "",
+          SQUARE_LOCATION_ID: "",
+          NEXT_PUBLIC_SQUARE_LOCATION_ID: "",
+          NEXT_PUBLIC_SQUARE_APPLICATION_ID: "",
+        },
       },
 });

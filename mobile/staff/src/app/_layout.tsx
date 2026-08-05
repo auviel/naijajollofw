@@ -1,5 +1,5 @@
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { Colors } from "@/constants/theme";
+import { Colors, headerScreenOptions } from "@naijajollof/ui";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, type ReactNode } from "react";
@@ -11,9 +11,7 @@ function Gate({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) {
-      return;
-    }
+    if (loading) return;
     const onLogin = segments[0] === "login";
     if (!user && !onLogin) {
       router.replace("/login");
@@ -45,13 +43,7 @@ export default function RootLayout() {
     <AuthProvider>
       <StatusBar style="dark" />
       <Gate>
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: Colors.surface },
-            headerTintColor: Colors.text,
-            contentStyle: { backgroundColor: Colors.background },
-          }}
-        >
+        <Stack screenOptions={headerScreenOptions}>
           <Stack.Screen name="index" options={{ title: "Kitchen" }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="orders/[id]" options={{ title: "Ticket" }} />

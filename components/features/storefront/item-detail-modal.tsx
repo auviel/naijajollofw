@@ -153,7 +153,6 @@ function ItemDetailModalBody({
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 0px, 50vw"
-                unoptimized={item.imageUrl.startsWith("http")}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-surface to-border/40" />
