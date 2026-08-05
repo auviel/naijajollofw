@@ -9,7 +9,8 @@ import type {
 } from "../types";
 import { createUberDirectClient } from "./client";
 import {
-  parseUberStatusChangedWebhook,
+  parseUberDeliveryWebhook,
+  UBER_DAAS_DELIVERY_STATUS_EVENT,
   UBER_STATUS_CHANGED_EVENT,
 } from "./webhook";
 
@@ -58,18 +59,24 @@ export const uberDirectAdapter: DeliveryProvider = {
       throw new Error("Uber webhook body must be a raw string for signature verification.");
     }
 
-    const payload = parseUberStatusChangedWebhook(raw);
+    const payload = parseUberDeliveryWebhook(raw);
+    if ("ignore" in payload) {
+      return null;
+    }
 
-    if (payload.event_type !== UBER_STATUS_CHANGED_EVENT) {
+    if (
+      payload.eventType !== UBER_STATUS_CHANGED_EVENT &&
+      payload.eventType !== UBER_DAAS_DELIVERY_STATUS_EVENT
+    ) {
       return null;
     }
 
     return {
-      eventId: payload.event_id,
-      providerOrderId: payload.meta.order_id ?? "",
-      status: payload.meta.status,
-      externalOrderId: payload.meta.external_order_id,
-      resourceHref: payload.resource_href,
+      eventId: payload.eventId,
+      providerOrderId: payload.providerOrderId ?? payload.providerDeliveryId ?? "",
+      status: payload.status,
+      externalOrderId: payload.externalOrderId,
+      resourceHref: payload.resourceHref,
     };
   },
 };

@@ -13,7 +13,7 @@
 | **v2** | Cancel, schedule, POD, webhooks, multi-store | Same layers; add events + tenant scoping |
 | **v3** | Restaurant ordering (catalog, cart, checkout, kitchen, pickup/delivery) | New **Order** domain; delivery is a staff-chosen fulfillment step — see [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md) |
 | **v4** | Uber + other delivery partners | Plug-in providers; routing/fallback without touching UI or order logic |
-| **Later** | iOS/Android apps, blog/marketing | Same `lib/` + `app/api` contract; no monorepo until a second real client ships |
+| **Now** | iOS/Android (Expo) + blog/marketing | Same `lib/` + `app/api`; Bearer **or** cookie auth; `mobile/` workspace beside the monolith |
 
 We optimize for a **modular monolith** first. Extract services (workers, webhooks, catalog) only when traffic or team size demands it — not on day one.
 
@@ -53,7 +53,7 @@ We optimize for a **modular monolith** first. Extract services (workers, webhook
                                                        Uber     DoorDash   Manual
 ┌──────────┐
 │ Mobile   │───▶ same app/api ──▶ same lib/services     (no carrier API)
-│ (later)  │
+│ Expo     │    Bearer access + refresh; cookie still for web
 └──────────┘
 ```
 
@@ -98,8 +98,8 @@ Strict dependency direction — **inner layers never depend on outer layers**.
 
 - `app/` route groups by **audience**: `(storefront)`, `(dashboard)`, `(marketing)`, `(auth)`
 - `lib/domain`, `lib/services`, `components/features` grow by **domain** (`menu`, `cart`, `order`, `delivery`, …)
-- `app/api` is the **shared HTTP contract** for web today and mobile later — thin handlers, stable JSON
-- **Do not** introduce Turborepo / `packages/*` until a real second client (native app) ships
+- `app/api` is the **shared HTTP contract** for web and Expo apps — thin handlers, stable JSON
+- Native clients live under `mobile/` (staff + customer + `packages/api-types`). Do **not** move Next.js into `apps/web` / Turborepo until a third client or shared domain package is painful.
 - Blog/marketing stays an island under `(marketing)` — no coupling to Order/Delivery
 
 Full restaurant checklist: [RESTAURANT_IMPLEMENTATION.md](./RESTAURANT_IMPLEMENTATION.md).
@@ -127,7 +127,7 @@ deliverGO/
 │   │   ├── customers/
 │   │   ├── deliveries/
 │   │   └── store/
-│   ├── api/                          # ★ Shared contract (web + future mobile)
+│   ├── api/                          # ★ Shared contract (web + Expo)
 │   │   ├── menu/
 │   │   ├── cart/
 │   │   ├── orders/
@@ -185,6 +185,11 @@ deliverGO/
 │   ├── auth/
 │   └── utils/
 │
+├── mobile/                           # Expo workspace (not a full Turborepo)
+│   ├── staff/                        # Kitchen app
+│   ├── customer/                     # Diner app
+│   └── packages/api-types/
+│
 ├── prisma/
 ├── tests/
 │   ├── unit/
@@ -204,10 +209,14 @@ deliverGO/
 | Client | Talks to | Must not |
 |--------|----------|----------|
 | Storefront / dashboard (Next.js) | `lib/services` via RSC/API | Import Uber/DoorDash in UI |
-| Future iOS / Android | `app/api` over HTTPS | Import `components/` or Prisma |
+| Expo staff / diner | `app/api` over HTTPS + Bearer | Import `components/` or Prisma |
 | Future blog | `(marketing)` + CMS/MDX | Touch Order/Cart/Delivery domains |
 
-When mobile starts: add token auth beside cookie sessions; optionally introduce `/api/v1`. Extract `packages/` only if sharing across repos becomes painful — not before.
+**Auth:** Auth.js cookie JWT (web) and mobile access JWT + hashed refresh tokens (`RefreshToken`). `getSessionUser()` accepts `Authorization: Bearer` or the session cookie. Password / email changes bump `sessionVersion` and revoke refresh tokens.
+
+**Cart (native):** `X-Cart-Sid` header or `dg_cart_sid` cookie. Responses return `sessionId` for clients to persist.
+
+**Push:** `PushDevice` rows + Expo Push API, hooked into `notifyStaffOrder` / `notifyOrderStatus`. Kitchen board poll (10s) remains source of truth.
 
 ### Naming conventions
 

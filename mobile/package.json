@@ -1,0 +1,10 @@
+{
+  "name": "naijajollof-mobile",
+  "private": true,
+  "scripts": {
+    "staff": "npm --prefix staff start",
+    "customer": "npm --prefix customer start",
+    "staff:ios": "npm --prefix staff run ios",
+    "customer:ios": "npm --prefix customer run ios"
+  }
+}

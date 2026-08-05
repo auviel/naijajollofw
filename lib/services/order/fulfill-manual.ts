@@ -56,6 +56,7 @@ export async function fulfillOrderManual(
   }
 
   void notifyOrderStatus({
+    userId: updated.userId,
     customerPhone: updated.customerPhone,
     customerEmail: updated.customerEmail,
     userEmail: updated.user?.email,

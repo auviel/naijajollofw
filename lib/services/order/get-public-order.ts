@@ -3,6 +3,7 @@ import {
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
 import type { PublicOrderView } from "@/lib/domain/order/types";
+import { syncDeliveryFromProvider } from "@/lib/services/delivery/sync-from-provider";
 import { AppError } from "@/lib/utils/errors";
 
 export async function getPublicOrder(
@@ -14,9 +15,17 @@ export async function getPublicOrder(
     throw new AppError("UNAUTHORIZED", "Order token is required.", 401);
   }
 
-  const order = await orderRepository.findByIdWithPublicToken(orderId, token);
+  let order = await orderRepository.findByIdWithPublicToken(orderId, token);
   if (!order) {
     throw new AppError("NOT_FOUND", "Order not found.", 404);
+  }
+
+  if (order.delivery && order.status === "out_for_delivery") {
+    await syncDeliveryFromProvider(order.delivery);
+    order = await orderRepository.findByIdWithPublicToken(orderId, token);
+    if (!order) {
+      throw new AppError("NOT_FOUND", "Order not found.", 404);
+    }
   }
 
   return mapOrderToPublicView(order);

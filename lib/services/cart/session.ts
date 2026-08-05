@@ -1,6 +1,7 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   CART_SESSION_COOKIE,
+  CART_SESSION_HEADER,
   CART_SESSION_MAX_AGE_SECONDS,
 } from "@/lib/domain/cart/types";
 
@@ -23,6 +24,11 @@ export async function setCartSessionCookie(sessionId: string): Promise<void> {
 }
 
 export async function readCartSessionId(): Promise<string | null> {
+  const headerValue = (await headers()).get(CART_SESSION_HEADER)?.trim();
+  if (headerValue && isCartSessionId(headerValue)) {
+    return headerValue;
+  }
+
   const jar = await cookies();
   const value = jar.get(CART_SESSION_COOKIE)?.value?.trim();
   return value && isCartSessionId(value) ? value : null;
@@ -48,7 +54,10 @@ export async function getOrCreateCartSessionId(): Promise<{
 }> {
   const existing = await readCartSessionId();
   if (existing) {
-    await touchCartSessionCookie(existing);
+    const headerValue = (await headers()).get(CART_SESSION_HEADER)?.trim();
+    if (!headerValue || headerValue !== existing) {
+      await touchCartSessionCookie(existing);
+    }
     return { sessionId: existing, created: false };
   }
 

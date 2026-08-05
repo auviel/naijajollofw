@@ -110,8 +110,11 @@ Open [http://localhost:3000](http://localhost:3000) for the storefront.
 - Staff login: `/login` (alias `/staff` → login or dashboard)
 - Kitchen board: `/dashboard` (requires staff login; guests are redirected to `/login`)
 - Session API: `/api/me`
+- Mobile auth: `POST /api/auth/mobile/login` (staff or diner Bearer tokens)
 - Geocode API: `POST /api/geocode` (auth required, Canada only)
 - Health check: `/api/health`
+
+**Expo apps** live in [`mobile/`](./mobile) (`staff` kitchen first, then `customer`). Point `EXPO_PUBLIC_API_URL` at this Next.js origin (use your LAN IP on a physical device).
 
 ## Scripts
 
@@ -159,7 +162,7 @@ When `UBER_LIVE_MODE=false` (default in `.env.example`):
 In sandbox, Uber simulates a full delivery trip without a human courier:
 
 1. Create a delivery → status starts as `pending`
-2. Uber sends `dapi.status_changed` webhooks as the robo courier progresses
+2. Uber sends `event.delivery_status` webhooks as the robo courier progresses
 3. Typical progression: pending → en route to pickup → at pickup → en route to dropoff → at dropoff → completed
 4. On completion, deliverGO fetches proof-of-delivery (photo/signature if configured)
 
@@ -181,7 +184,7 @@ Use this before going live:
 2. Update Vercel env vars: `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET`, `UBER_CUSTOMER_ID`
 3. Set `UBER_LIVE_MODE=true` and redeploy
 4. Robo courier spec is **not** sent when live mode is on — real couriers are dispatched
-5. Register production webhook URL in Uber Developer Dashboard → Settings → Ride Requests
+5. Register production webhook URL in the [Uber Direct dashboard](https://direct.uber.com) (Delivery Status)
 6. Pilot with one store before wider rollout
 
 ## Deployment (Vercel + Neon)
@@ -241,11 +244,11 @@ Errors return `{ error, code?, details? }`. Validation errors include a `details
 
 ## Webhooks
 
-Uber Direct sends `dapi.status_changed` events when delivery status updates. deliverGO verifies the `X-Uber-Signature` header (HMAC-SHA256 of the raw body) and updates local delivery records automatically.
+Uber Direct sends `event.delivery_status` when a courier job advances (Eats Direct `dapi.status_changed` is still accepted). The app verifies `X-Uber-Signature` (HMAC-SHA256 of the raw body), updates the delivery, and completes the linked restaurant order when the carrier marks it delivered.
 
 ### Production (Vercel)
 
-1. Open the [Uber Developer Dashboard](https://developer.uber.com/) → **Settings** → **Ride Requests**
+1. Open the [Uber Direct dashboard](https://direct.uber.com) → webhooks / Delivery Status
 2. Set your webhook URL:
 
 ```

@@ -7,6 +7,7 @@ import {
   buildStaffNewOrderEmail,
   buildStaffOrderCancelledEmail,
 } from "@/lib/integrations/email/templates";
+import { notifyStaffNewOrderPush } from "@/lib/services/push/notify-staff-push";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { logger } from "@/lib/utils/logger";
 
@@ -40,6 +41,17 @@ function dashboardOrderUrl(orderId: string): string | null {
 export async function notifyStaffOrder(
   input: NotifyStaffOrderInput,
 ): Promise<void> {
+  if (input.kind === "new_order") {
+    void notifyStaffNewOrderPush({
+      storeId: input.storeId,
+      orderId: input.orderId,
+      fulfillmentType: input.fulfillmentType,
+      totalCents: input.totalCents,
+      displayNumber: input.displayNumber,
+      itemSummary: input.itemSummary,
+    });
+  }
+
   try {
     const [store, managers] = await Promise.all([
       storeRepository.findById(input.storeId),

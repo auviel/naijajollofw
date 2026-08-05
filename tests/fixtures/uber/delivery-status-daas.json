@@ -1,0 +1,18 @@
+{
+  "account_id": "acc_test",
+  "created": "2026-08-05T12:00:00.000Z",
+  "customer_id": "cus_test",
+  "data": {
+    "complete": true,
+    "external_id": "DG-1730000000000-abcd1234",
+    "id": "del_QbLowiwHQM-b4e8YmOZNOw",
+    "status": "delivered",
+    "tracking_url": "https://www.ubereats.com/orders/test",
+    "uuid": "41B2E8C22C0740CF9BE1EF1898E64D3B"
+  },
+  "delivery_id": "del_QbLowiwHQM-b4e8YmOZNOw",
+  "id": "evt_Bouz7BhPTYGDz9FFQNgODw",
+  "kind": "event.delivery_status",
+  "live_mode": false,
+  "status": "delivered"
+}

@@ -12,6 +12,7 @@ import {
   resolveUberPincode,
 } from "@/lib/integrations/delivery/uber/mappers";
 import type { ProviderDelivery } from "@/lib/integrations/delivery/types";
+import { syncOrderFromLinkedDelivery } from "@/lib/services/order/sync-order-from-delivery";
 import { logger } from "@/lib/utils/logger";
 
 export function buildProofUpdate(
@@ -70,9 +71,10 @@ function shouldSyncFromProvider(delivery: Delivery): boolean {
   return delivery.status === "completed" && !delivery.proofOfDelivery;
 }
 
-/** Refresh delivery status and proof from Uber Direct. */
+/** Refresh delivery status and proof from the carrier, then mirror onto the linked order. */
 export async function syncDeliveryFromProvider(delivery: Delivery): Promise<Delivery> {
   if (!shouldSyncFromProvider(delivery)) {
+    await syncOrderFromLinkedDelivery(delivery);
     return delivery;
   }
 
@@ -95,7 +97,7 @@ export async function syncDeliveryFromProvider(delivery: Delivery): Promise<Deli
         : undefined,
     );
 
-    return deliveryRepository.update(delivery.id, delivery.storeId, {
+    const updated = await deliveryRepository.update(delivery.id, delivery.storeId, {
       status: synced.status,
       feeCents: synced.feeCents,
       currency: synced.currency,
@@ -105,11 +107,14 @@ export async function syncDeliveryFromProvider(delivery: Delivery): Promise<Deli
       ...(proofOfDelivery ? { proofOfDelivery } : {}),
       providerPayload: synced.raw as Prisma.InputJsonValue,
     });
+    await syncOrderFromLinkedDelivery(updated);
+    return updated;
   } catch (error) {
     logger.error("delivery.sync.failed", {
       deliveryId: delivery.id,
       error: error instanceof Error ? error.message : String(error),
     });
+    await syncOrderFromLinkedDelivery(delivery);
     return delivery;
   }
 }

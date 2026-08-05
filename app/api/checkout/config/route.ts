@@ -27,6 +27,10 @@ export async function GET() {
         taxRateBps: getTaxRateBps(),
         cart,
         preview: computeOrderTotals(cart.subtotalCents, 0),
+        mobilePayments: {
+          sourceIdFromInAppSdk: true,
+          currency: "CAD",
+        },
       },
     });
   } catch (error) {

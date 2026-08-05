@@ -1,6 +1,5 @@
-import type { UserRole } from "@/lib/domain/auth/types";
-import { userRepository } from "@/lib/db/repositories/user.repository";
 import { authConfig } from "@/lib/auth/auth.config";
+import { verifyUserCredentials } from "@/lib/auth/verify-credentials";
 import { isTurnstileEnabled } from "@/lib/integrations/turnstile/config";
 import { verifyTurnstileToken } from "@/lib/integrations/turnstile/verify";
 import {
@@ -11,7 +10,6 @@ import {
 import { getRequestIp } from "@/lib/utils/request-ip";
 import { isAppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
-import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
@@ -21,10 +19,6 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
   turnstileToken: z.string().optional(),
 });
-
-/** Precomputed bcrypt hash so missing-user paths still pay compare cost. */
-const DUMMY_PASSWORD_HASH =
-  "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -68,29 +62,15 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             }
           }
 
-          const user = await userRepository.findByEmail(email);
-          const passwordValid = await bcrypt.compare(
-            parsed.data.password,
-            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
-          );
-
-          if (!user || !passwordValid) {
+          const user = await verifyUserCredentials(email, parsed.data.password);
+          if (!user) {
             await recordLoginFailure(email, ip);
             return null;
           }
 
           await clearLoginFailures(email, ip);
 
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            storeId: user.storeId,
-            storeName: user.store?.name ?? "Store",
-            role: user.role as UserRole,
-            phoneE164: user.phoneE164 ?? null,
-            sessionVersion: user.sessionVersion ?? 0,
-          };
+          return user;
         } catch (error) {
           logger.error("auth.authorize_unexpected", { error });
           return null;

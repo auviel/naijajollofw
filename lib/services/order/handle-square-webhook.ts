@@ -40,6 +40,7 @@ export async function handleSquareWebhook(
       previous?.status !== "cancelled"
     ) {
       void notifyOrderStatus({
+        userId: updated.userId,
         customerPhone: updated.customerPhone,
         customerEmail: updated.customerEmail,
         userEmail: updated.user?.email,

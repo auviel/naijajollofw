@@ -50,6 +50,7 @@ export async function syncOrderFromLinkedDelivery(delivery: {
 
   if (updated && (next === "out_for_delivery" || next === "completed")) {
     void notifyOrderStatus({
+      userId: updated.userId,
       customerPhone: updated.customerPhone,
       customerEmail: updated.customerEmail,
       userEmail: updated.user?.email,

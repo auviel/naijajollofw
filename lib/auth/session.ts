@@ -1,10 +1,15 @@
 import { auth } from "@/lib/auth/index";
+import {
+  readBearerToken,
+  verifyMobileAccessToken,
+} from "@/lib/auth/mobile-token";
 import { storeRepository, mapStoreToProfile } from "@/lib/db/repositories/store.repository";
 import { userRepository } from "@/lib/db/repositories/user.repository";
 import { AppError } from "@/lib/utils/errors";
 import type { StoreProfile } from "@/lib/domain/store/types";
-import type { UserRole } from "@/lib/domain/auth/types";
+import type { MobileApp, UserRole } from "@/lib/domain/auth/types";
 import type { Session } from "next-auth";
+import { headers } from "next/headers";
 
 export type SessionUser = {
   id: string;
@@ -16,6 +21,7 @@ export type SessionUser = {
   phoneE164?: string | null;
   sessionVersion: number;
   emailVerifiedAt?: Date | null;
+  mobileApp?: MobileApp | null;
 };
 
 export type SessionContext = {
@@ -40,7 +46,46 @@ function mapSessionUser(session: Session | null | undefined): SessionUser | null
   };
 }
 
+async function getSessionUserFromBearer(): Promise<SessionUser | null> {
+  const authorization = (await headers()).get("authorization");
+  const token = readBearerToken(authorization);
+  if (!token) {
+    return null;
+  }
+
+  const claims = verifyMobileAccessToken(token);
+  if (!claims) {
+    return null;
+  }
+
+  const dbUser = await userRepository.findById(claims.sub);
+  if (!dbUser) {
+    return null;
+  }
+  if (dbUser.sessionVersion !== claims.sessionVersion) {
+    return null;
+  }
+
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    storeId: dbUser.storeId,
+    storeName: dbUser.store?.name ?? claims.storeName,
+    role: dbUser.role,
+    phoneE164: dbUser.phoneE164 ?? claims.phoneE164,
+    sessionVersion: dbUser.sessionVersion,
+    emailVerifiedAt: dbUser.emailVerifiedAt,
+    mobileApp: claims.app,
+  };
+}
+
 export async function getSessionUser(): Promise<SessionUser | null> {
+  const fromBearer = await getSessionUserFromBearer();
+  if (fromBearer) {
+    return fromBearer;
+  }
+
   const session = (await auth()) as Session | null;
   const mapped = mapSessionUser(session);
   if (!mapped) {
@@ -59,6 +104,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     ...mapped,
     emailVerifiedAt: dbUser.emailVerifiedAt,
     phoneE164: dbUser.phoneE164 ?? mapped.phoneE164,
+    mobileApp: null,
   };
 }
 

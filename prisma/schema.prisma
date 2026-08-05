@@ -15,6 +15,11 @@ enum UserRole {
   DINER
 }
 
+enum MobileApp {
+  staff
+  diner
+}
+
 enum DeliveryStatus {
   draft
   pending
@@ -121,9 +126,40 @@ model User {
   orders          Order[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  refreshTokens           RefreshToken[]
+  pushDevices             PushDevice[]
 
   @@index([storeId])
   @@index([storeId, role])
+}
+
+model RefreshToken {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash      String    @unique
+  app            MobileApp
+  sessionVersion Int
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, revokedAt])
+}
+
+model PushDevice {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expoPushToken String
+  platform      String
+  app           MobileApp
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, expoPushToken])
+  @@index([userId, app])
+  @@index([app])
 }
 
 model PasswordResetToken {

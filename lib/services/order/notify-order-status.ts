@@ -8,6 +8,7 @@ import {
   isWhatsAppEnabled,
 } from "@/lib/integrations/whatsapp/config";
 import { sendTextMessage } from "@/lib/integrations/whatsapp/client";
+import { notifyDinerOrderPush } from "@/lib/services/push/notify-diner-push";
 import { logger } from "@/lib/utils/logger";
 
 /** Opt-in diner updates — separate from staff WhatsApp dispatch. */
@@ -240,6 +241,7 @@ function sendEmailUpdate(input: {
 }
 
 export type OrderStatusNotifyInput = {
+  userId?: string | null;
   customerPhone: string;
   customerEmail?: string | null;
   userEmail?: string | null;
@@ -263,4 +265,15 @@ export async function notifyOrderStatus(
 ): Promise<void> {
   sendEmailUpdate(input);
   await sendWhatsAppUpdate(input);
+  if (shouldNotifyOrderStatus(input.status, input.fulfillmentType)) {
+    await notifyDinerOrderPush({
+      userId: input.userId,
+      orderId: input.orderId,
+      publicToken: input.publicToken,
+      status: input.status,
+      fulfillmentType: input.fulfillmentType,
+      displayNumber: input.displayNumber,
+      storeName: input.storeName,
+    });
+  }
 }

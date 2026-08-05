@@ -21,6 +21,7 @@ Build in this order:
 | 3 | [Coupons and discounts](#3-coupons-and-discounts) | Not started | M–L | Checkout totals + #2 |
 | 4 | [Blog](#4-setup-blog) | Placeholder `/blog` | S–M | None |
 | 5 | [Google review widgets](#5-google-review-widgets) | Maps link only | S | Place ID |
+| 6 | [Native apps](#6-native-apps-staff-then-diner) | Backend + Expo scaffolds | L | Dual auth + push |
 
 ---
 
@@ -243,6 +244,45 @@ Migrate existing `STORE_MANAGER` → `OWNER` (or keep the enum value as alias du
 
 ---
 
+## 6. Native apps (staff then diner)
+
+**Goal:** Kitchen phone app first, diner app second. Same Next.js `app/api` + `lib/services`. No Capacitor wrap, no super-app.
+
+**Layout:** `mobile/staff`, `mobile/customer`, `mobile/packages/api-types` (nested workspace). Web stays at repo root.
+
+### Auth + push (shared backend)
+
+| Slice | Work |
+|-------|------|
+| 6.1 Dual auth | `POST /api/auth/mobile/login` · refresh · logout. Bearer **or** Auth.js cookie in `getSessionUser()`. `sessionVersion` + refresh-token revoke on password/email change. |
+| 6.2 Devices | `PushDevice` + `POST/DELETE /api/mobile/devices` |
+| 6.3 Staff push | Expo push on `notifyStaffOrder("new_order")`. Board still polls 10s. |
+| 6.4 Diner push | Same status set as email (accepted / ready or ready_for_pickup / out / cancelled) |
+
+### Staff app (`mobile/staff`)
+
+Kitchen board, ticket transitions, manual out-for-delivery, account. TestFlight + closed Play — **not** a public listing.
+
+Out of v1: menu CRUD, customers, hours, store profile, Delivergo quotes (web / WhatsApp bot).
+
+### Diner app (`mobile/customer`) — after staff is in the kitchen’s pocket
+
+| Gap | API |
+|-----|-----|
+| Me | `GET /api/diner/me` |
+| History | `GET /api/diner/orders` |
+| Cart on native | `X-Cart-Sid` header (+ cookie for web) |
+| Pay | Square In-App Payments → `sourceId` → existing `POST /api/checkout` |
+
+Website stays the SEO / first-order surface.
+
+### Done when
+
+- Staff can sign in on device, see the live board, transition tickets, and get a lock-screen ping on new ASAP orders.
+- Diner app can browse, cart, checkout with a Square `sourceId`, track, and list history.
+
+---
+
 ## Cross-cutting
 
 - **Square / checkout:** Coupons must change `createSquarePayment` amount. Do not apply discounts only in the UI.
@@ -262,5 +302,7 @@ Migrate existing `STORE_MANAGER` → `OWNER` (or keep the enum value as alias du
 | **M2 — Safe multi-staff** | 2.1–2.3, 1.6 | Roles + invites + staff phone pings (1.6 can ship during M1) |
 | **M3 — Promos** | 3 | Working codes at checkout, owner-only admin |
 | **M4 — Marketing surface** | 4 v1 + 5 v1 | Live blog + Google rating on homepage |
+| **M5 — Kitchen in pocket** | 6.1–6.3 + staff Expo | Token auth + staff push + TestFlight kitchen app |
+| **M6 — Diner app** | 6.4 + diner APIs + customer Expo | Reorder / track / push; web remains canonical |
 
-M4 can start during M1 if you want SEO/trust wins without waiting on RBAC (static MDX + embed need no dashboard).
+M4 can start during M1 if you want SEO/trust wins without waiting on RBAC (static MDX + embed need no dashboard). Mobile auth (6.1) can ship in parallel with M1/M2.

@@ -1,5 +1,6 @@
 import type { UserRole } from "@/lib/domain/auth/types";
 import { prisma } from "@/lib/db/client";
+import { refreshTokenRepository } from "@/lib/db/repositories/refresh-token.repository";
 
 export const userRepository = {
   async findByEmail(email: string) {
@@ -52,13 +53,15 @@ export const userRepository = {
   },
 
   async updatePasswordHash(userId: string, passwordHash: string) {
-    return prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         passwordHash,
         sessionVersion: { increment: 1 },
       },
     });
+    await refreshTokenRepository.revokeAllForUser(userId);
+    return updated;
   },
 
   async updateSquareCustomerId(userId: string, squareCustomerId: string) {
@@ -69,7 +72,7 @@ export const userRepository = {
   },
 
   async updateEmail(userId: string, email: string) {
-    return prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         email: email.toLowerCase(),
@@ -77,6 +80,8 @@ export const userRepository = {
         sessionVersion: { increment: 1 },
       },
     });
+    await refreshTokenRepository.revokeAllForUser(userId);
+    return updated;
   },
 
   async updateProfile(

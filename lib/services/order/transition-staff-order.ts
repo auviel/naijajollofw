@@ -52,6 +52,7 @@ export async function transitionStaffOrder(
   }
 
   void notifyOrderStatus({
+    userId: updated.userId,
     customerPhone: updated.customerPhone,
     customerEmail: updated.customerEmail,
     userEmail: updated.user?.email,

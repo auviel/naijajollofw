@@ -15,6 +15,8 @@ export const CHECKOUT_LIMIT = 20;
 export const CHECKOUT_WINDOW_MS = 60_000;
 export const CART_ADD_LIMIT = 60;
 export const CART_ADD_WINDOW_MS = 60_000;
+export const MOBILE_LOGIN_LIMIT = 20;
+export const MOBILE_LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
 function loginPairKey(email: string, ip: string): string {
   return hashAuthChallengeKey([
@@ -124,7 +126,13 @@ export async function clearLoginFailures(
  * Fixed-window durable rate limit. Throws AppError 429 when exceeded.
  */
 export async function assertDurableRateLimit(input: {
-  kind: "forgot" | "register" | "login-challenge" | "checkout" | "cart-add";
+  kind:
+    | "forgot"
+    | "register"
+    | "login-challenge"
+    | "checkout"
+    | "cart-add"
+    | "mobile-login";
   ip: string;
   limit: number;
   windowMs: number;

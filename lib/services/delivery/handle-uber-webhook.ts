@@ -1,11 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import { deliveryRepository } from "@/lib/db/repositories/delivery.repository";
 import { webhookEventRepository } from "@/lib/db/repositories/webhook-event.repository";
-import { mapProviderStatusToDomain } from "@/lib/domain/delivery/status";
-import { uberDirectAdapter } from "@/lib/integrations/delivery/uber/adapter";
+import { mapUberDeliveryStatus } from "@/lib/integrations/delivery/uber/mappers";
 import {
   getUberWebhookSigningSecret,
-  parseUberStatusChangedWebhook,
+  parseUberDeliveryWebhook,
+  UBER_DAAS_DELIVERY_STATUS_EVENT,
   UBER_STATUS_CHANGED_EVENT,
   verifyUberWebhookSignature,
 } from "@/lib/integrations/delivery/uber/webhook";
@@ -16,7 +16,8 @@ import { logger } from "@/lib/utils/logger";
 
 async function resolveDeliveryForWebhook(input: {
   externalOrderId?: string;
-  orderId?: string;
+  providerDeliveryId?: string;
+  providerOrderId?: string;
 }) {
   if (input.externalOrderId) {
     const byExternal = await deliveryRepository.findByExternalId(input.externalOrderId);
@@ -25,26 +26,35 @@ async function resolveDeliveryForWebhook(input: {
     }
   }
 
-  if (input.orderId) {
+  if (input.providerDeliveryId) {
     const byProviderDelivery = await deliveryRepository.findByProviderDeliveryId(
-      input.orderId,
+      input.providerDeliveryId,
     );
     if (byProviderDelivery) {
       return byProviderDelivery;
     }
+  }
 
+  if (input.providerOrderId) {
     const byProviderOrder = await deliveryRepository.findByProviderOrderId(
-      input.orderId,
+      input.providerOrderId,
     );
     if (byProviderOrder) {
       return byProviderOrder;
+    }
+
+    const byProviderDelivery = await deliveryRepository.findByProviderDeliveryId(
+      input.providerOrderId,
+    );
+    if (byProviderDelivery) {
+      return byProviderDelivery;
     }
   }
 
   return null;
 }
 
-/** Process an Uber Direct dapi.status_changed webhook. */
+/** Process Uber Direct DaaS or Eats Direct status webhooks. */
 export async function handleUberWebhook(
   rawBody: string,
   headers: Headers,
@@ -63,9 +73,9 @@ export async function handleUberWebhook(
     throw new AppError("UNAUTHORIZED", "Invalid webhook signature", 401);
   }
 
-  let payload: ReturnType<typeof parseUberStatusChangedWebhook>;
+  let payload: ReturnType<typeof parseUberDeliveryWebhook>;
   try {
-    payload = parseUberStatusChangedWebhook(rawBody);
+    payload = parseUberDeliveryWebhook(rawBody);
   } catch (error) {
     logger.error("webhook.parse.failed", {
       error: error instanceof Error ? error.message : String(error),
@@ -73,50 +83,58 @@ export async function handleUberWebhook(
     throw new AppError("VALIDATION_ERROR", "Invalid webhook payload", 400);
   }
 
-  if (payload.event_type !== UBER_STATUS_CHANGED_EVENT) {
-    logger.info("webhook.ignored", { eventType: payload.event_type });
+  if ("ignore" in payload) {
+    logger.info("webhook.ignored", { eventType: payload.eventType });
     return;
   }
 
-  const parsedEvent = await uberDirectAdapter.parseWebhook(rawBody, headers);
-  if (!parsedEvent) {
+  if (
+    payload.eventType !== UBER_STATUS_CHANGED_EVENT &&
+    payload.eventType !== UBER_DAAS_DELIVERY_STATUS_EVENT
+  ) {
+    logger.info("webhook.ignored", { eventType: payload.eventType });
     return;
   }
 
   const { event, created } = await webhookEventRepository.createIfNotExists({
-    eventId: payload.event_id,
-    eventType: payload.event_type,
+    eventId: payload.eventId,
+    eventType: payload.eventType,
     payload: JSON.parse(rawBody) as Prisma.InputJsonValue,
   });
 
   if (!created && event.processedAt) {
-    logger.info("webhook.duplicate", { eventId: payload.event_id });
+    logger.info("webhook.duplicate", { eventId: payload.eventId });
     return;
   }
 
   const delivery = await resolveDeliveryForWebhook({
-    externalOrderId: payload.meta.external_order_id,
-    orderId: payload.meta.order_id,
+    externalOrderId: payload.externalOrderId,
+    providerDeliveryId: payload.providerDeliveryId,
+    providerOrderId: payload.providerOrderId,
   });
 
   if (!delivery) {
     logger.warn("webhook.delivery_not_found", {
-      eventId: payload.event_id,
-      externalOrderId: payload.meta.external_order_id,
-      orderId: payload.meta.order_id,
+      eventId: payload.eventId,
+      externalOrderId: payload.externalOrderId,
+      providerDeliveryId: payload.providerDeliveryId,
+      providerOrderId: payload.providerOrderId,
     });
     await webhookEventRepository.markProcessed(event.id);
     return;
   }
 
-  const status = mapProviderStatusToDomain(payload.meta.status);
+  const status = mapUberDeliveryStatus(payload.status);
 
   let updated = await deliveryRepository.update(delivery.id, delivery.storeId, {
     status,
-    ...(payload.meta.order_id
+    ...(payload.providerOrderId
+      ? { providerOrderId: payload.providerOrderId }
+      : {}),
+    ...(payload.providerDeliveryId
       ? {
-          providerOrderId: payload.meta.order_id,
-          providerDeliveryId: delivery.providerDeliveryId ?? payload.meta.order_id,
+          providerDeliveryId:
+            delivery.providerDeliveryId ?? payload.providerDeliveryId,
         }
       : {}),
   });
@@ -130,7 +148,7 @@ export async function handleUberWebhook(
   await webhookEventRepository.markProcessed(event.id, updated.id);
 
   logger.info("webhook.processed", {
-    eventId: payload.event_id,
+    eventId: payload.eventId,
     deliveryId: updated.id,
     status: updated.status,
   });
