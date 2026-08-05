@@ -2,7 +2,7 @@ import type { FulfillmentMethod, FulfillmentType, OrderStatus } from "@prisma/cl
 
 /** Base kitchen transitions (fulfillment-aware overrides applied in helpers). */
 const STAFF_TRANSITIONS = new Map<OrderStatus, readonly OrderStatus[]>([
-  ["pending_acceptance", ["accepted", "cancelled"]],
+  ["pending_acceptance", ["preparing", "cancelled"]],
   ["accepted", ["preparing", "cancelled"]],
   ["preparing", ["ready", "cancelled"]],
   ["ready", ["cancelled"]],
@@ -26,7 +26,7 @@ const ACTION_META = new Map<
   { label: string; variant: TransitionAction["variant"] }
 >([
   ["accepted", { label: "Accept", variant: "primary" }],
-  ["preparing", { label: "Start preparing", variant: "primary" }],
+  ["preparing", { label: "Start", variant: "primary" }],
   ["ready", { label: "Ready", variant: "primary" }],
   ["ready_for_pickup", { label: "Ready", variant: "primary" }],
   ["completed", { label: "Complete", variant: "primary" }],
@@ -83,14 +83,9 @@ export const KITCHEN_BOARD_COLUMNS = [
     statuses: ["pending_acceptance"] as const satisfies readonly OrderStatus[],
   },
   {
-    id: "accepted",
-    title: "Accepted",
-    statuses: ["accepted"] as const satisfies readonly OrderStatus[],
-  },
-  {
-    id: "preparing",
-    title: "Preparing",
-    statuses: ["preparing"] as const satisfies readonly OrderStatus[],
+    id: "cooking",
+    title: "Cooking",
+    statuses: ["accepted", "preparing"] as const satisfies readonly OrderStatus[],
   },
   {
     id: "ready",

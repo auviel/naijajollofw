@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardHomePage() {
-  const { items, pendingAcceptanceCount } = await listStaffOrders({
+  const { items, pendingAcceptanceCount, prepMinutes } = await listStaffOrders({
     filter: "active",
     channel: "kitchen",
     limit: 80,
@@ -26,7 +26,7 @@ export default async function DashboardHomePage() {
         title="Kitchen board"
         description={
           pendingAcceptanceCount > 0
-            ? `${pendingAcceptanceCount} order${pendingAcceptanceCount === 1 ? "" : "s"} waiting for accept`
+            ? `${pendingAcceptanceCount} order${pendingAcceptanceCount === 1 ? "" : "s"} waiting to start`
             : "Live orders — polls every few seconds"
         }
         action={
@@ -43,6 +43,7 @@ export default async function DashboardHomePage() {
         <KitchenBoard
           initialItems={items}
           initialPendingCount={pendingAcceptanceCount}
+          prepMinutes={prepMinutes}
         />
       </DashboardPageBody>
     </DashboardPage>

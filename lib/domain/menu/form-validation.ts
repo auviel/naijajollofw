@@ -1,4 +1,5 @@
 import { parseDollarsToCents } from "@/lib/domain/menu/format";
+import { MENU_ITEM_NAME_MAX } from "@/lib/domain/menu/limits";
 import type { MenuModifierGroupView } from "@/lib/domain/menu/types";
 
 export type MenuItemFieldErrors = {
@@ -48,6 +49,8 @@ export function validateMenuItemForm(input: {
   }
   if (!input.name.trim()) {
     fieldErrors.name = "Item name is required.";
+  } else if (input.name.trim().length > MENU_ITEM_NAME_MAX) {
+    fieldErrors.name = `Keep the name under ${MENU_ITEM_NAME_MAX} characters.`;
   }
   if (parseDollarsToCents(input.priceDollars) === null) {
     fieldErrors.priceDollars = "Enter a valid price like 12.50.";

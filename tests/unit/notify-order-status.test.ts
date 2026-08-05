@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shouldNotifyOrderStatus } from "@/lib/services/order/notify-order-status";
+import {
+  notifyStatusForStaffTransition,
+  shouldNotifyOrderStatus,
+} from "@/lib/services/order/notify-order-status";
 import {
   buildEmailVerificationEmail,
   buildOrderStatusEmail,
@@ -19,6 +22,13 @@ describe("shouldNotifyOrderStatus", () => {
     expect(shouldNotifyOrderStatus("ready_for_pickup", "delivery")).toBe(false);
     expect(shouldNotifyOrderStatus("out_for_delivery", "delivery")).toBe(true);
     expect(shouldNotifyOrderStatus("completed", "delivery")).toBe(false);
+  });
+
+  it("maps board Start to the accepted diner ping", () => {
+    expect(
+      notifyStatusForStaffTransition("pending_acceptance", "preparing"),
+    ).toBe("accepted");
+    expect(notifyStatusForStaffTransition("preparing", "ready")).toBe("ready");
   });
 });
 

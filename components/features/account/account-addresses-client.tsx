@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AddressAutocomplete } from "@/components/features/deliveries/address-autocomplete";
 import { canRequestQuote } from "@/components/features/deliveries/address-preview";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Trash } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { CustomerAddressView } from "@/lib/services/diner/addresses";
@@ -30,6 +31,9 @@ export function AccountAddressesClient({
   const [label, setLabel] = useState("");
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CustomerAddressView | null>(
+    null,
+  );
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -127,6 +131,7 @@ export function AccountAddressesClient({
         throw new Error(await readApiError(response));
       }
       setAddresses((current) => current.filter((item) => item.id !== id));
+      setDeleteTarget(null);
       success("Address removed");
       router.refresh();
     } catch (err) {
@@ -201,7 +206,7 @@ export function AccountAddressesClient({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => void removeAddress(address.id)}
+                onClick={() => setDeleteTarget(address)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-text-tertiary hover:bg-surface hover:text-foreground"
                 aria-label="Remove address"
               >
@@ -237,6 +242,29 @@ export function AccountAddressesClient({
           {pending ? "Saving…" : "Save address"}
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Remove this address?"
+        description={
+          deleteTarget
+            ? `${deleteTarget.label || "This address"} will be deleted from your account.`
+            : undefined
+        }
+        confirmLabel="Remove address"
+        cancelLabel="Keep address"
+        pending={pending && deleteTarget !== null}
+        onCancel={() => {
+          if (!pending) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            void removeAddress(deleteTarget.id);
+          }
+        }}
+      />
     </div>
   );
 }

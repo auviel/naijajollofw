@@ -8,6 +8,7 @@ import {
   useSquareCardForm,
 } from "@/components/features/storefront/square-card-form";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Trash } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { SavedCardView } from "@/lib/integrations/payments/square/cards";
@@ -42,6 +43,7 @@ export function AccountPaymentClient({
   const [scriptFailed, setScriptFailed] = useState(false);
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SavedCardView | null>(null);
 
   const squareSrc =
     environment === "production"
@@ -119,6 +121,7 @@ export function AccountPaymentClient({
         throw new Error(await readApiError(response));
       }
       setCards((current) => current.filter((card) => card.id !== id));
+      setDeleteTarget(null);
       success("Card removed");
       router.refresh();
     } catch (err) {
@@ -176,7 +179,7 @@ export function AccountPaymentClient({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => void removeCard(card.id)}
+                onClick={() => setDeleteTarget(card)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-text-tertiary hover:bg-surface hover:text-foreground"
                 aria-label="Remove card"
               >
@@ -207,6 +210,29 @@ export function AccountPaymentClient({
           {pending ? "Saving…" : "Save card"}
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Remove this card?"
+        description={
+          deleteTarget
+            ? `${deleteTarget.brand ?? "Card"} ···· ${deleteTarget.last4 ?? "????"} will be deleted from your account.`
+            : undefined
+        }
+        confirmLabel="Remove card"
+        cancelLabel="Keep card"
+        pending={pending && deleteTarget !== null}
+        onCancel={() => {
+          if (!pending) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            void removeCard(deleteTarget.id);
+          }
+        }}
+      />
     </div>
   );
 }

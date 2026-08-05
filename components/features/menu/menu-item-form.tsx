@@ -1,14 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
+import { ArrowLeft, Plus } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils/cn";
 import {
   formatCentsAsDollarsInput,
   parseDollarsToCents,
@@ -28,6 +32,10 @@ import {
   MENU_IMAGE_MAX_COUNT,
 } from "@/lib/domain/menu/media";
 import type { MenuItemDetail, MenuItemImageView } from "@/lib/domain/menu/types";
+import {
+  MENU_ITEM_DESCRIPTION_MAX,
+  MENU_ITEM_NAME_MAX,
+} from "@/lib/domain/menu/limits";
 
 type CategoryOption = {
   id: string;
@@ -57,6 +65,11 @@ type MenuItemFormProps = {
   item?: MenuItemDetail;
 };
 
+type DestroyTarget =
+  | { type: "photo"; id: string }
+  | { type: "group"; key: string; name: string }
+  | { type: "modifier"; groupKey: string; modifierKey: string; name: string };
+
 function newKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -84,6 +97,7 @@ function groupsFromItem(item?: MenuItemDetail): ModifierGroupDraft[] {
 export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [categoryId, setCategoryId] = useState(item?.categoryId ?? categories[0]?.id ?? "");
   const [name, setName] = useState(item?.name ?? "");
@@ -98,7 +112,6 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
   const [pendingFiles, setPendingFiles] = useState<
     Array<{ key: string; file: File; previewUrl: string }>
   >([]);
-  const [clearAllImages, setClearAllImages] = useState(false);
   const [groups, setGroups] = useState<ModifierGroupDraft[]>(() => groupsFromItem(item));
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<MenuItemFieldErrors>({});
@@ -107,10 +120,11 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
     {},
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [destroyTarget, setDestroyTarget] = useState<DestroyTarget | null>(null);
+  const [destroyPending, setDestroyPending] = useState(false);
 
   const activeCategories = categories.filter((category) => category.active || category.id === categoryId);
-  const totalPhotoCount =
-    (clearAllImages ? 0 : savedImages.length) + pendingFiles.length;
+  const totalPhotoCount = savedImages.length + pendingFiles.length;
 
   function updateGroup(key: string, patch: Partial<ModifierGroupDraft>) {
     setGroups((current) =>
@@ -193,7 +207,9 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
       description: description.trim() ? description.trim() : null,
       priceCents,
       available,
-      ...(clearAllImages && pendingFiles.length === 0 ? { imageUrl: null } : {}),
+      ...(savedImages.length === 0 && pendingFiles.length === 0
+        ? { imageUrl: null }
+        : {}),
       modifierGroups,
     };
   }
@@ -227,25 +243,30 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
       });
     }
     if (next.length === 0) return;
-    setClearAllImages(false);
     setPendingFiles((current) => [...current, ...next]);
   }
 
-  async function removeSavedImage(imageId: string) {
+  async function removeSavedImage(imageId: string): Promise<boolean> {
     if (mode !== "edit" || !item) {
       setSavedImages((current) => current.filter((image) => image.id !== imageId));
-      return;
+      return true;
     }
-    const response = await fetch(
-      `/api/menu/items/${item.id}/images/${imageId}`,
-      { method: "DELETE" },
-    );
-    if (!response.ok) {
-      toastError(await readApiError(response));
-      return;
+    try {
+      const response = await fetch(
+        `/api/menu/items/${item.id}/images/${imageId}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        toastError(await readApiError(response));
+        return false;
+      }
+      setSavedImages((current) => current.filter((image) => image.id !== imageId));
+      success("Photo removed");
+      return true;
+    } catch {
+      toastError("Unable to remove photo.");
+      return false;
     }
-    setSavedImages((current) => current.filter((image) => image.id !== imageId));
-    success("Photo removed");
   }
 
   function removePendingFile(key: string) {
@@ -256,6 +277,71 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
       }
       return current.filter((row) => row.key !== key);
     });
+  }
+
+  async function applyDestroy() {
+    if (!destroyTarget) {
+      return;
+    }
+
+    if (destroyTarget.type === "photo") {
+      setDestroyPending(true);
+      const removed = await removeSavedImage(destroyTarget.id);
+      setDestroyPending(false);
+      if (removed) {
+        setDestroyTarget(null);
+      }
+      return;
+    }
+
+    if (destroyTarget.type === "group") {
+      setGroups((current) =>
+        current.filter((entry) => entry.key !== destroyTarget.key),
+      );
+      setDestroyTarget(null);
+      return;
+    }
+
+    setGroups((current) =>
+      current.map((group) =>
+        group.key === destroyTarget.groupKey
+          ? {
+              ...group,
+              modifiers: group.modifiers.filter(
+                (entry) => entry.key !== destroyTarget.modifierKey,
+              ),
+            }
+          : group,
+      ),
+    );
+    setDestroyTarget(null);
+  }
+
+  async function toggleAvailability() {
+    if (mode !== "edit" || !item) {
+      setAvailable((current) => !current);
+      return;
+    }
+
+    const next = !available;
+    setAvailable(next);
+    try {
+      const response = await fetch(`/api/menu/items/${item.id}/availability`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ available: next }),
+      });
+      if (!response.ok) {
+        setAvailable(!next);
+        toastError(await readApiError(response));
+        return;
+      }
+      success(next ? "Item available" : "Marked sold out");
+      router.refresh();
+    } catch {
+      setAvailable(!next);
+      toastError("Unable to update availability.");
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -351,22 +437,51 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
 
   if (categories.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-6">
-          <p className="text-sm text-text-secondary">
-            Add a category first, then create menu items.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Link
+          href="/dashboard/menu"
+          className="inline-flex h-11 items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Menu
+        </Link>
+        <Card>
+          <CardContent className="py-6">
+            <p className="text-sm text-text-secondary">
+              Add a category first, then create menu items.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <header className="flex items-center justify-between gap-3">
+        <Link
+          href="/dashboard/menu"
+          className="inline-flex h-11 items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Menu
+        </Link>
+        <button
+          type="button"
+          onClick={() => void toggleAvailability()}
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium",
+            available
+              ? "bg-surface text-text-secondary hover:bg-border"
+              : "bg-amber-100 text-amber-950 hover:bg-amber-200",
+          )}
+          aria-pressed={available}
+        >
+          {available ? "Available" : "Sold out"}
+        </button>
+      </header>
+
       <Card>
-        <CardHeader className="py-4">
-          <h2 className="text-base font-semibold text-foreground">Item details</h2>
-        </CardHeader>
         <CardContent className="space-y-4">
           <FormField
             id="itemCategory"
@@ -391,8 +506,15 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
             />
           </FormField>
 
-          <FormField id="itemName" label="Name" error={fieldErrors.name}>
+          <div className="space-y-2">
+            <label
+              htmlFor="itemName"
+              className="text-sm font-medium text-text-secondary"
+            >
+              Name
+            </label>
             <Input
+              id="itemName"
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
@@ -404,48 +526,101 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                 }
               }}
               placeholder="Classic burger"
+              maxLength={MENU_ITEM_NAME_MAX}
+              aria-invalid={fieldErrors.name ? true : undefined}
+              aria-describedby="itemName-count"
             />
-          </FormField>
+            <div className="flex items-start justify-between gap-3">
+              {fieldErrors.name ? (
+                <p role="alert" className="text-sm text-error">
+                  {fieldErrors.name}
+                </p>
+              ) : (
+                <span />
+              )}
+              <p
+                id="itemName-count"
+                className="shrink-0 text-right text-xs tabular-nums text-text-tertiary"
+              >
+                {name.length}/{MENU_ITEM_NAME_MAX}
+              </p>
+            </div>
+          </div>
 
-          <FormField id="itemDescription" label="Description" hint="Optional">
-            <Input
+          <div className="space-y-2">
+            <label
+              htmlFor="itemDescription"
+              className="text-sm font-medium text-text-secondary"
+            >
+              Description (Optional)
+            </label>
+            <textarea
+              id="itemDescription"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Angus beef, lettuce, tomato, house sauce"
+              maxLength={MENU_ITEM_DESCRIPTION_MAX}
+              rows={3}
+              aria-describedby="itemDescription-count"
+              className="flex min-h-[5.5rem] w-full resize-y rounded-md border border-border-strong bg-background px-4 py-3 text-base text-foreground placeholder:text-text-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-foreground disabled:cursor-not-allowed disabled:opacity-50"
             />
-          </FormField>
+            <p
+              id="itemDescription-count"
+              className="text-right text-xs tabular-nums text-text-tertiary"
+            >
+              {description.length}/{MENU_ITEM_DESCRIPTION_MAX}
+            </p>
+          </div>
 
-          <FormField
-            id="itemPrice"
-            label="Price (CAD)"
-            hint="Example: 14.50"
-            error={fieldErrors.priceDollars}
-          >
-            <Input
-              value={priceDollars}
-              onChange={(event) => {
-                setPriceDollars(event.target.value);
-                if (fieldErrors.priceDollars) {
-                  setFieldErrors((current) => ({
-                    ...current,
-                    priceDollars: undefined,
-                  }));
-                }
-              }}
-              inputMode="decimal"
-              placeholder="14.50"
-            />
-          </FormField>
+          <div className="space-y-2">
+            <label
+              htmlFor="itemPrice"
+              className="text-sm font-medium text-text-secondary"
+            >
+              Price
+            </label>
+            <div className="relative">
+              <span
+                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-base text-text-secondary"
+                aria-hidden
+              >
+                $
+              </span>
+              <Input
+                id="itemPrice"
+                value={priceDollars}
+                onChange={(event) => {
+                  setPriceDollars(event.target.value);
+                  if (fieldErrors.priceDollars) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      priceDollars: undefined,
+                    }));
+                  }
+                }}
+                inputMode="decimal"
+                placeholder="14.50"
+                className="pl-8"
+                aria-invalid={fieldErrors.priceDollars ? true : undefined}
+              />
+            </div>
+            {fieldErrors.priceDollars ? (
+              <p role="alert" className="text-sm text-error">
+                {fieldErrors.priceDollars}
+              </p>
+            ) : null}
+          </div>
 
-          <FormField
-            id="itemImages"
-            label="Photos"
-            hint={`Up to ${MENU_IMAGE_MAX_COUNT} images · JPEG/PNG/WebP/GIF · max ${Math.floor(MENU_IMAGE_MAX_BYTES / (1024 * 1024))} MB each`}
-          >
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-text-secondary">Photos</p>
+              <p className="text-xs text-text-tertiary">
+                Up to {MENU_IMAGE_MAX_COUNT} · JPEG, PNG, WebP, GIF
+              </p>
+            </div>
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                {!clearAllImages
-                  ? savedImages.map((image) => (
+                {savedImages.map((image) => (
                       <div
                         key={image.id}
                         className="relative h-24 w-24 overflow-hidden rounded-2xl bg-surface"
@@ -458,15 +633,16 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                         />
                         <button
                           type="button"
-                          onClick={() => void removeSavedImage(image.id)}
+                          onClick={() =>
+                            setDestroyTarget({ type: "photo", id: image.id })
+                          }
                           className="absolute top-1 right-1 rounded-full bg-background/90 px-1.5 text-xs font-medium text-foreground"
                           aria-label="Remove photo"
                         >
                           ×
                         </button>
                       </div>
-                    ))
-                  : null}
+                    ))}
                 {pendingFiles.map((pending) => (
                   <div
                     key={pending.key}
@@ -488,66 +664,48 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                     </button>
                   </div>
                 ))}
-                {totalPhotoCount === 0 ? (
-                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-surface text-center text-xs text-text-tertiary">
-                    No photos
-                  </div>
+                {totalPhotoCount < MENU_IMAGE_MAX_COUNT ? (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex h-24 w-24 items-center justify-center rounded-2xl border border-dashed border-border-strong bg-surface text-text-tertiary transition-colors hover:border-foreground hover:text-foreground"
+                    aria-label="Add photos"
+                  >
+                    <Plus className="h-6 w-6" aria-hidden />
+                  </button>
                 ) : null}
               </div>
-              <Input
+              <input
+                ref={fileInputRef}
                 type="file"
                 accept={MENU_IMAGE_ACCEPT}
                 multiple
+                className="sr-only"
+                tabIndex={-1}
                 disabled={totalPhotoCount >= MENU_IMAGE_MAX_COUNT}
                 onChange={(event) => {
                   addPendingFiles(event.target.files);
                   event.target.value = "";
                 }}
               />
-              {totalPhotoCount > 0 ? (
-                <button
-                  type="button"
-                  className="text-sm font-medium text-text-secondary underline-offset-2 hover:underline"
-                  onClick={() => {
-                    for (const pending of pendingFiles) {
-                      if (pending.previewUrl.startsWith("blob:")) {
-                        URL.revokeObjectURL(pending.previewUrl);
-                      }
-                    }
-                    setPendingFiles([]);
-                    setSavedImages([]);
-                    setClearAllImages(true);
-                  }}
-                >
-                  Remove all photos
-                </button>
-              ) : null}
             </div>
-          </FormField>
+          </div>
 
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={available}
-              onChange={(event) => setAvailable(event.target.checked)}
-              className="h-4 w-4 rounded-md border-border-strong"
-            />
-            Available for ordering
-          </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 py-4">
+        <CardHeader className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Modifiers</h2>
+            <h2 className="text-base font-semibold text-foreground">Options</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Optional add-ons or required choices (size, toppings).
+              Add-ons or required choices like size and toppings.
             </p>
           </div>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
+            className="w-full sm:w-auto"
             onClick={() =>
               setGroups((current) => [
                 ...current,
@@ -567,7 +725,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {groups.length === 0 ? (
-            <p className="text-sm text-text-secondary">No modifier groups yet.</p>
+            <p className="text-sm text-text-secondary">No options yet.</p>
           ) : (
             groups.map((group) => (
               <div
@@ -602,10 +760,13 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                   <Button
                     type="button"
                     variant="secondary"
+                    className="w-full sm:w-auto"
                     onClick={() =>
-                      setGroups((current) =>
-                        current.filter((entry) => entry.key !== group.key),
-                      )
+                      setDestroyTarget({
+                        type: "group",
+                        key: group.key,
+                        name: group.name.trim(),
+                      })
                     }
                   >
                     Remove group
@@ -712,31 +873,40 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                         ) : null}
                       </div>
                       <div className="space-y-1">
-                        <Input
-                          value={modifier.priceDollars}
-                          onChange={(event) => {
-                            updateModifier(group.key, modifier.key, {
-                              priceDollars: event.target.value,
-                            });
-                            if (modifierErrors[modifier.key]?.priceDollars) {
-                              setModifierErrors((current) => ({
-                                ...current,
-                                [modifier.key]: {
-                                  ...current[modifier.key],
-                                  priceDollars: undefined,
-                                },
-                              }));
+                        <div className="relative">
+                          <span
+                            className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-base text-text-secondary"
+                            aria-hidden
+                          >
+                            $
+                          </span>
+                          <Input
+                            value={modifier.priceDollars}
+                            onChange={(event) => {
+                              updateModifier(group.key, modifier.key, {
+                                priceDollars: event.target.value,
+                              });
+                              if (modifierErrors[modifier.key]?.priceDollars) {
+                                setModifierErrors((current) => ({
+                                  ...current,
+                                  [modifier.key]: {
+                                    ...current[modifier.key],
+                                    priceDollars: undefined,
+                                  },
+                                }));
+                              }
+                            }}
+                            inputMode="decimal"
+                            placeholder="1.50"
+                            className="pl-8"
+                            aria-label="Modifier price"
+                            aria-invalid={
+                              modifierErrors[modifier.key]?.priceDollars
+                                ? true
+                                : undefined
                             }
-                          }}
-                          inputMode="decimal"
-                          placeholder="1.50"
-                          aria-label="Modifier price"
-                          aria-invalid={
-                            modifierErrors[modifier.key]?.priceDollars
-                              ? true
-                              : undefined
-                          }
-                        />
+                          />
+                        </div>
                         {modifierErrors[modifier.key]?.priceDollars ? (
                           <p role="alert" className="text-sm text-error">
                             {modifierErrors[modifier.key]?.priceDollars}
@@ -759,11 +929,13 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                       <Button
                         type="button"
                         variant="secondary"
+                        className="w-full sm:w-auto"
                         onClick={() =>
-                          updateGroup(group.key, {
-                            modifiers: group.modifiers.filter(
-                              (entry) => entry.key !== modifier.key,
-                            ),
+                          setDestroyTarget({
+                            type: "modifier",
+                            groupKey: group.key,
+                            modifierKey: modifier.key,
+                            name: modifier.name.trim(),
                           })
                         }
                       >
@@ -775,6 +947,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                   <Button
                     type="button"
                     variant="secondary"
+                    className="w-full sm:w-auto"
                     onClick={() =>
                       updateGroup(group.key, {
                         modifiers: [
@@ -789,7 +962,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
                       })
                     }
                   >
-                    Add modifier
+                    Add option
                   </Button>
                 </div>
               </div>
@@ -802,14 +975,10 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <Button
-          type="button"
-          variant="secondary"
-          onClick={() => router.push("/dashboard/menu")}
+          type="submit"
+          className="w-full sm:w-auto"
           disabled={isSubmitting}
         >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting
             ? "Saving…"
             : mode === "create"
@@ -817,6 +986,41 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
               : "Save changes"}
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={destroyTarget !== null}
+        title={
+          destroyTarget?.type === "photo"
+            ? "Remove this photo?"
+            : destroyTarget?.type === "group"
+              ? "Remove this group?"
+              : "Remove this modifier?"
+        }
+        description={
+          destroyTarget?.type === "photo"
+            ? "This photo will be deleted from the item."
+            : destroyTarget?.type === "group"
+              ? `${destroyTarget.name || "This group"} and its modifiers will be removed.`
+              : destroyTarget?.type === "modifier"
+                ? `${destroyTarget.name || "This modifier"} will be removed from the group.`
+                : undefined
+        }
+        confirmLabel={
+          destroyTarget?.type === "photo"
+            ? "Remove photo"
+            : destroyTarget?.type === "group"
+              ? "Remove group"
+              : "Remove modifier"
+        }
+        cancelLabel="Keep"
+        pending={destroyPending}
+        onCancel={() => {
+          if (!destroyPending) {
+            setDestroyTarget(null);
+          }
+        }}
+        onConfirm={() => void applyDestroy()}
+      />
     </form>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClipboardList } from "@/components/ui/icons";
+import { KitchenDeliveryFulfill } from "@/components/features/orders/kitchen-delivery-fulfill";
 import { OrderTransitionButtons } from "@/components/features/orders/order-transition-buttons";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -14,6 +15,7 @@ import {
   formatKitchenScheduled,
   formatKitchenWait,
 } from "@/lib/domain/order/kitchen-format";
+import { isKitchenBoardDeferred } from "@/lib/domain/order/kitchen-schedule";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import {
   getTransitionActions,
@@ -28,13 +30,12 @@ const BOARD_POLL_MS = ACTIVE_DELIVERY_POLL_MS;
 const TAB_LABELS: Record<(typeof KITCHEN_BOARD_COLUMNS)[number]["id"], string> =
   {
     new: "New",
-    accepted: "Accepted",
-    preparing: "Preparing",
+    cooking: "Cooking",
     ready: "Ready",
   };
 
 const BOARD_ACTION_LABELS: Partial<Record<TransitionAction["to"], string>> = {
-  preparing: "Prep",
+  preparing: "Start",
   ready: "Ready",
   ready_for_pickup: "Ready",
 };
@@ -44,12 +45,14 @@ type ColumnId = (typeof KITCHEN_BOARD_COLUMNS)[number]["id"];
 type KitchenBoardProps = {
   initialItems: StaffOrderListItem[];
   initialPendingCount: number;
+  prepMinutes: number;
 };
 
 type ListApiResponse = {
   data: {
     items: StaffOrderListItem[];
     pendingAcceptanceCount: number;
+    prepMinutes: number;
   };
 };
 
@@ -82,17 +85,28 @@ function firstColumnWithWork(items: StaffOrderListItem[]): ColumnId {
 export function KitchenBoard({
   initialItems,
   initialPendingCount,
+  prepMinutes: initialPrepMinutes,
 }: KitchenBoardProps) {
   const [items, setItems] = useState(initialItems);
   const [pendingCount, setPendingCount] = useState(initialPendingCount);
+  const [prepMinutes, setPrepMinutes] = useState(initialPrepMinutes);
+  const [laterOpen, setLaterOpen] = useState(false);
   const [prevInitial, setPrevInitial] = useState(initialItems);
   const [activeColumnId, setActiveColumnId] = useState<ColumnId>(() =>
-    firstColumnWithWork(initialItems),
+    firstColumnWithWork(
+      initialItems.filter(
+        (order) => !isKitchenBoardDeferred(order, initialPrepMinutes),
+      ),
+    ),
   );
   const knownPendingIds = useRef(
     new Set(
       initialItems
-        .filter((order) => order.status === "pending_acceptance")
+        .filter(
+          (order) =>
+            order.status === "pending_acceptance" &&
+            !isKitchenBoardDeferred(order, initialPrepMinutes),
+        )
         .map((order) => order.id),
     ),
   );
@@ -103,26 +117,42 @@ export function KitchenBoard({
     setPrevInitial(initialItems);
     setItems(initialItems);
     setPendingCount(initialPendingCount);
+    setPrepMinutes(initialPrepMinutes);
   }
+
+  const { liveItems, laterItems } = useMemo(() => {
+    const later: StaffOrderListItem[] = [];
+    const live: StaffOrderListItem[] = [];
+    for (const order of items) {
+      if (isKitchenBoardDeferred(order, prepMinutes)) {
+        later.push(order);
+      } else {
+        live.push(order);
+      }
+    }
+    later.sort((a, b) => {
+      const aMs = a.scheduledFor ? new Date(a.scheduledFor).getTime() : 0;
+      const bMs = b.scheduledFor ? new Date(b.scheduledFor).getTime() : 0;
+      return aMs - bMs;
+    });
+    return { liveItems: live, laterItems: later };
+  }, [items, prepMinutes]);
 
   const columnCounts = useMemo(() => {
     return Object.fromEntries(
       KITCHEN_BOARD_COLUMNS.map((column) => [
         column.id,
-        ordersForColumn(items, column).length,
+        ordersForColumn(liveItems, column).length,
       ]),
     ) as Record<ColumnId, number>;
-  }, [items]);
+  }, [liveItems]);
 
-  useEffect(() => {
-    if (columnCounts[activeColumnId] > 0) {
-      return;
-    }
-    const next = firstColumnWithWork(items);
+  if (columnCounts[activeColumnId] === 0) {
+    const next = firstColumnWithWork(liveItems);
     if (next !== activeColumnId) {
       setActiveColumnId(next);
     }
-  }, [activeColumnId, columnCounts, items]);
+  }
 
   const playChime = useCallback(() => {
     try {
@@ -160,8 +190,11 @@ export function KitchenBoard({
       }
       const body = (await response.json()) as ListApiResponse;
       const nextItems = body.data.items;
+      const nextPrep = body.data.prepMinutes ?? prepMinutes;
       const nextPending = nextItems.filter(
-        (order) => order.status === "pending_acceptance",
+        (order) =>
+          order.status === "pending_acceptance" &&
+          !isKitchenBoardDeferred(order, nextPrep),
       );
       const newIds = nextPending.filter(
         (order) => !knownPendingIds.current.has(order.id),
@@ -175,11 +208,12 @@ export function KitchenBoard({
 
       knownPendingIds.current = new Set(nextPending.map((order) => order.id));
       setItems(nextItems);
+      setPrepMinutes(nextPrep);
       setPendingCount(body.data.pendingAcceptanceCount);
     } catch {
       // Ignore transient poll errors.
     }
-  }, [playChime]);
+  }, [playChime, prepMinutes]);
 
   useLiveRefresh({
     enabled: true,
@@ -197,7 +231,7 @@ export function KitchenBoard({
     };
   }, [pendingCount]);
 
-  if (items.length === 0) {
+  if (liveItems.length === 0 && laterItems.length === 0) {
     return (
       <EmptyState
         icon={<ClipboardList className="h-6 w-6" aria-hidden />}
@@ -218,7 +252,7 @@ export function KitchenBoard({
   const activeColumn =
     KITCHEN_BOARD_COLUMNS.find((column) => column.id === activeColumnId) ??
     KITCHEN_BOARD_COLUMNS[0];
-  const activeOrders = ordersForColumn(items, activeColumn);
+  const activeOrders = ordersForColumn(liveItems, activeColumn);
 
   return (
     <div className="space-y-4">
@@ -287,9 +321,9 @@ export function KitchenBoard({
         </section>
       </div>
 
-      <div className="hidden gap-3 lg:grid lg:grid-cols-4">
+      <div className="hidden gap-3 lg:grid lg:grid-cols-3">
         {KITCHEN_BOARD_COLUMNS.map((column) => {
-          const columnOrders = ordersForColumn(items, column);
+          const columnOrders = ordersForColumn(liveItems, column);
 
           return (
             <section
@@ -330,6 +364,29 @@ export function KitchenBoard({
           );
         })}
       </div>
+
+      {laterItems.length > 0 ? (
+        <section className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
+          <button
+            type="button"
+            onClick={() => setLaterOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={laterOpen || liveItems.length === 0}
+          >
+            <h2 className="text-sm font-semibold text-foreground">Later</h2>
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-background px-1.5 text-xs font-semibold text-text-secondary">
+              {laterItems.length}
+            </span>
+          </button>
+          {laterOpen || liveItems.length === 0 ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {laterItems.map((order) => (
+                <KitchenOrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -402,12 +459,7 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
       {order.status === "ready" &&
       order.fulfillmentType === "delivery" &&
       order.fulfillmentMethod === "unassigned" ? (
-        <Link
-          href={`/dashboard/orders/${order.id}`}
-          className="inline-flex h-11 w-full items-center justify-center rounded-md border border-amber-300 bg-amber-50 text-sm font-medium text-amber-900"
-        >
-          Fulfill delivery
-        </Link>
+        <KitchenDeliveryFulfill order={order} />
       ) : (
         <OrderTransitionButtons
           orderId={order.id}

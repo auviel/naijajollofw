@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   canTransition,
   getTransitionActions,
+  KITCHEN_BOARD_COLUMNS,
   mapDeliveryStatusToOrderStatus,
   parseStaffOrderListFilter,
   statusesForStaffFilter,
 } from "@/lib/domain/order/transitions";
 
 describe("order transitions", () => {
-  it("allows accept and cancel from pending_acceptance", () => {
-    expect(canTransition("pending_acceptance", "accepted")).toBe(true);
+  it("allows start (preparing) and cancel from pending_acceptance", () => {
+    expect(canTransition("pending_acceptance", "preparing")).toBe(true);
+    expect(canTransition("pending_acceptance", "accepted")).toBe(false);
     expect(canTransition("pending_acceptance", "cancelled")).toBe(true);
     expect(canTransition("pending_acceptance", "ready")).toBe(false);
   });
@@ -55,10 +57,19 @@ describe("order transitions", () => {
     );
   });
 
-  it("exposes primary accept action first", () => {
+  it("exposes primary start action first", () => {
     const actions = getTransitionActions("pending_acceptance");
-    expect(actions[0]?.to).toBe("accepted");
+    expect(actions[0]?.to).toBe("preparing");
+    expect(actions[0]?.label).toBe("Start");
     expect(actions.some((a) => a.to === "cancelled")).toBe(true);
+  });
+
+  it("uses a three-column kitchen board", () => {
+    expect(KITCHEN_BOARD_COLUMNS.map((column) => column.id)).toEqual([
+      "new",
+      "cooking",
+      "ready",
+    ]);
   });
 
   it("maps carrier status onto order status", () => {

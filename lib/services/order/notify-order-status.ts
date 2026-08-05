@@ -26,6 +26,17 @@ type EmailNotifyStatus =
   | "out_for_delivery"
   | "cancelled";
 
+/** Start on the board skips `accepted` → still send the accepted diner ping. */
+export function notifyStatusForStaffTransition(
+  from: OrderStatus,
+  to: OrderStatus,
+): OrderStatus {
+  if (from === "pending_acceptance" && to === "preparing") {
+    return "accepted";
+  }
+  return to;
+}
+
 /** Pickup: one ready ping when the bag is ready. Delivery: ping on `ready`. No completed mail. */
 export function shouldNotifyOrderStatus(
   status: OrderStatus,

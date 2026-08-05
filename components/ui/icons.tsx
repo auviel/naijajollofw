@@ -14,7 +14,9 @@ import {
   HandshakeIcon,
   DrinkIcon,
   EyeIcon,
+  Folder01Icon,
   Home01Icon,
+  Image01Icon,
   IceCubesIcon,
   InstagramIcon,
   LeftToRightListDashIcon,
@@ -91,7 +93,9 @@ export const Clock = createIcon(Clock01Icon, "Clock");
 export const Eye = createIcon(EyeIcon, "Eye");
 export const EyeOff = createIcon(ViewOffIcon, "EyeOff");
 export const ExternalLink = createIcon(LinkSquare01Icon, "ExternalLink");
+export const Folder = createIcon(Folder01Icon, "Folder");
 export const Handshake = createIcon(HandshakeIcon, "Handshake");
+export const Image = createIcon(Image01Icon, "Image");
 export const Home = createIcon(Home01Icon, "Home");
 export const List = createIcon(LeftToRightListDashIcon, "List");
 export const Location = createIcon(Location01Icon, "Location");

@@ -11,14 +11,16 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">{title}</h1>
-        {description ? (
-          <p className="mt-1 text-sm text-text-secondary">{description}</p>
-        ) : null}
+    <div className="mb-5 sm:mb-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="min-w-0 text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+          {title}
+        </h1>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      {action ? <div className="w-full shrink-0 sm:w-auto">{action}</div> : null}
+      {description ? (
+        <p className="mt-1 text-sm text-text-secondary">{description}</p>
+      ) : null}
     </div>
   );
 }

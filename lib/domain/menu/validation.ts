@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  MENU_ITEM_DESCRIPTION_MAX,
+  MENU_ITEM_NAME_MAX,
+} from "@/lib/domain/menu/limits";
 
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1, "Category name is required").max(80),
@@ -41,8 +45,17 @@ const imageUrlSchema = z
 
 export const createMenuItemSchema = z.object({
   categoryId: z.string().cuid("Choose a category"),
-  name: z.string().trim().min(1, "Item name is required").max(120),
-  description: z.string().trim().max(500).nullable().optional(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Item name is required")
+    .max(MENU_ITEM_NAME_MAX),
+  description: z
+    .string()
+    .trim()
+    .max(MENU_ITEM_DESCRIPTION_MAX)
+    .nullable()
+    .optional(),
   priceCents: z.number().int().min(0, "Price must be zero or more").max(1_000_000),
   imageUrl: imageUrlSchema,
   available: z.boolean().optional(),
@@ -52,8 +65,18 @@ export const createMenuItemSchema = z.object({
 
 export const updateMenuItemSchema = z.object({
   categoryId: z.string().cuid().optional(),
-  name: z.string().trim().min(1, "Item name is required").max(120).optional(),
-  description: z.string().trim().max(500).nullable().optional(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Item name is required")
+    .max(MENU_ITEM_NAME_MAX)
+    .optional(),
+  description: z
+    .string()
+    .trim()
+    .max(MENU_ITEM_DESCRIPTION_MAX)
+    .nullable()
+    .optional(),
   priceCents: z.number().int().min(0).max(1_000_000).optional(),
   imageUrl: imageUrlSchema,
   available: z.boolean().optional(),

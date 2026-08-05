@@ -7,7 +7,10 @@ import {
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { canTransition } from "@/lib/domain/order/transitions";
 import { orderTransitionSchema } from "@/lib/domain/order/validation-staff";
-import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
+import {
+  notifyOrderStatus,
+  notifyStatusForStaffTransition,
+} from "@/lib/services/order/notify-order-status";
 import { AppError } from "@/lib/utils/errors";
 
 export async function transitionStaffOrder(
@@ -56,7 +59,7 @@ export async function transitionStaffOrder(
     storeName: updated.store?.name ?? "Restaurant",
     orderId: updated.id,
     publicToken: updated.publicToken,
-    status: updated.status,
+    status: notifyStatusForStaffTransition(existing.status, updated.status),
     fulfillmentType: updated.fulfillmentType,
     courierTrackingUrl: updated.delivery?.trackingUrl,
     note: parsed.note?.trim() || null,
@@ -71,7 +74,7 @@ function defaultTransitionNote(to: OrderStatus): string {
     case "accepted":
       return "Order accepted";
     case "preparing":
-      return "Kitchen started preparing";
+      return "Kitchen started";
     case "ready":
       return "Order marked ready";
     case "ready_for_pickup":

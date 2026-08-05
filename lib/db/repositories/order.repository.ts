@@ -382,6 +382,7 @@ export const orderRepository = {
     storeId: string,
     statuses?: OrderStatus[],
     channel: "all" | "kitchen" | "courier" = "all",
+    options?: { scheduledDueBy?: Date },
   ) {
     return prisma.order.count({
       where: {
@@ -392,6 +393,14 @@ export const orderRepository = {
           : channel === "courier"
             ? { source: { in: ["dashboard", "whatsapp"] } }
             : {}),
+        ...(options?.scheduledDueBy
+          ? {
+              OR: [
+                { scheduledFor: null },
+                { scheduledFor: { lte: options.scheduledDueBy } },
+              ],
+            }
+          : {}),
         NOT: { status: "pending_payment" },
       },
     });

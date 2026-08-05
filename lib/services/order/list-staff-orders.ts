@@ -3,6 +3,8 @@ import {
   mapOrderToStaffListItem,
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
+import { storeRepository } from "@/lib/db/repositories/store.repository";
+import { kitchenBoardDueBy } from "@/lib/domain/order/kitchen-schedule";
 import type { StaffOrderListItem } from "@/lib/domain/order/types";
 import {
   parseStaffOrderChannel,
@@ -25,6 +27,7 @@ export type ListStaffOrdersResult = {
   channel: StaffOrderChannel;
   search: string;
   pendingAcceptanceCount: number;
+  prepMinutes: number;
 };
 
 export async function listStaffOrders(
@@ -39,7 +42,7 @@ export async function listStaffOrders(
   const effectiveChannel =
     filter === "active" && channel === "all" ? "kitchen" : channel;
 
-  const [orders, pendingAcceptanceCount] = await Promise.all([
+  const [orders, store] = await Promise.all([
     orderRepository.findManyForStore({
       storeId: user.storeId,
       statuses,
@@ -47,12 +50,15 @@ export async function listStaffOrders(
       limit: input.limit,
       channel: effectiveChannel,
     }),
-    orderRepository.countForStore(
-      user.storeId,
-      ["pending_acceptance"],
-      "kitchen",
-    ),
+    storeRepository.findById(user.storeId),
   ]);
+  const prepMinutes = store?.prepMinutes ?? 15;
+  const pendingAcceptanceCount = await orderRepository.countForStore(
+    user.storeId,
+    ["pending_acceptance"],
+    "kitchen",
+    { scheduledDueBy: kitchenBoardDueBy(prepMinutes) },
+  );
 
   return {
     items: orders.map(mapOrderToStaffListItem),
@@ -60,5 +66,6 @@ export async function listStaffOrders(
     channel: effectiveChannel,
     search,
     pendingAcceptanceCount,
+    prepMinutes,
   };
 }

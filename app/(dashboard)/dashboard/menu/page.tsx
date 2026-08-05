@@ -14,12 +14,21 @@ export const metadata: Metadata = {
 
 export default async function MenuAdminPage() {
   const catalog = await listMenuCatalog();
+  const soldOutCount = catalog.categories.reduce(
+    (count, category) =>
+      count + category.items.filter((item) => !item.available).length,
+    0,
+  );
 
   return (
     <DashboardPage>
       <PageHeader
         title="Menu"
-        description="Categories, items, and sold-out toggles for your storefront."
+        description={
+          soldOutCount > 0
+            ? `${soldOutCount} sold out`
+            : undefined
+        }
         action={<MenuCreateActions />}
       />
       <DashboardPageBody>

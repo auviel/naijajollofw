@@ -20,8 +20,8 @@ export function DashboardListLoading({
       </div>
       <DashboardPageBody>
         {board ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, column) => (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, column) => (
               <div key={column} className="space-y-2 rounded-2xl border border-border p-3">
                 <Skeleton className="h-5 w-24" />
                 <Skeleton className="h-28 w-full rounded-md" />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowDown, User } from "@/components/ui/icons";
+import { ArrowDown, LogOut, Store, User } from "@/components/ui/icons";
 import { signOutStaff } from "@/lib/auth/actions";
 import { cn } from "@/lib/utils/cn";
 
@@ -78,9 +78,10 @@ export function SidebarProfileMenu() {
             <Link
               role="menuitem"
               href="/dashboard/store"
-              className="block px-3 py-2.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-surface"
+              className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-surface"
               onClick={() => setOpen(false)}
             >
+              <Store className="h-4 w-4 text-text-secondary" aria-hidden />
               Store profile
             </Link>
           </li>
@@ -89,8 +90,9 @@ export function SidebarProfileMenu() {
               <button
                 type="submit"
                 role="menuitem"
-                className="block w-full px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface"
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface"
               >
+                <LogOut className="h-4 w-4 text-text-secondary" aria-hidden />
                 Sign out
               </button>
             </form>

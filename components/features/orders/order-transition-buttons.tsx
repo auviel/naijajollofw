@@ -13,6 +13,7 @@ import {
   ShoppingBagCheck,
   X,
 } from "@/components/ui/icons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
 
@@ -54,19 +55,24 @@ export function OrderTransitionButtons({
   const router = useRouter();
   const { success, error: toastError } = useToast();
   const [pendingTo, setPendingTo] = useState<OrderStatus | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   if (actions.length === 0) {
     return null;
   }
 
+  const cancelAction = actions.find((action) => action.to === "cancelled");
+
   async function runTransition(action: TransitionAction) {
     if (action.to === "cancelled") {
-      const confirmed = window.confirm("Cancel this order?");
-      if (!confirmed) {
-        return;
-      }
+      setCancelOpen(true);
+      return;
     }
 
+    await executeTransition(action);
+  }
+
+  async function executeTransition(action: TransitionAction) {
     setPendingTo(action.to);
     try {
       const response = await fetch(`/api/orders/${orderId}/transition`, {
@@ -81,6 +87,7 @@ export function OrderTransitionButtons({
       }
 
       success(`${action.label} — done`);
+      setCancelOpen(false);
       onTransitioned?.(action.to);
       router.refresh();
     } catch {
@@ -136,6 +143,21 @@ export function OrderTransitionButtons({
           </button>
         );
       })}
+
+      <ConfirmDialog
+        open={cancelOpen}
+        title="Cancel this order?"
+        description="The kitchen will stop this ticket. The diner will be notified."
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        pending={pendingTo === "cancelled"}
+        onCancel={() => setCancelOpen(false)}
+        onConfirm={() => {
+          if (cancelAction) {
+            void executeTransition(cancelAction);
+          }
+        }}
+      />
     </div>
   );
 }

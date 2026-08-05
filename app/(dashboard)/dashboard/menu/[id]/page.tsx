@@ -4,7 +4,6 @@ import {
   DashboardPage,
   DashboardPageBody,
 } from "@/components/layout/dashboard-page";
-import { PageHeader } from "@/components/layout/page-header";
 import { MenuItemForm } from "@/components/features/menu/menu-item-form";
 import { getMenuItem } from "@/lib/services/menu/get-menu-item";
 import { listMenuCategories } from "@/lib/services/menu/list-categories";
@@ -48,7 +47,6 @@ export default async function MenuItemAdminPage({ params }: PageProps) {
 
   return (
     <DashboardPage>
-      <PageHeader title={item.name} description="Edit price, availability, and modifiers." />
       <DashboardPageBody>
         <MenuItemForm mode="edit" categories={categories} item={item} />
       </DashboardPageBody>

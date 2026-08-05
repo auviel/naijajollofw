@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
@@ -40,21 +41,6 @@ export function CancelDeliveryButton({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelled, setCancelled] = useState(false);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
   async function handleCancel() {
     setError(null);
     setIsSubmitting(true);
@@ -70,7 +56,9 @@ export function CancelDeliveryButton({
       });
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
         const message = body.error ?? "Unable to cancel delivery.";
         setError(message);
         toastError(message);
@@ -102,89 +90,63 @@ export function CancelDeliveryButton({
         {cancelled ? "Delivery cancelled" : "Cancel delivery"}
       </Button>
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-delivery-title"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface-elevated p-5 shadow-sm safe-bottom sm:max-w-lg sm:rounded-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="cancel-delivery-title" className="text-lg font-semibold text-foreground">
-              Cancel delivery
-            </h3>
-            <p className="mt-2 text-sm text-text-secondary">
-              This notifies {getDeliveryProviderLabel(providerId)} and stops the courier if
-              they have not completed dropoff yet.
-            </p>
-
-            <div className="mt-4 space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="cancelReason" className="text-sm font-medium text-text-secondary">
-                  Reason
-                </label>
-                <Select
-                  id="cancelReason"
-                  value={reason}
-                  onChange={(next) =>
-                    setReason(next as CancelDeliverySchema["reason"])
-                  }
-                  options={CANCEL_REASONS.map((option) => ({
-                    value: option,
-                    label: getCancelReasonLabel(option),
-                  }))}
-                />
-              </div>
-
-              {reason === "OTHER" ? (
-                <div className="space-y-2">
-                  <label htmlFor="cancelDetails" className="text-sm font-medium text-text-secondary">
-                    Details
-                  </label>
-                  <Input
-                    id="cancelDetails"
-                    value={details}
-                    onChange={(event) => setDetails(event.target.value)}
-                    placeholder="Explain why you're cancelling"
-                    required
-                  />
-                </div>
-              ) : null}
-
-              {error ? (
-                <p className="text-sm text-error" role="alert">
-                  {error}
-                </p>
-              ) : null}
-
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full sm:w-auto"
-                  onClick={() => setOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Keep delivery
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  className="w-full sm:w-auto"
-                  onClick={handleCancel}
-                  disabled={isSubmitting || (reason === "OTHER" && !details.trim())}
-                >
-                  {isSubmitting ? "Cancelling…" : "Confirm cancel"}
-                </Button>
-              </div>
-            </div>
+      <ConfirmDialog
+        open={open}
+        title="Cancel delivery?"
+        description={`This notifies ${getDeliveryProviderLabel(providerId)} and stops the courier if they have not completed dropoff yet.`}
+        confirmLabel="Confirm cancel"
+        cancelLabel="Keep delivery"
+        pending={isSubmitting}
+        confirmDisabled={reason === "OTHER" && !details.trim()}
+        onCancel={() => setOpen(false)}
+        onConfirm={() => void handleCancel()}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="cancelReason"
+              className="text-sm font-medium text-text-secondary"
+            >
+              Reason
+            </label>
+            <Select
+              id="cancelReason"
+              value={reason}
+              onChange={(next) =>
+                setReason(next as CancelDeliverySchema["reason"])
+              }
+              options={CANCEL_REASONS.map((option) => ({
+                value: option,
+                label: getCancelReasonLabel(option),
+              }))}
+            />
           </div>
+
+          {reason === "OTHER" ? (
+            <div className="space-y-2">
+              <label
+                htmlFor="cancelDetails"
+                className="text-sm font-medium text-text-secondary"
+              >
+                Details
+              </label>
+              <Input
+                id="cancelDetails"
+                value={details}
+                onChange={(event) => setDetails(event.target.value)}
+                placeholder="Explain why you're cancelling"
+                required
+              />
+            </div>
+          ) : null}
+
+          {error ? (
+            <p className="text-sm text-error" role="alert">
+              {error}
+            </p>
+          ) : null}
         </div>
-      ) : null}
+      </ConfirmDialog>
     </>
   );
 }

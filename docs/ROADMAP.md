@@ -71,7 +71,7 @@ Leave `preparing` silent (accepted copy already says the kitchen is starting). C
 
 - Outbound **new `pending_acceptance` ping** on WhatsApp and/or SMS (in addition to email + bell + chime).
 - Reuse `WhatsAppStaffPhone` + env allowlist; dashboard CRUD can wait on #2.4 / #2.5 if needed.
-- Optional later: escalate if still unaccepted after 3–5 minutes; scheduled orders page kitchen at prep window, not at place.
+- Optional later: escalate if still unaccepted after 3–5 minutes. Scheduled tickets stay off the live kitchen board (and bell) until prep window.
 
 ### Out of scope (v1)
 

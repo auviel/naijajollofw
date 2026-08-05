@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ChevronRight, Search, UtensilsCrossed } from "@/components/ui/icons";
+import { Image, Search, UtensilsCrossed } from "@/components/ui/icons";
 import { filterCatalogByQuery } from "@/lib/domain/menu/search";
 import type { MenuCatalog, MenuItemListItem } from "@/lib/domain/menu/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
@@ -45,7 +45,6 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
     let categories = filterCatalogByQuery(catalog, query);
     if (categoryId !== "all") {
       categories = categories.filter((category) => category.id === categoryId);
-      // Keep empty selected category visible when not searching.
       if (categories.length === 0 && !query.trim()) {
         const selected = catalog.categories.find((c) => c.id === categoryId);
         if (selected) return [selected];
@@ -66,7 +65,7 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Search
             className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-text-tertiary"
@@ -75,9 +74,9 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search menu items"
+            placeholder="Search menu"
             className="pl-11"
-            aria-label="Search menu items"
+            aria-label="Search menu"
           />
         </div>
         <label className="sr-only" htmlFor="menu-category-filter">
@@ -94,7 +93,7 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
               label: category.name,
             })),
           ]}
-          className="sm:w-48"
+          className="w-[10.5rem] shrink-0 sm:w-52"
           triggerClassName={filterTriggerClassName}
           aria-label="Category"
         />
@@ -103,18 +102,13 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
       {!hasItems && !filtering ? (
         <div className="space-y-6">
           {catalog.categories.map((category) => (
-            <section key={category.id} className="space-y-3">
-              <h2 className="text-sm font-semibold tracking-wide text-text-tertiary uppercase">
-                {category.name}
-                {!category.active ? (
-                  <span className="ml-2 font-normal normal-case text-text-secondary">
-                    (hidden)
-                  </span>
-                ) : null}
-              </h2>
-              <p className="text-sm text-text-secondary">
-                No items in this category yet.
-              </p>
+            <section key={category.id} className="space-y-2">
+              <CategoryHeading
+                name={category.name}
+                hidden={!category.active}
+                count={0}
+              />
+              <p className="text-sm text-text-secondary">No items yet.</p>
             </section>
           ))}
           <PrimaryLink href="/dashboard/menu/new">New item</PrimaryLink>
@@ -136,20 +130,11 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
         <div className="space-y-8">
           {filteredCategories.map((category) => (
             <section key={category.id} className="space-y-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-sm font-semibold tracking-wide text-text-tertiary uppercase">
-                  {category.name}
-                  {!category.active ? (
-                    <span className="ml-2 font-normal normal-case text-text-secondary">
-                      (hidden)
-                    </span>
-                  ) : null}
-                </h2>
-                <span className="text-xs text-text-tertiary">
-                  {category.items.length} item
-                  {category.items.length === 1 ? "" : "s"}
-                </span>
-              </div>
+              <CategoryHeading
+                name={category.name}
+                hidden={!category.active}
+                count={category.items.length}
+              />
 
               {category.items.length === 0 ? (
                 <p className="text-sm text-text-secondary">No items yet.</p>
@@ -164,6 +149,28 @@ export function MenuCatalogView({ catalog }: MenuCatalogViewProps) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CategoryHeading({
+  name,
+  hidden,
+  count,
+}: {
+  name: string;
+  hidden: boolean;
+  count: number;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <h2 className="text-sm font-semibold text-foreground">
+        {name}
+        {hidden ? (
+          <span className="ml-2 font-normal text-text-secondary">Hidden</span>
+        ) : null}
+      </h2>
+      <span className="text-xs tabular-nums text-text-tertiary">{count}</span>
     </div>
   );
 }
@@ -203,12 +210,17 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
   }
 
   return (
-    <div className="flex items-stretch gap-2 rounded-2xl border border-border bg-surface-elevated">
+    <div
+      className={cn(
+        "flex items-stretch gap-2 rounded-2xl border bg-surface-elevated",
+        available ? "border-border" : "border-amber-200",
+      )}
+    >
       <Link
         href={`/dashboard/menu/${item.id}`}
         className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 transition-colors hover:bg-surface sm:px-4"
       >
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface sm:h-16 sm:w-16">
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -217,8 +229,8 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[10px] text-text-tertiary">
-              No photo
+            <div className="flex h-full w-full items-center justify-center text-text-tertiary">
+              <Image className="h-5 w-5" aria-hidden />
             </div>
           )}
           {item.imageCount > 1 ? (
@@ -232,29 +244,26 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
           <p className="mt-0.5 text-sm text-text-secondary">
             {formatCadFromCents(item.priceCents)}
             {item.modifierGroupCount > 0
-              ? ` · ${item.modifierGroupCount} modifier group${item.modifierGroupCount === 1 ? "" : "s"}`
+              ? ` · ${item.modifierGroupCount} option${item.modifierGroupCount === 1 ? "" : "s"}`
               : null}
           </p>
         </div>
-        <ChevronRight
-          className="h-4 w-4 shrink-0 text-text-tertiary"
-          aria-hidden
-        />
       </Link>
 
-      <div className="flex items-center border-l border-border px-3">
+      <div className="flex items-center pr-3 sm:pr-4">
         <button
           type="button"
           disabled={pending}
           onClick={toggleAvailability}
           className={cn(
-            "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+            "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
             available
-              ? "bg-success/10 text-success hover:bg-success/15"
-              : "bg-surface text-text-secondary hover:bg-border",
+              ? "bg-surface text-text-secondary hover:bg-border"
+              : "bg-amber-100 text-amber-950 hover:bg-amber-200",
             pending && "opacity-60",
           )}
           aria-pressed={available}
+          aria-label={available ? "Mark sold out" : "Mark available"}
         >
           {available ? "Available" : "Sold out"}
         </button>

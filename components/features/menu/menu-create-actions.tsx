@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowDown } from "@/components/ui/icons";
+import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
+import { MotionModal } from "@/components/motion/primitives";
+import { ArrowDown, Folder, UtensilsCrossed } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,8 @@ export function MenuCreateActions() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useBodyScrollLock(categoryOpen);
+
   useEffect(() => {
     if (!menuOpen) return;
 
@@ -48,19 +52,6 @@ export function MenuCreateActions() {
       document.removeEventListener("keydown", onKey);
     };
   }, [menuOpen]);
-
-  useEffect(() => {
-    if (!categoryOpen) return;
-
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isSubmitting) {
-        setCategoryOpen(false);
-      }
-    }
-
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [categoryOpen, isSubmitting]);
 
   function openCategoryDialog() {
     setMenuOpen(false);
@@ -109,13 +100,13 @@ export function MenuCreateActions() {
 
   return (
     <>
-      <div ref={rootRef} className="relative w-full sm:w-auto">
+      <div ref={rootRef} className="relative">
         <Button
           type="button"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           aria-controls={menuId}
-          className="w-full gap-2 sm:w-auto"
+          className="h-10 gap-2 px-4 sm:h-12 sm:px-5"
           onClick={() => setMenuOpen((open) => !open)}
         >
           New
@@ -132,15 +123,19 @@ export function MenuCreateActions() {
           <ul
             id={menuId}
             role="menu"
-            className="absolute top-full right-0 z-30 mt-2 w-full min-w-[12rem] overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-lg sm:w-48"
+            className="absolute top-full right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-lg"
           >
             <li role="none">
               <Link
                 role="menuitem"
                 href="/dashboard/menu/new"
-                className="block px-4 py-3 text-sm font-medium text-foreground no-underline transition-colors hover:bg-surface"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground no-underline transition-colors hover:bg-surface"
                 onClick={() => setMenuOpen(false)}
               >
+                <UtensilsCrossed
+                  className="h-4 w-4 text-text-secondary"
+                  aria-hidden
+                />
                 New item
               </Link>
             </li>
@@ -148,9 +143,10 @@ export function MenuCreateActions() {
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface"
                 onClick={openCategoryDialog}
               >
+                <Folder className="h-4 w-4 text-text-secondary" aria-hidden />
                 New category
               </button>
             </li>
@@ -158,62 +154,61 @@ export function MenuCreateActions() {
         ) : null}
       </div>
 
-      {categoryOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !isSubmitting) {
-              setCategoryOpen(false);
-            }
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={dialogTitleId}
-            className="w-full max-w-md rounded-2xl border border-border bg-surface-elevated p-5 shadow-lg sm:p-6"
+      <MotionModal
+        open={categoryOpen}
+        onClose={() => {
+          if (!isSubmitting) {
+            setCategoryOpen(false);
+          }
+        }}
+        labelledBy={dialogTitleId}
+        panelClassName="max-w-md flex-col overflow-visible p-5 sm:p-6"
+      >
+        <div className="w-full">
+          <h2
+            id={dialogTitleId}
+            className="text-lg font-semibold text-foreground"
           >
-            <h2
-              id={dialogTitleId}
-              className="text-base font-semibold text-foreground"
+            New category
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Group items like Mains, Drinks, or Sides.
+          </p>
+          <form onSubmit={handleCreateCategory} className="mt-5 space-y-4">
+            <FormField
+              id="categoryName"
+              label="Name"
+              error={formError ?? undefined}
             >
-              New category
-            </h2>
-            <p className="mt-1 text-sm text-text-secondary">
-              Group items like Mains, Drinks, or Sides.
-            </p>
-            <form onSubmit={handleCreateCategory} className="mt-5 space-y-4">
-              <FormField
-                id="categoryName"
-                label="Name"
-                error={formError ?? undefined}
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Mains"
+                autoFocus
+                disabled={isSubmitting}
+              />
+            </FormField>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+                onClick={() => setCategoryOpen(false)}
               >
-                <Input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Mains"
-                  autoFocus
-                  disabled={isSubmitting}
-                />
-              </FormField>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={isSubmitting}
-                  onClick={() => setCategoryOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Adding…" : "Add category"}
-                </Button>
-              </div>
-            </form>
-          </div>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Adding…" : "Add category"}
+              </Button>
+            </div>
+          </form>
         </div>
-      ) : null}
+      </MotionModal>
     </>
   );
 }

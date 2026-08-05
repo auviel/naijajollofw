@@ -53,6 +53,22 @@ describe("staff notifications", () => {
     ]);
   });
 
+  it("hides scheduled tickets that are not due yet", () => {
+    const now = Date.parse("2026-08-05T16:00:00.000Z");
+    const items = [
+      order({ id: "asap" }),
+      order({
+        id: "later",
+        scheduledFor: "2026-08-05T18:00:00.000Z",
+      }),
+    ];
+    expect(
+      pendingAcceptanceOrders(items, { prepMinutes: 15, nowMs: now }).map(
+        (row) => row.id,
+      ),
+    ).toEqual(["asap"]);
+  });
+
   it("counts all pending as unread when never seen", () => {
     const pending = [
       order({ id: "1" }),
@@ -68,5 +84,24 @@ describe("staff notifications", () => {
     ];
     const lastSeen = new Date("2026-07-12T18:00:00.000Z").getTime();
     expect(countUnreadStaffNotifications(pending, lastSeen)).toBe(1);
+  });
+
+  it("pages scheduled tickets when the prep window opens", () => {
+    const pending = [
+      order({
+        id: "later",
+        placedAt: "2026-08-05T12:00:00.000Z",
+        scheduledFor: "2026-08-05T18:00:00.000Z",
+      }),
+    ];
+    const lastSeen = Date.parse("2026-08-05T16:00:00.000Z");
+    expect(countUnreadStaffNotifications(pending, lastSeen, 15)).toBe(1);
+    expect(
+      countUnreadStaffNotifications(
+        pending,
+        Date.parse("2026-08-05T17:50:00.000Z"),
+        15,
+      ),
+    ).toBe(0);
   });
 });

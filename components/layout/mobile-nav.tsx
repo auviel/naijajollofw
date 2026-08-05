@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import {
   ClipboardList,
   LogOut,
@@ -100,12 +100,17 @@ export function MobileNav() {
   const searchParams = useSearchParams();
   const channel = searchParams.get("channel");
   const [moreOpen, setMoreOpen] = useState(false);
+  const [moreOpenPath, setMoreOpenPath] = useState(pathname);
   const moreMenuId = useId();
-  const moreActive = moreOpen || isMoreSectionActive(pathname);
 
-  useEffect(() => {
-    setMoreOpen(false);
-  }, [pathname]);
+  if (moreOpenPath !== pathname) {
+    setMoreOpenPath(pathname);
+    if (moreOpen) {
+      setMoreOpen(false);
+    }
+  }
+
+  const moreActive = moreOpen || isMoreSectionActive(pathname);
 
   return (
     <>

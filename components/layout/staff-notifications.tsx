@@ -20,6 +20,7 @@ type ListApiResponse = {
   data: {
     items: StaffOrderListItem[];
     pendingAcceptanceCount: number;
+    prepMinutes?: number;
   };
 };
 
@@ -39,6 +40,7 @@ export function StaffNotifications() {
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<StaffOrderListItem[]>([]);
+  const [prepMinutes, setPrepMinutes] = useState(15);
   const [lastSeenAt, setLastSeenAt] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
     return readStaffNotifLastSeenAt();
@@ -54,6 +56,9 @@ export function StaffNotifications() {
       if (!response.ok) return;
       const body = (await response.json()) as ListApiResponse;
       setItems(body.data.items);
+      if (typeof body.data.prepMinutes === "number") {
+        setPrepMinutes(body.data.prepMinutes);
+      }
     } catch {
       // Ignore transient poll errors.
     }
@@ -87,9 +92,9 @@ export function StaffNotifications() {
     };
   }, [open]);
 
-  const pending = pendingAcceptanceOrders(items);
+  const pending = pendingAcceptanceOrders(items, { prepMinutes });
   const unread = hydrated
-    ? countUnreadStaffNotifications(pending, lastSeenAt)
+    ? countUnreadStaffNotifications(pending, lastSeenAt, prepMinutes)
     : 0;
 
   function toggleOpen() {
