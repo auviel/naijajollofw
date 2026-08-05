@@ -306,7 +306,7 @@ export function AddressAutocomplete({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-2xl border border-border-strong bg-background py-1 shadow-lg"
+          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-2xl bg-surface-elevated py-1 shadow-md"
         >
           {suggestions.map((suggestion, index) => (
             <li

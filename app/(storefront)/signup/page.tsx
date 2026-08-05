@@ -17,7 +17,7 @@ export default function SignupPage() {
         Save your details for faster checkout. Guest ordering still works
         without an account.
       </p>
-      <div className="mt-8 rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="mt-8 rounded-2xl bg-surface-elevated p-5 sm:p-6">
         <DinerSignupForm turnstileSiteKey={getTurnstileSiteKey()} />
       </div>
     </section>

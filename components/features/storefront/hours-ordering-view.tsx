@@ -42,7 +42,7 @@ export function HoursOrderingView({
 
       <section
         aria-labelledby="hours-status-heading"
-        className="mt-10 rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6"
+        className="mt-10 rounded-2xl bg-surface-elevated px-5 py-5 sm:px-6"
       >
         <h2 id="hours-status-heading" className="sr-only">
           Current status

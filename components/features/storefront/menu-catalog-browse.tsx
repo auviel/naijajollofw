@@ -310,7 +310,7 @@ function MenuItemCard({
 
   if (!item.available) {
     return (
-      <div className="flex gap-3 rounded-2xl border border-border bg-surface-elevated/60 p-3 opacity-70">
+      <div className="flex gap-3 rounded-2xl bg-surface-elevated/60 p-3 opacity-70">
         {text}
         {media}
       </div>
@@ -334,7 +334,7 @@ function MenuItemCard({
         }
       }}
       className={cn(
-        "flex gap-3 rounded-2xl border border-border bg-background p-3 no-underline transition-colors",
+        "flex gap-3 rounded-2xl bg-surface-elevated p-3 no-underline transition-colors",
         "hover:border-border-strong hover:bg-surface/40",
       )}
     >

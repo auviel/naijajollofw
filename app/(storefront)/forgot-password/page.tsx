@@ -15,7 +15,7 @@ export default function ForgotPasswordPage() {
       <p className="mt-2 text-sm text-text-secondary">
         Enter your email and we&apos;ll send a link to reset your password.
       </p>
-      <div className="mt-8 rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="mt-8 rounded-2xl bg-surface-elevated p-5 sm:p-6">
         <DinerForgotPasswordForm />
       </div>
     </section>

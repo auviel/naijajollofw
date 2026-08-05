@@ -477,7 +477,7 @@ export function CheckoutClient({
           onClick={() => setOrderDetailsOpen(false)}
         >
           <div
-            className="flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
+            className="flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated shadow-xl sm:rounded-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
@@ -500,7 +500,7 @@ export function CheckoutClient({
               {initialCart.items.map((line) => (
                 <li
                   key={line.id}
-                  className="flex gap-3 rounded-2xl border border-border bg-surface-elevated p-3"
+                  className="flex gap-3 rounded-2xl bg-surface-elevated p-3"
                 >
                   <CartLineThumbnail line={line} size="sm" />
                   <div className="min-w-0 flex-1">
@@ -537,13 +537,13 @@ export function CheckoutClient({
       ) : null}
 
       {!configured && !simulatePayments ? (
-        <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+        <div className="rounded-2xl bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
           Square payments is not set up.
         </div>
       ) : null}
 
       {simulatePayments ? (
-        <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+        <div className="rounded-2xl bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
           Test checkout — orders are created without charging a card.
         </div>
       ) : null}
@@ -586,12 +586,12 @@ export function CheckoutClient({
             type="button"
             onClick={() => setSchedulePickerOpen(true)}
             className={cn(
-              "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left transition-colors",
+              "flex w-full items-center justify-between rounded-2xl bg-surface-elevated px-4 py-3.5 text-left transition-colors",
               fieldErrors.scheduledFor
-                ? "border-error bg-background"
+                ? "ring-2 ring-error"
                 : scheduledFor
-                  ? "border-border bg-surface-elevated hover:border-border-strong"
-                  : "border-foreground bg-background",
+                  ? "hover:bg-surface"
+                  : "ring-2 ring-foreground",
             )}
           >
             <span>
@@ -618,10 +618,8 @@ export function CheckoutClient({
               type="button"
               onClick={() => setScheduledFor(null)}
               className={cn(
-                "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left",
-                !scheduledFor
-                  ? "border-foreground bg-background"
-                  : "border-border bg-surface-elevated",
+                "flex w-full items-center justify-between rounded-2xl bg-surface-elevated px-4 py-3.5 text-left",
+                !scheduledFor ? "ring-2 ring-foreground" : "",
               )}
             >
               <span className="text-sm font-semibold text-foreground">
@@ -641,10 +639,8 @@ export function CheckoutClient({
               type="button"
               onClick={() => setSchedulePickerOpen(true)}
               className={cn(
-                "flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left",
-                scheduledFor
-                  ? "border-foreground bg-background"
-                  : "border-border bg-surface-elevated",
+                "flex w-full items-center justify-between rounded-2xl bg-surface-elevated px-4 py-3.5 text-left",
+                scheduledFor ? "ring-2 ring-foreground" : "",
               )}
             >
               <span>
@@ -775,7 +771,7 @@ export function CheckoutClient({
         ) : null}
       </section>
 
-      <section className="space-y-2 rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm">
+      <section className="space-y-2 rounded-2xl bg-surface-elevated px-4 py-3 text-sm">
         <div className="flex justify-between text-text-secondary">
           <span>Subtotal</span>
           <span>{formatCadFromCents(totals.subtotalCents)}</span>

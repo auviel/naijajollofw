@@ -66,7 +66,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-        <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
+        <div className="space-y-2 rounded-2xl bg-surface-elevated p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
             Customer
           </h2>
@@ -88,7 +88,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
           ) : null}
         </div>
 
-        <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
+        <div className="space-y-2 rounded-2xl bg-surface-elevated p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
             Guest tracking
           </h2>

@@ -181,7 +181,7 @@ export function StorefrontHeaderBar({
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-20 border-b bg-background/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md transition-[border-color,box-shadow] duration-normal ease-out",
+          "fixed inset-x-0 top-0 z-20 border-b bg-surface/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md transition-[border-color,box-shadow] duration-normal ease-out",
           scrolled
             ? "border-border shadow-[0_1px_0_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)]"
             : "border-transparent",

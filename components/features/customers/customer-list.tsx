@@ -60,7 +60,7 @@ function CustomerListRow({ customer }: { customer: CustomerListItem }) {
   return (
     <Link
       href={`/dashboard/customers/${customer.id}`}
-      className="block rounded-2xl border border-border bg-surface-elevated px-4 py-3 transition-colors duration-fast hover:bg-surface sm:px-4 sm:py-3.5"
+      className="block rounded-2xl bg-surface-elevated px-4 py-3 transition-colors duration-fast hover:bg-surface sm:px-4 sm:py-3.5"
     >
       <p className="font-medium text-foreground">{customer.name}</p>
       {customer.primaryPhone ? (

@@ -51,14 +51,12 @@ export function DeliveryStatusTimeline({
 
   if (terminal) {
     return (
-      <div className="rounded-2xl border border-border bg-surface-elevated p-5">
+      <div className="rounded-2xl bg-surface-elevated p-5">
         <h2 className="text-lg font-semibold text-foreground">Status</h2>
         <div
           className={cn(
-            "mt-4 flex items-start gap-3 rounded-md border p-4",
-            terminal === "cancelled"
-              ? "border-border bg-surface"
-              : "border-error/20 bg-red-50",
+            "mt-4 flex items-start gap-3 rounded-2xl p-4",
+            terminal === "cancelled" ? "bg-surface" : "bg-red-50",
           )}
         >
           <X
@@ -84,7 +82,7 @@ export function DeliveryStatusTimeline({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated p-5">
+    <div className="rounded-2xl bg-surface-elevated p-5">
       <h2 className="text-lg font-semibold text-foreground">Status timeline</h2>
       <ol className="mt-6 space-y-0">
         {steps.map((step, index) => (

@@ -33,7 +33,7 @@ export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
 
   if (order.linkedDelivery) {
     return (
-      <section className="space-y-2 rounded-2xl border border-border bg-surface-elevated p-4">
+      <section className="space-y-2 rounded-2xl bg-surface-elevated p-4">
         <h2 className="text-sm font-semibold text-foreground">Courier dispatch</h2>
         <p className="text-sm text-text-secondary">
           Carrier status: {order.linkedDelivery.status.replaceAll("_", " ")}
@@ -62,7 +62,7 @@ export function OrderFulfillPanel({ order }: OrderFulfillPanelProps) {
 
   if (order.fulfillmentMethod === "manual") {
     return (
-      <section className="space-y-1 rounded-2xl border border-border bg-surface-elevated p-4">
+      <section className="space-y-1 rounded-2xl bg-surface-elevated p-4">
         <h2 className="text-sm font-semibold text-foreground">Manual delivery</h2>
         <p className="text-sm text-text-secondary">
           {order.manualDeliveryNote || "Dispatched outside Courier."}
@@ -81,7 +81,7 @@ function DeliveryFulfillChoices({ order }: { order: StaffOrderDetail }) {
   const [mode, setMode] = useState<"choose" | "manual" | "delivergo">("choose");
 
   return (
-    <section className="space-y-4 rounded-md border border-amber-200 bg-amber-50/40 p-4">
+    <section className="space-y-4 rounded-2xl bg-amber-50 p-4">
       <div>
         <h2 className="text-sm font-semibold text-foreground">Fulfill delivery</h2>
         <p className="text-sm text-text-secondary">

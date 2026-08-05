@@ -195,12 +195,12 @@ function orderTimeLabel(
 
 export function OrderList({ items, filter }: OrderListProps) {
   return (
-    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface-elevated">
+    <ul className="divide-y divide-border rounded-2xl bg-surface-elevated">
       {items.map((order) => (
         <li key={order.id}>
           <Link
             href={`/dashboard/orders/${order.id}`}
-            className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-background sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 space-y-0.5">
               <p className="font-medium text-foreground">{orderTitle(order)}</p>

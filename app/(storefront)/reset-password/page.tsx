@@ -16,7 +16,7 @@ export default function ResetPasswordPage() {
       <p className="mt-2 text-sm text-text-secondary">
         Choose a new password for your account.
       </p>
-      <div className="mt-8 rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="mt-8 rounded-2xl bg-surface-elevated p-5 sm:p-6">
         <Suspense
           fallback={<p className="text-sm text-text-secondary">Loading…</p>}
         >

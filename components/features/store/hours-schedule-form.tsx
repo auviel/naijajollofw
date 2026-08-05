@@ -93,7 +93,7 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
         ) : null}
       </div>
 
-      <div className="divide-y divide-border rounded-md border border-border">
+      <div className="divide-y divide-border rounded-2xl bg-surface-elevated">
         {days.map((day) => (
           <div
             key={day.dayOfWeek}

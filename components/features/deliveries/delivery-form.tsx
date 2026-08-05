@@ -613,7 +613,7 @@ export function DeliveryForm() {
       </CollapsibleSettingCard>
 
       {isQuoting && quotes.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-secondary">
+        <div className="rounded-2xl bg-surface-elevated p-4 text-sm text-text-secondary">
           Getting quotes…
         </div>
       ) : null}

@@ -325,7 +325,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
                 </span>
               </label>
             ) : (
-              <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+              <div className="flex items-start gap-3 rounded-2xl bg-surface-elevated px-4 py-3">
                 <span className="mt-0.5 rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-text-secondary">
                   Coming soon
                 </span>

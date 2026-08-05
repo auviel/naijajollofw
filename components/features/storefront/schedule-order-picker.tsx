@@ -159,7 +159,7 @@ function ScheduleOrderPickerBody({
         onClick={onClose}
       />
       <motion.div
-        className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-background shadow-xl sm:rounded-2xl"
+        className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated shadow-xl sm:rounded-2xl"
         initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
         animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
         exit={reduce ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
@@ -209,10 +209,10 @@ function ScheduleOrderPickerBody({
                       setSelectedSlot(nextSlots[0]?.startAt ?? null);
                     }}
                     className={cn(
-                      "min-w-0 flex-1 rounded-2xl border px-3 py-3 text-left transition-colors",
+                      "min-w-0 flex-1 rounded-2xl px-3 py-3 text-left transition-colors",
                       active
-                        ? "border-foreground bg-background"
-                        : "border-border bg-surface text-text-secondary hover:border-border-strong",
+                        ? "bg-surface-elevated ring-2 ring-foreground"
+                        : "bg-surface text-text-secondary hover:bg-surface-elevated",
                     )}
                   >
                     <span className="block text-sm font-semibold text-foreground">
@@ -234,7 +234,7 @@ function ScheduleOrderPickerBody({
             ) : null}
           </div>
 
-          <div className="mt-4 divide-y divide-border rounded-2xl border border-border">
+          <div className="mt-4 divide-y divide-border rounded-2xl bg-surface-elevated">
             {slots.length === 0 ? (
               <p className="px-4 py-6 text-sm text-text-secondary">
                 No times available for this day.

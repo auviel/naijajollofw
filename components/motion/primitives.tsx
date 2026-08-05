@@ -98,7 +98,7 @@ export function MotionSheet({
         aria-modal="true"
         aria-labelledby={labelledBy}
         className={cn(
-          "absolute inset-x-0 bottom-0 flex max-h-[min(88dvh,40rem)] flex-col rounded-t-2xl border border-border bg-background shadow-lg md:hidden",
+          "absolute inset-x-0 bottom-0 flex max-h-[min(88dvh,40rem)] flex-col rounded-t-2xl bg-surface-elevated shadow-xl md:hidden",
           mobileClassName,
         )}
         initial={reduce ? { opacity: 0 } : { y: "100%" }}
@@ -114,7 +114,7 @@ export function MotionSheet({
         aria-modal="true"
         aria-labelledby={desktopLabelledBy ?? labelledBy}
         className={cn(
-          "absolute inset-y-0 right-0 hidden w-full max-w-md flex-col border-l border-border bg-background shadow-xl md:flex",
+          "absolute inset-y-0 right-0 hidden w-full max-w-md flex-col bg-surface-elevated shadow-xl md:flex",
           desktopClassName,
         )}
         initial={reduce ? { opacity: 0 } : { x: "100%" }}
@@ -158,7 +158,7 @@ export function MotionModal({
         aria-modal="true"
         aria-labelledby={labelledBy}
         className={cn(
-          "relative z-10 flex max-h-[min(90dvh,880px)] w-full max-w-4xl overflow-hidden rounded-2xl bg-background shadow-xl",
+          "relative z-10 flex max-h-[min(90dvh,880px)] w-full max-w-4xl overflow-hidden rounded-2xl bg-surface-elevated shadow-xl",
           panelClassName,
         )}
         initial={variants.initial}

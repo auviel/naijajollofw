@@ -212,8 +212,8 @@ function MenuItemRow({ item }: { item: MenuItemListItem }) {
   return (
     <div
       className={cn(
-        "flex items-stretch gap-2 rounded-2xl border bg-surface-elevated",
-        available ? "border-border" : "border-amber-200",
+        "flex items-stretch gap-2 rounded-2xl bg-surface-elevated",
+        !available && "ring-1 ring-amber-200",
       )}
     >
       <Link

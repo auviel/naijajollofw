@@ -19,7 +19,7 @@ function ProofImage({
 
   if (failed) {
     return (
-      <div className="rounded-md border border-border bg-surface p-4 text-sm text-text-secondary">
+      <div className="rounded-2xl bg-surface p-4 text-sm text-text-secondary">
         Image no longer available. Uber retains proof-of-delivery media for about 30 days.
       </div>
     );
@@ -30,7 +30,7 @@ function ProofImage({
     <img
       src={src}
       alt={alt}
-      className="max-h-80 w-full rounded-md border border-border object-contain"
+      className="max-h-80 w-full rounded-2xl object-contain"
       onError={() => setFailed(true)}
     />
   );

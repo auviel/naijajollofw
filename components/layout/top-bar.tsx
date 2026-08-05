@@ -3,7 +3,7 @@ import { StaffNotifications } from "@/components/layout/staff-notifications";
 
 export async function TopBar() {
   return (
-    <header className="sticky top-0 z-20 shrink-0 border-b border-border bg-background/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-20 shrink-0 border-b border-border bg-surface/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-surface/80">
       <div className="flex items-center gap-3 px-4 py-2.5 md:h-14 md:px-6 md:py-0 lg:px-8">
         <DashboardGlobalSearch />
 

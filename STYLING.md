@@ -82,11 +82,11 @@ Implement these in `app/globals.css` (Tailwind v4 `@theme`) or a `tokens.css` fi
 
 | Token | Light value | Usage |
 |-------|-------------|-------|
-| `--background` | `#FFFFFF` | Page background |
+| `--background` | `#FFFFFF` | Inputs, inverse-on-surface controls |
 | `--foreground` | `#000000` | Primary text |
-| `--surface` | `#F6F6F6` | Cards, sidebar |
-| `--surface-elevated` | `#FFFFFF` | Elevated cards (with border) |
-| `--border` | `rgba(0,0,0,0.08)` | Dividers, card borders (Base `border200`) |
+| `--surface` | `#F6F6F6` | Page canvas, sidebar |
+| `--surface-elevated` | `#FFFFFF` | Cards / list rows (no outline) |
+| `--border` | `rgba(0,0,0,0.08)` | Dividers only (not card outlines) |
 | `--border-strong` | `rgba(0,0,0,0.12)` | Input borders |
 | `--text-primary` | `#000000` | Headings, body |
 | `--text-secondary` | `#545454` | Labels, meta |
@@ -167,18 +167,22 @@ Uber Base uses `scale100` = 4px, `scale200` = 8px, etc. We use an 8px base grid.
 
 Wired in `app/globals.css` (`:root` + `@theme`). Prefer **`rounded-md`** for controls and **`rounded-2xl`** for surfaces app-wide (staff + storefront). Mobile bottom sheets keep **`rounded-t-2xl`**. Do not use bare `rounded`.
 
-Border style matches Base Web `border200`: `1px solid rgba(0,0,0,0.08)`.
+Controls keep a hairline: `1px solid rgba(0,0,0,0.12)` (`border-strong`) on inputs/selects. In-flow **surfaces do not use a card outline** — they sit on `--surface` (`#F6F6F6`) as white 16px cards, same as transactional email.
+
+Structural dividers (`border-b` in headers, `divide-y` in lists) are fine. Semantic borders stay (sold out amber, errors, dashed add-empty).
 
 ### Shadows & elevation
 
-Uber web apps use **flat surfaces + borders** over heavy shadows. Use shadows sparingly.
+**Soft UI:** page canvas is `--surface`; cards are `--surface-elevated` with **no border and no shadow**. Elevation comes from contrast, not a stroke.
 
 | Level | Value | Usage |
 |-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.06)` | Dropdown menus |
-| `--shadow-md` | `0 4px 16px rgba(0,0,0,0.12)` | Modals only |
+| none | — | In-flow cards, list rows, empty states |
+| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.06)` | unused on cards |
+| `--shadow-md` | `0 4px 16px rgba(0,0,0,0.08)` | Dropdowns, popovers, toasts |
+| `--shadow-xl` | `0 12px 40px rgba(0,0,0,0.12)` | Modals / sheets only |
 
-Cards on `--surface` background: border only, no shadow.
+Do not combine a hairline border **and** a shadow on the same floating panel.
 
 ### Motion
 

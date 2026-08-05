@@ -730,7 +730,7 @@ export function MenuItemForm({ mode, categories, item }: MenuItemFormProps) {
             groups.map((group) => (
               <div
                 key={group.key}
-                className="space-y-3 rounded-2xl border border-border bg-surface p-4"
+                className="space-y-3 rounded-2xl bg-surface-elevated p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1">

@@ -89,7 +89,7 @@
   }
 
   body {
-    @apply flex min-h-dvh flex-col bg-background text-foreground font-sans antialiased;
+    @apply flex min-h-dvh flex-col bg-surface text-foreground font-sans antialiased;
   }
 
   .safe-bottom {

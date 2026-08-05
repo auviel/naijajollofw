@@ -152,7 +152,7 @@ export function AccountSecurityClient({
     <div className="space-y-8">
       {!emailVerified ? <EmailVerifyBanner email={email} /> : null}
 
-      <div className="rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="rounded-2xl bg-surface-elevated p-5 sm:p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Change email
         </h2>
@@ -201,7 +201,7 @@ export function AccountSecurityClient({
         </form>
       </div>
 
-      <div className="rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="rounded-2xl bg-surface-elevated p-5 sm:p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Change password
         </h2>

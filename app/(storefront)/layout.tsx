@@ -21,7 +21,7 @@ export default function StorefrontLayout({
     <StorefrontProviders>
       <div
         id="storefront-scroll"
-        className={`${outfit.variable} flex min-h-dvh flex-1 flex-col bg-background`}
+        className={`${outfit.variable} flex min-h-dvh flex-1 flex-col bg-surface`}
       >
         <StorefrontHeader />
         <main

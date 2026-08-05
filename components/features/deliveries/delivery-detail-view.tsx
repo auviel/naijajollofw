@@ -72,7 +72,7 @@ export function DeliveryDetailView({ delivery }: DeliveryDetailViewProps) {
               ) : null}
 
               {delivery.podConfig.pincode ? (
-                <div className="rounded-md border border-border bg-background px-3 py-3">
+                <div className="rounded-2xl bg-surface px-3 py-3">
                   <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
                     Delivery PIN
                   </p>

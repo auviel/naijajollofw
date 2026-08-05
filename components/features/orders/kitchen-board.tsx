@@ -269,7 +269,7 @@ export function KitchenBoard({
         <div
           role="tablist"
           aria-label="Kitchen board columns"
-          className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-1 overflow-x-auto rounded-2xl bg-surface-elevated p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {KITCHEN_BOARD_COLUMNS.map((column) => {
             const count = columnCounts[column.id];
@@ -328,7 +328,7 @@ export function KitchenBoard({
           return (
             <section
               key={column.id}
-              className="flex min-h-[12rem] flex-col gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-3"
+              className="flex min-h-[12rem] flex-col gap-3 rounded-2xl bg-surface-elevated/50 p-3"
               aria-label={column.title}
             >
               <header className="flex items-center justify-between gap-2">
@@ -366,7 +366,7 @@ export function KitchenBoard({
       </div>
 
       {laterItems.length > 0 ? (
-        <section className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
+        <section className="rounded-2xl bg-surface-elevated/50 p-3">
           <button
             type="button"
             onClick={() => setLaterOpen((open) => !open)}
@@ -416,7 +416,7 @@ function KitchenOrderCard({ order }: { order: StaffOrderListItem }) {
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
       transition={{ duration: motionDuration.chrome, ease: easeOut }}
       className={cn(
-        "space-y-3 rounded-2xl border border-border bg-background p-3 shadow-sm",
+        "space-y-3 rounded-2xl bg-surface-elevated p-3",
         order.status === "pending_acceptance" && "border-amber-300",
       )}
     >

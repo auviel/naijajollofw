@@ -94,7 +94,7 @@ export function MenuSearchSuggest({
       role="listbox"
       aria-label="Search suggestions"
       className={cn(
-        "absolute top-[calc(100%+0.5rem)] right-0 left-0 z-30 max-h-[min(28rem,70vh)] overflow-y-auto rounded-2xl border border-border bg-background shadow-[0_12px_40px_rgba(0,0,0,0.12)]",
+        "absolute top-[calc(100%+0.5rem)] right-0 left-0 z-30 max-h-[min(28rem,70vh)] overflow-y-auto rounded-2xl bg-surface-elevated shadow-[0_12px_40px_rgba(0,0,0,0.12)]",
         className,
       )}
       onKeyDown={(event) => {

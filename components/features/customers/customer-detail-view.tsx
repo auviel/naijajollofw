@@ -184,7 +184,7 @@ export function CustomerDetailView({
                 customer.phones.map((phone) => (
                   <div
                     key={phone.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-2.5"
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-surface px-3 py-2.5"
                   >
                     <a
                       href={`tel:${phone.phoneE164}`}
@@ -215,7 +215,7 @@ export function CustomerDetailView({
                 customer.addresses.map((address) => (
                   <div
                     key={address.id}
-                    className="flex items-start justify-between gap-3 rounded-2xl border border-border px-3 py-2.5"
+                    className="flex items-start justify-between gap-3 rounded-2xl bg-surface px-3 py-2.5"
                   >
                     <p className="text-sm text-foreground">{address.formatted}</p>
                     {address.isPrimary ? (
@@ -243,7 +243,7 @@ export function CustomerDetailView({
               <Link
                 key={order.id}
                 href={`/dashboard/orders/${order.id}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-2.5 no-underline transition-colors hover:bg-surface"
+                className="flex items-center justify-between gap-3 rounded-2xl bg-surface px-3 py-2.5 no-underline transition-colors hover:bg-surface"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">

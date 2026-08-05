@@ -132,7 +132,7 @@ export function MobileNav() {
           <div
             id={moreMenuId}
             role="menu"
-            className="pointer-events-auto mx-auto mb-2 max-w-lg overflow-hidden rounded-2xl border border-border bg-background shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+            className="pointer-events-auto mx-auto mb-2 max-w-lg overflow-hidden rounded-2xl bg-surface-elevated shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
           >
             <Link
               role="menuitem"
@@ -177,7 +177,7 @@ export function MobileNav() {
           </div>
         ) : null}
 
-        <div className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-5 rounded-2xl border border-border bg-background/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
+        <div className="pointer-events-auto mx-auto grid h-14 max-w-lg grid-cols-5 rounded-2xl bg-surface-elevated/95 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
           {items.map(({ href, label, icon: Icon, kind }) => {
             const active = isNavActive(kind, pathname, channel);
 

@@ -239,8 +239,8 @@ export function ItemCustomizePanel({
               </div>
               <div
                 className={cn(
-                  "divide-y divide-border rounded-2xl border",
-                  groupErrors[group.id] ? "border-error" : "border-border",
+                  "divide-y divide-border rounded-2xl bg-surface-elevated",
+                  groupErrors[group.id] && "ring-1 ring-error",
                 )}
               >
                 {group.modifiers.map((modifier) => {

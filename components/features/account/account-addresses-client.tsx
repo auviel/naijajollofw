@@ -178,7 +178,7 @@ export function AccountAddressesClient({
           addresses.map((address) => (
             <li
               key={address.id}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-surface-elevated px-4 py-3"
+              className="flex items-start justify-between gap-3 rounded-2xl bg-surface-elevated px-4 py-3"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -217,7 +217,7 @@ export function AccountAddressesClient({
         )}
       </ul>
 
-      <div className="space-y-3 rounded-2xl border border-border p-4">
+      <div className="space-y-3 rounded-2xl bg-surface-elevated p-4">
         <h2 className="text-sm font-semibold text-foreground">Add address</h2>
         <AddressAutocomplete
           value={query}

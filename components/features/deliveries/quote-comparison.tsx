@@ -69,10 +69,10 @@ function QuoteOption({
 
   return (
     <label
-      className={`block cursor-pointer rounded-2xl border p-4 transition-colors ${
+      className={`block cursor-pointer rounded-2xl p-4 transition-colors ${
         selected
-          ? "border-accent bg-surface ring-1 ring-accent"
-          : "border-border bg-surface hover:border-border-strong"
+          ? "bg-surface-elevated ring-2 ring-accent"
+          : "bg-surface-elevated hover:bg-surface"
       } ${isExpired ? "opacity-60" : ""}`}
     >
       <div className="flex items-start gap-3">
@@ -188,7 +188,7 @@ export function QuoteComparison({
         </div>
 
         {failures.length > 0 ? (
-          <div className="space-y-2 rounded-2xl border border-border bg-surface p-3">
+          <div className="space-y-2 rounded-2xl bg-surface-elevated p-3">
             {failures.map((failure) => (
               <p key={failure.providerId} className="text-sm text-text-secondary">
                 <span className="font-medium text-foreground">

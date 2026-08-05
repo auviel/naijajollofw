@@ -16,7 +16,7 @@ export default function SigninPage() {
       <p className="mt-2 text-sm text-text-secondary">
         Access your orders and checkout faster next time.
       </p>
-      <div className="mt-8 rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="mt-8 rounded-2xl bg-surface-elevated p-5 sm:p-6">
         <Suspense
           fallback={<p className="text-sm text-text-secondary">Loading…</p>}
         >
