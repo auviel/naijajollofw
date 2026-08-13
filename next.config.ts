@@ -1,3 +1,4 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
@@ -114,8 +115,16 @@ function r2RemotePatterns(): NonNullable<
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
+  serverExternalPackages: [
+    "@prisma/client",
+    ".prisma/client",
+    "@prisma/adapter-pg",
+    "pg",
+  ],
   env: {
-    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? "",
+    NEXT_PUBLIC_VERCEL_ENV:
+      process.env.CLOUDFLARE_ENV ?? process.env.VERCEL_ENV ?? "",
+    NEXT_PUBLIC_CLOUDFLARE_ENV: process.env.CLOUDFLARE_ENV ?? "",
     NEXT_PUBLIC_STORE_TIMEZONE:
       process.env.STORE_TIMEZONE ?? "America/Toronto",
   },
@@ -140,3 +149,8 @@ export default withSentryConfig(nextConfig, {
   tunnelRoute: "/monitoring",
   silent: !process.env.CI,
 });
+
+// Optional: OPENNEXT_DEV=1 npm run dev — use Wrangler bindings (Hyperdrive) in Next.dev.
+if (process.env.OPENNEXT_DEV === "1") {
+  initOpenNextCloudflareForDev();
+}

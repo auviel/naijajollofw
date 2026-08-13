@@ -1,0 +1,62 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "naijajollofw-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "images": {
+    "binding": "IMAGES",
+  },
+  "vars": {
+    "CLOUDFLARE_ENV": "production",
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "naijajollofw-web",
+    },
+  ],
+  // App data stays on Neon. Hyperdrive origin must be the Neon *direct*
+  // (unpooled) URL — Hyperdrive is the pooler. Create with:
+  // npx wrangler hyperdrive create naijajollofw-neon --connection-string="$NEON_DIRECT_URL"
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "REPLACE_WITH_HYPERDRIVE_ID",
+      "localConnectionString": "postgresql://delivergo:delivergo@localhost:5433/delivergo?schema=public",
+    },
+  ],
+  // Next.js ISR / data cache only — not menu images (those stay on the media bucket).
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "naijajollofw-next-cache",
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NEXT_CACHE_DO_QUEUE",
+        "class_name": "DOQueueHandler",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DOQueueHandler"],
+    },
+  ],
+  // OpenNext on-demand revalidateTag store. This is NOT the restaurant database.
+  "d1_databases": [
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "naijajollofw-next-tag-cache",
+      "database_id": "REPLACE_WITH_D1_TAG_CACHE_ID",
+    },
+  ],
+}

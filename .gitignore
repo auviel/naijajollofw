@@ -20,6 +20,9 @@
 # next.js
 /.next/
 /out/
+.open-next
+.wrangler
+.dev.vars
 
 # production
 /build
@@ -38,7 +41,7 @@ yarn-error.log*
 .env*
 !.env.example
 
-# vercel
+# vercel (kept during cutover)
 .vercel
 
 # typescript

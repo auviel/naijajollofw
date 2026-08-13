@@ -195,23 +195,43 @@ Use this before going live:
 ### Going to production
 
 1. Obtain **live** Uber Direct credentials in the [Uber Direct dashboard](https://direct.uber.com)
-2. Update Vercel env vars: `UBER_CLIENT_ID`, `UBER_CLIENT_SECRET`, `UBER_CUSTOMER_ID`
+2. Update env vars (`UBER_CLIENT_ID`, `UBER_CLIENT_SECRET`, `UBER_CUSTOMER_ID`)
 3. Set `UBER_LIVE_MODE=true` and redeploy
 4. Robo courier spec is **not** sent when live mode is on — real couriers are dispatched
 5. Register production webhook URL in the [Uber Direct dashboard](https://direct.uber.com) (Delivery Status)
 6. Pilot with one store before wider rollout
 
-## Deployment (Vercel + Neon)
+## Deployment (Cloudflare Workers + Neon)
 
-1. Push to GitHub and import the repo in [Vercel](https://vercel.com)
-2. Connect a [Neon](https://neon.tech) Postgres database (Vercel integration recommended)
-3. Set environment variables in Vercel:
+Compute runs on Cloudflare Workers via OpenNext. Postgres stays on Neon (free tier is fine). Hyperdrive is the pooler — when you outgrow Neon free, point Hyperdrive at Neon paid (or any Postgres). Do **not** migrate app data to D1; D1 in this project is only Next.js `revalidateTag` cache.
+
+1. Create Cloudflare resources (once):
+
+```bash
+npx wrangler r2 bucket create naijajollofw-next-cache
+npx wrangler d1 create naijajollofw-next-tag-cache
+npx wrangler hyperdrive create naijajollofw-neon --connection-string="$NEON_DIRECT_URL"
+```
+
+Use Neon’s **direct** (unpooled) connection string for Hyperdrive. Paste the Hyperdrive id and D1 database id into `wrangler.jsonc`.
+
+2. Copy `.dev.vars.example` to `.dev.vars` for Wrangler preview. Put app secrets in Wrangler secrets (not `wrangler.jsonc` vars), same names as `.env.example` (`AUTH_SECRET`, Square, Uber, R2, Resend, …). `DATABASE_URL` is still required for `prisma migrate` and local Docker.
+
+3. Migrate, then deploy:
+
+```bash
+npm run db:migrate:deploy   # needs DATABASE_URL (Neon)
+npm run deploy              # OpenNext build + wrangler deploy
+```
+
+Local Node: `npm run dev` (Docker Postgres via `DATABASE_URL`). Optional Hyperdrive in Next.dev: `OPENNEXT_DEV=1 npm run dev`. Workers-runtime preview: `npm run preview`.
 
 | Variable | Notes |
 |----------|-------|
-| `DATABASE_URL` | Neon **pooled** connection string |
+| `DATABASE_URL` | Neon or Docker. Used by migrate and by `next dev` when Hyperdrive is off |
+| `CLOUDFLARE_ENV` | `production` / `preview` — Sentry environment (set in wrangler `vars`) |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
-| `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | Production origin, e.g. `https://new.naijajollofw.ca` |
 | `UBER_*` | Sandbox creds first; switch to live when ready |
 | `UBER_LIVE_MODE` | `false` until production pilot |
 | `DOORDASH_EXTERNAL_BUSINESS_ID` | Merchant id (often `default` in sandbox) |
@@ -228,7 +248,7 @@ Use this before going live:
 | `WHATSAPP_STAFF_PHONES` | Comma-separated allowlisted staff phones (+15195550100) |
 | `WHATSAPP_STORE_ID` | Optional store ID (defaults to first store in DB) |
 
-4. `npm run build` runs `prisma migrate deploy` then `next build`. Vercel uses that by default — no separate migrate step.
+Keep the production hostname so Square / Uber / DoorDash webhook URLs do not change.
 
 Do **not** run `npm run db:seed` against production after go-live (it resets menu + seed logins).
 

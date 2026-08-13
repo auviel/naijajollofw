@@ -1,0 +1,2 @@
+# Copy to .dev.vars (gitignored). Tells Wrangler preview which Next.js env files to load.
+NEXTJS_ENV=development

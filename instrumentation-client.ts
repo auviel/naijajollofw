@@ -1,11 +1,9 @@
 import * as Sentry from "@sentry/nextjs";
 import { sentryBeforeSend } from "@/lib/observability/sentry-before-send";
+import { deployEnvironment } from "@/lib/observability/deploy-env";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
-const environment =
-  process.env.NEXT_PUBLIC_VERCEL_ENV ??
-  process.env.VERCEL_ENV ??
-  process.env.NODE_ENV;
+const environment = deployEnvironment();
 
 Sentry.init({
   dsn,

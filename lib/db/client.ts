@@ -1,18 +1,80 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { cache } from "react";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function isCloudflareWorkers(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    navigator.userAgent === "Cloudflare-Workers"
+  );
+}
+
+function hyperdriveConnectionString(): string | undefined {
+  try {
+    const { env } = getCloudflareContext();
+    return env.HYPERDRIVE?.connectionString;
+  } catch {
+    return undefined;
+  }
+}
+
+function createPrisma(connectionString: string, perRequest: boolean): PrismaClient {
+  const adapter = new PrismaPg({
+    connectionString,
+    max: perRequest ? 1 : 5,
+    ...(perRequest ? { maxUses: 1 } : {}),
+  });
+  return new PrismaClient({
+    adapter,
     log:
       process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
+        ? ["error", "warn"]
         : ["error"],
   });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
 }
+
+const prismaForHyperdriveRequest = cache((connectionString: string) =>
+  createPrisma(connectionString, true),
+);
+
+function getClient(): PrismaClient {
+  const hyperdrive = hyperdriveConnectionString();
+  if (hyperdrive && isCloudflareWorkers()) {
+    return prismaForHyperdriveRequest(hyperdrive);
+  }
+
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
+
+  const databaseUrl = hyperdrive ?? process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL is not set (and Hyperdrive is unavailable). Local/migrate uses Neon or Docker Postgres; Workers use the HYPERDRIVE binding.",
+    );
+  }
+
+  const client = createPrisma(databaseUrl, false);
+  globalForPrisma.prisma = client;
+  return client;
+}
+
+/**
+ * Lazy Prisma client. On Workers this goes through Hyperdrive (pg adapter,
+ * maxUses: 1). Local `next dev`, tests, and `prisma migrate` keep using
+ * DATABASE_URL. Repositories can keep importing `prisma`.
+ */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client) as unknown;
+    return typeof value === "function"
+      ? (value as (...args: unknown[]) => unknown).bind(client)
+      : value;
+  },
+});

@@ -6,6 +6,7 @@ generator client {
 }
 
 datasource db {
+  // Postgres stays (Neon now, any Postgres later via Hyperdrive). Not D1/SQLite.
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
