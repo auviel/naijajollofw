@@ -26,7 +26,7 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "REPLACE_WITH_HYPERDRIVE_ID",
+      "id": "bad82ca6b68444b4be502e1e67b40572",
       "localConnectionString": "postgresql://delivergo:delivergo@localhost:5433/delivergo?schema=public",
     },
   ],
@@ -56,7 +56,7 @@
     {
       "binding": "NEXT_TAG_CACHE_D1",
       "database_name": "naijajollofw-next-tag-cache",
-      "database_id": "REPLACE_WITH_D1_TAG_CACHE_ID",
+      "database_id": "fd4cb1c3-d52d-4fda-9004-5427c3a975b5",
     },
   ],
 }
