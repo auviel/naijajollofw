@@ -16,8 +16,12 @@ export function StorefrontAiChat() {
   const pathname = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
   const [pathForOpen, setPathForOpen] = useState(pathname);
-  const { setAiChatOpen, dismissAddedToCart, registerCloseAiChat } =
-    useStorefrontUi();
+  const {
+    cartOpen,
+    setAiChatOpen,
+    dismissAddedToCart,
+    registerCloseAiChat,
+  } = useStorefrontUi();
 
   // Close the floating panel when navigating to checkout (no effect needed).
   if (pathname !== pathForOpen) {
@@ -27,7 +31,12 @@ export function StorefrontAiChat() {
     }
   }
 
-  const panelOpen = open && !isCheckoutPath(pathname);
+  // Hide behind the cart drawer — close panel so it does not snap back open.
+  if (cartOpen && open) {
+    setOpen(false);
+  }
+
+  const panelOpen = open && !isCheckoutPath(pathname) && !cartOpen;
 
   useEffect(() => {
     registerCloseAiChat(() => setOpen(false));
@@ -41,7 +50,7 @@ export function StorefrontAiChat() {
     }
   }, [panelOpen, setAiChatOpen, dismissAddedToCart]);
 
-  if (isChatPath(pathname) || isCheckoutPath(pathname)) {
+  if (isChatPath(pathname) || isCheckoutPath(pathname) || cartOpen) {
     return null;
   }
 

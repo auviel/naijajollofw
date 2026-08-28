@@ -74,7 +74,7 @@ export function buildSearchIndex(catalog: MenuCatalog): MenuSearchIndex {
 export function buildHeaderSearchIndex(catalog: MenuCatalog): MenuSearchIndex {
   const { items } = buildSearchIndex(catalog);
   return {
-    items: items.map(({ description: _description, ...item }) => ({
+    items: items.map((item) => ({
       ...item,
       description: null,
     })),

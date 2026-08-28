@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { AutocompleteListSkeleton } from "@/components/features/storefront/storefront-skeletons";
 import { cn } from "@/lib/utils/cn";
 import type { CustomerSearchResult } from "@/lib/domain/customer/types";
 import { phoneE164ToFormValue } from "@/lib/domain/customer/format";
@@ -59,6 +60,7 @@ export function CustomerNameAutocomplete({
 
     const timeout = window.setTimeout(async () => {
       setIsLoading(true);
+      setIsOpen(true);
       setSearchError(null);
 
       try {
@@ -164,10 +166,6 @@ export function CustomerNameAutocomplete({
         disabled={disabled}
       />
 
-      {isLoading ? (
-        <p className="mt-1 text-xs text-text-tertiary">Searching saved customers…</p>
-      ) : null}
-
       {searchError ? (
         <p className="mt-1 text-xs text-destructive">{searchError}</p>
       ) : null}
@@ -178,24 +176,28 @@ export function CustomerNameAutocomplete({
           role="listbox"
           className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-2xl bg-surface-elevated py-1 shadow-md"
         >
-          {suggestions.map((customer, index) => (
-            <li key={customer.id} role="option" aria-selected={index === activeIndex}>
-              <button
-                type="button"
-                className={cn(
-                  "flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors duration-fast hover:bg-surface",
-                  index === activeIndex && "bg-surface",
-                )}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => chooseCustomer(customer)}
-              >
-                <span className="font-medium text-foreground">{customer.name}</span>
-                <span className="text-sm text-text-secondary">
-                  {customer.phoneDisplay} · {customer.addressFormatted}
-                </span>
-              </button>
-            </li>
-          ))}
+          {isLoading && suggestions.length === 0 ? (
+            <AutocompleteListSkeleton rows={3} />
+          ) : (
+            suggestions.map((customer, index) => (
+              <li key={customer.id} role="option" aria-selected={index === activeIndex}>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors duration-fast hover:bg-surface",
+                    index === activeIndex && "bg-surface",
+                  )}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseCustomer(customer)}
+                >
+                  <span className="font-medium text-foreground">{customer.name}</span>
+                  <span className="text-sm text-text-secondary">
+                    {customer.phoneDisplay} · {customer.addressFormatted}
+                  </span>
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       ) : null}
     </div>

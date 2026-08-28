@@ -1,11 +1,10 @@
 import { apiFetch } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { formatCadFromCents, type CartView } from "@naijajollof/api-types";
-import { Button, Colors, Radii, Screen, Type } from "@naijajollof/ui";
+import { Button, Colors, ItemScreenSkeleton, Radii, Screen, Type } from "@naijajollof/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -67,8 +66,8 @@ export default function ItemScreen() {
 
   if (!data) {
     return (
-      <Screen style={styles.center}>
-        <ActivityIndicator color={Colors.accent} />
+      <Screen>
+        <ItemScreenSkeleton />
       </Screen>
     );
   }
@@ -169,7 +168,6 @@ export default function ItemScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
   hero: { width: "100%", height: 220, borderRadius: Radii.lg, backgroundColor: "#eee" },
   price: { fontSize: 18, fontWeight: "800", color: Colors.accent },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CartPanel } from "@/components/features/storefront/cart-panel";
+import { CartDrawerSkeleton } from "@/components/features/storefront/storefront-skeletons";
 import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { MotionSheet } from "@/components/motion/primitives";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
@@ -160,9 +161,7 @@ function CartDrawerChrome({
       </div>
 
       {loading ? (
-        <div className="flex flex-1 items-center justify-center p-10 text-sm text-text-secondary">
-          Loading…
-        </div>
+        <CartDrawerSkeleton />
       ) : error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
           <p className="text-sm text-text-secondary">{error}</p>

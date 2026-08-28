@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DinerResetPasswordForm } from "@/components/features/storefront/diner-reset-password-form";
+import { AuthFormSkeleton } from "@/components/features/storefront/storefront-skeletons";
 
 import { privatePageMetadata } from "@/lib/seo/noindex";
 
@@ -19,9 +20,7 @@ export default function ResetPasswordPage() {
         Choose a new password for your account.
       </p>
       <div className="mt-8 rounded-2xl bg-surface-elevated p-5 sm:p-6">
-        <Suspense
-          fallback={<p className="text-sm text-text-secondary">Loading…</p>}
-        >
+        <Suspense fallback={<AuthFormSkeleton fields={2} />}>
           <DinerResetPasswordForm />
         </Suspense>
       </div>

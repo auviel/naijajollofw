@@ -52,12 +52,6 @@ function AddCardPanel({
     disabled: !scriptLoaded || scriptFailed,
   });
 
-  useEffect(() => {
-    if (scriptFailed) {
-      setFormError(THIRD_PARTY_BLOCKED.square);
-    }
-  }, [scriptFailed]);
-
   async function saveCard() {
     onPendingChange(true);
     setFormError(null);

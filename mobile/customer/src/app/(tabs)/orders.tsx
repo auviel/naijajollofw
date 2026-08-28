@@ -3,11 +3,10 @@ import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { loadRecentOrders, type RecentOrder } from "@/lib/recent-orders";
 import { formatCadFromCents, type PublicOrderView } from "@naijajollof/api-types";
-import { Button, Card, Colors, Screen, Type } from "@naijajollof/ui";
+import { Button, Card, Colors, OrdersScreenSkeleton, Screen, Type } from "@naijajollof/ui";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
@@ -47,8 +46,9 @@ export default function OrdersScreen() {
 
   if (loading || !ready) {
     return (
-      <Screen style={styles.center}>
-        <ActivityIndicator color={Colors.accent} />
+      <Screen>
+        {Platform.OS === "ios" ? <DinerTabHeader title="Orders" /> : null}
+        <OrdersScreenSkeleton />
       </Screen>
     );
   }
@@ -88,7 +88,6 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { alignItems: "center", justifyContent: "center" },
   content: {
     padding: 20,
     gap: 12,

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Check } from "@/components/ui/icons";
+import { AutocompleteListSkeleton } from "@/components/features/storefront/storefront-skeletons";
 import { cn } from "@/lib/utils/cn";
 import type { AddressSuggestion } from "@/lib/integrations/geocoding/types";
 import { readApiError } from "@/lib/forms/read-api-error";
@@ -104,6 +105,7 @@ export function AddressAutocomplete({
 
     const timeout = window.setTimeout(async () => {
       setIsLoading(true);
+      setIsOpen(true);
       setSuggestError(null);
 
       try {
@@ -288,10 +290,6 @@ export function AddressAutocomplete({
         ) : null}
       </div>
 
-      {isLoading ? (
-        <p className="mt-1 text-xs text-text-tertiary">Searching…</p>
-      ) : null}
-
       {verifyError ? (
         <p className="mt-1 text-xs text-destructive" role="alert">
           {verifyError}
@@ -308,26 +306,30 @@ export function AddressAutocomplete({
           role="listbox"
           className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-2xl bg-surface-elevated py-1 shadow-md"
         >
-          {suggestions.map((suggestion, index) => (
-            <li
-              key={suggestion.id}
-              id={`${listboxId}-option-${index}`}
-              role="option"
-              aria-selected={index === activeIndex}
-            >
-              <button
-                type="button"
-                className={cn(
-                  "block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-surface",
-                  index === activeIndex && "bg-surface",
-                )}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => selectSuggestion(suggestion)}
+          {isLoading && suggestions.length === 0 ? (
+            <AutocompleteListSkeleton rows={3} />
+          ) : (
+            suggestions.map((suggestion, index) => (
+              <li
+                key={suggestion.id}
+                id={`${listboxId}-option-${index}`}
+                role="option"
+                aria-selected={index === activeIndex}
               >
-                {suggestion.label}
-              </button>
-            </li>
-          ))}
+                <button
+                  type="button"
+                  className={cn(
+                    "block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-surface",
+                    index === activeIndex && "bg-surface",
+                  )}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectSuggestion(suggestion)}
+                >
+                  {suggestion.label}
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       ) : null}
     </div>

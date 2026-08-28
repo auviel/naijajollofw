@@ -2,11 +2,10 @@ import { DinerTabHeader } from "@/components/diner-tab-header";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatCadFromCents, type StoreOpenStatus } from "@naijajollof/api-types";
-import { Card, Colors, Radii, Screen, Type } from "@naijajollof/ui";
+import { Card, Colors, MenuScreenSkeleton, Radii, Screen, Type } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -67,8 +66,9 @@ export default function MenuScreen() {
 
   if (!data && !error) {
     return (
-      <Screen style={styles.center}>
-        <ActivityIndicator color={Colors.accent} />
+      <Screen>
+        {Platform.OS === "ios" ? <DinerTabHeader title="Menu" /> : null}
+        <MenuScreenSkeleton />
       </Screen>
     );
   }
@@ -141,7 +141,6 @@ export default function MenuScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { alignItems: "center", justifyContent: "center" },
   content: {
     padding: 20,
     gap: 12,

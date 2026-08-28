@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { ClipboardList, Search, Users } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
+import { DashboardSearchHitsSkeleton } from "@/components/features/storefront/storefront-skeletons";
 import type { CustomerSearchResult } from "@/lib/domain/customer/types";
 import {
   getOrderStatusLabel,
@@ -151,7 +152,7 @@ export function DashboardGlobalSearch() {
           className="absolute top-full right-0 left-0 z-40 mt-2 max-h-[min(24rem,70dvh)] overflow-y-auto rounded-2xl bg-surface-elevated shadow-md"
         >
           {loading && visibleHits.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-text-secondary">Searching…</p>
+            <DashboardSearchHitsSkeleton />
           ) : visibleHits.length === 0 ? (
             <p className="px-4 py-3 text-sm text-text-secondary">
               No matches for “{trimmedQuery}”

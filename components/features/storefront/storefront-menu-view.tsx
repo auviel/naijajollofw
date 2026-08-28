@@ -21,6 +21,7 @@ import type { StoreProfile } from "@/lib/domain/store/types";
 import type { PublicGoogleRating } from "@/lib/integrations/google/places/types";
 import { shouldUseAiSearch } from "@/lib/ai/catalog/should-use-ai-search";
 import { useAiMenuSearch } from "@/components/features/storefront/use-ai-menu-search";
+import { MenuCatalogBrowseSkeleton } from "@/components/features/storefront/storefront-skeletons";
 
 type StorefrontMenuViewProps = {
   store: StoreProfile;
@@ -185,11 +186,7 @@ function StorefrontMenuContent({
       <div className="space-y-6">
         <div id="menu" className="scroll-mt-24">
           {useAi && aiSearch.loading ? (
-            <EmptyState
-              icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
-              title="Searching the menu…"
-              description={`Finding dishes for “${committedQuery}”.`}
-            />
+            <MenuCatalogBrowseSkeleton cardCount={6} />
           ) : isSearching && categories.length === 0 ? (
             <EmptyState
               icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}

@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { rememberOrder } from "@/lib/recent-orders";
 import { formatCadFromCents, type PublicOrderView } from "@naijajollof/api-types";
-import { Card, Colors, Screen, Type } from "@naijajollof/ui";
+import { Card, Colors, OrdersScreenSkeleton, Screen, Type } from "@naijajollof/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -60,7 +60,7 @@ export default function TrackOrderScreen() {
   if (!order) {
     return (
       <Screen>
-        <Text style={Type.meta}>Loading…</Text>
+        <OrdersScreenSkeleton />
       </Screen>
     );
   }

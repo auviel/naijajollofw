@@ -10,6 +10,7 @@ import {
 } from "@/components/features/storefront/item-customize-panel";
 import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
 import { MotionModal } from "@/components/motion/primitives";
+import { Skeleton } from "@/components/ui/skeleton";
 import { X } from "@/components/ui/icons";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
 import { cn } from "@/lib/utils/cn";
@@ -159,10 +160,7 @@ function ItemDetailModalBody({
   return (
     <>
       {loading ? (
-        <div className="relative flex min-h-[28rem] w-full items-center justify-center p-10 text-sm text-text-secondary">
-          <CloseButton onClose={onClose} className="absolute top-3 left-3" />
-          Loading…
-        </div>
+        <ItemDetailModalSkeleton onClose={onClose} />
       ) : error || !item ? (
         <div className="relative flex min-h-[20rem] w-full flex-col items-center justify-center gap-3 p-10 text-center">
           <CloseButton onClose={onClose} className="absolute top-3 left-3" />
@@ -236,6 +234,64 @@ function ItemDetailModalContent({
       </div>
 
       <ItemCustomizeFooter customize={customize} />
+    </div>
+  );
+}
+
+/** Content-shaped placeholder — mirrors loaded layout so the modal doesn’t jump. */
+function ItemDetailModalSkeleton({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden"
+      aria-busy="true"
+      aria-label="Loading item"
+    >
+      <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-2">
+        <div className="relative hidden w-full self-stretch bg-surface-elevated pt-5 pl-5 pr-3 sm:pt-6 sm:pl-7 lg:block">
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
+            <Skeleton className="absolute inset-0 h-full w-full rounded-2xl" />
+            <CloseButton
+              onClose={onClose}
+              className="absolute top-3 left-3"
+            />
+          </div>
+        </div>
+
+        <div className="flex min-h-0 w-full flex-col overflow-hidden bg-surface-elevated">
+          <div className="relative aspect-[4/3] w-full shrink-0 lg:hidden">
+            <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
+            <CloseButton
+              onClose={onClose}
+              className="absolute top-3 left-3"
+            />
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+            <div className="space-y-3">
+              <Skeleton className="h-7 w-3/4 max-w-sm" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-full max-w-md" />
+              <Skeleton className="h-4 w-5/6 max-w-sm" />
+            </div>
+            <div className="space-y-3 border-t border-black/5 pt-5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+            <div className="space-y-3 border-t border-black/5 pt-5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-3 border-t border-black/5 bg-surface-elevated px-5 py-3 sm:px-7">
+        <Skeleton className="h-11 w-28 rounded-full" />
+        <Skeleton className="h-11 min-w-0 flex-1 rounded-full" />
+      </div>
     </div>
   );
 }

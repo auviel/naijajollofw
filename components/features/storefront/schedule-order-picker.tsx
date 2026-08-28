@@ -209,10 +209,10 @@ function ScheduleOrderPickerBody({
                       setSelectedSlot(nextSlots[0]?.startAt ?? null);
                     }}
                     className={cn(
-                      "min-w-0 flex-1 rounded-2xl px-3 py-3 text-left transition-colors",
+                      "min-w-0 flex-1 rounded-2xl border-2 px-3 py-3 text-left transition-colors",
                       active
-                        ? "bg-surface-elevated ring-2 ring-foreground"
-                        : "bg-surface text-text-secondary hover:bg-surface-elevated",
+                        ? "border-foreground bg-surface-elevated"
+                        : "border-transparent bg-surface text-text-secondary hover:bg-surface-elevated",
                     )}
                   >
                     <span className="block text-sm font-semibold text-foreground">

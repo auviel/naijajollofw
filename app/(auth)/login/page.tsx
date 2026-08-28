@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/features/auth/login-form";
+import { AuthFormSkeleton } from "@/components/features/storefront/storefront-skeletons";
 import { privatePageMetadata } from "@/lib/seo/noindex";
 import { Suspense } from "react";
 
@@ -22,11 +23,7 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-2xl bg-surface-elevated p-6">
-          <Suspense
-            fallback={
-              <p className="text-sm text-text-secondary">Loading…</p>
-            }
-          >
+          <Suspense fallback={<AuthFormSkeleton fields={2} />}>
             <LoginForm />
           </Suspense>
         </div>

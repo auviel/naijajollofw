@@ -2,11 +2,10 @@ import { DinerTabHeader } from "@/components/diner-tab-header";
 import { apiFetch } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { formatCadFromCents } from "@naijajollof/api-types";
-import { Button, Card, Colors, Radii, Screen, Type } from "@naijajollof/ui";
+import { Button, Card, CartScreenSkeleton, Colors, Radii, Screen, Type } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   RefreshControl,
@@ -44,8 +43,9 @@ export default function CartScreen() {
 
   if (loading && cart.items.length === 0) {
     return (
-      <Screen style={styles.center}>
-        <ActivityIndicator color={Colors.accent} />
+      <Screen>
+        {Platform.OS === "ios" ? <DinerTabHeader title="Cart" /> : null}
+        <CartScreenSkeleton />
       </Screen>
     );
   }
@@ -119,7 +119,6 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { alignItems: "center", justifyContent: "center" },
   content: {
     padding: 20,
     gap: 12,

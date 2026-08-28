@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { StorefrontMenuView } from "@/components/features/storefront/storefront-menu-view";
+import { StorefrontMenuPageSkeleton } from "@/components/features/storefront/storefront-skeletons";
 import type { MenuCatalog } from "@/lib/domain/menu/types";
 import type { StoreOpenStatus } from "@/lib/domain/store/hours";
 import type { StoreProfile } from "@/lib/domain/store/types";
@@ -13,17 +14,6 @@ type StorefrontMenuProps = {
   googleRating?: PublicGoogleRating | null;
   searchQuery?: string;
 };
-
-/** Lightweight Suspense fallback — never SSR the full catalog twice. */
-function StorefrontMenuSkeleton() {
-  return (
-    <div
-      className="min-h-[70vh]"
-      aria-busy="true"
-      aria-label="Loading menu"
-    />
-  );
-}
 
 export function StorefrontMenu({
   store,
@@ -43,7 +33,7 @@ export function StorefrontMenu({
   };
 
   return (
-    <Suspense fallback={<StorefrontMenuSkeleton />}>
+    <Suspense fallback={<StorefrontMenuPageSkeleton />}>
       <StorefrontMenuView {...shared} />
     </Suspense>
   );

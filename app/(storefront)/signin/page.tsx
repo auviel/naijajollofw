@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DinerSigninForm } from "@/components/features/storefront/diner-signin-form";
+import { AuthFormSkeleton } from "@/components/features/storefront/storefront-skeletons";
 
 import { privatePageMetadata } from "@/lib/seo/noindex";
 
@@ -19,9 +20,7 @@ export default function SigninPage() {
         Access your orders and checkout faster next time.
       </p>
       <div className="mt-8 rounded-2xl bg-surface-elevated p-5 sm:p-6">
-        <Suspense
-          fallback={<p className="text-sm text-text-secondary">Loading…</p>}
-        >
+        <Suspense fallback={<AuthFormSkeleton fields={2} />}>
           <DinerSigninForm />
         </Suspense>
       </div>
