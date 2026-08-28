@@ -8,9 +8,18 @@ import {
   type AmakaChatSession,
 } from "@/lib/ai/amaka-chat-history";
 import {
+  getActiveAmakaChatSessionId,
+  loadActiveAmakaChatSession,
   loadAmakaChatSessions,
   saveAmakaChatSession,
+  setActiveAmakaChatSessionId,
 } from "@/lib/utils/amaka-chat-history-client";
+
+function newSessionId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `chat-${Date.now()}`;
+}
 
 export function useAmakaChatSessions({
   messages,
@@ -23,37 +32,73 @@ export function useAmakaChatSessions({
 }) {
   const [sessions, setSessions] = useState<AmakaChatSession[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const sessionIdRef = useRef(
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `chat-${Date.now()}`,
-  );
+  const sessionIdRef = useRef(newSessionId());
+  const restoredRef = useRef(false);
+  const messagesRef = useRef(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const refreshSessions = useCallback(() => {
     setSessions(loadAmakaChatSessions());
   }, []);
 
-  useEffect(() => {
-    refreshSessions();
-  }, [refreshSessions]);
-
-  const archiveCurrentMessages = useCallback(() => {
-    if (messages.length === 0) return;
+  const persistCurrentSession = useCallback((msgs: UIMessage[]) => {
+    if (msgs.length === 0) return;
     saveAmakaChatSession({
       id: sessionIdRef.current,
-      title: amakaChatSessionTitle(messages),
+      title: amakaChatSessionTitle(msgs),
       updatedAt: Date.now(),
-      messages,
+      messages: msgs,
     });
+  }, []);
+
+  // Restore the active chat when the panel mounts.
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    const active = loadActiveAmakaChatSession();
+    if (active) {
+      sessionIdRef.current = active.id;
+      setMessages(active.messages);
+    } else {
+      const existingActiveId = getActiveAmakaChatSessionId();
+      sessionIdRef.current = existingActiveId ?? newSessionId();
+      setActiveAmakaChatSessionId(sessionIdRef.current);
+    }
     refreshSessions();
-  }, [messages, refreshSessions]);
+  }, [refreshSessions, setMessages]);
+
+  // Auto-save as the conversation grows.
+  useEffect(() => {
+    if (!restoredRef.current || messages.length === 0) return;
+
+    const timeout = window.setTimeout(() => {
+      persistCurrentSession(messages);
+      refreshSessions();
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
+  }, [messages, persistCurrentSession, refreshSessions]);
+
+  // Save when the chat panel unmounts (close floating chat, navigate away).
+  useEffect(() => {
+    return () => {
+      persistCurrentSession(messagesRef.current);
+    };
+  }, [persistCurrentSession]);
+
+  const archiveCurrentMessages = useCallback(() => {
+    persistCurrentSession(messages);
+    refreshSessions();
+  }, [messages, persistCurrentSession, refreshSessions]);
 
   const startNewChat = useCallback(() => {
     archiveCurrentMessages();
-    sessionIdRef.current =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `chat-${Date.now()}`;
+    sessionIdRef.current = newSessionId();
+    setActiveAmakaChatSessionId(sessionIdRef.current);
     setMessages([]);
     setHistoryOpen(false);
   }, [archiveCurrentMessages, setMessages]);
@@ -68,6 +113,7 @@ export function useAmakaChatSessions({
     (session: AmakaChatSession) => {
       archiveCurrentMessages();
       sessionIdRef.current = session.id;
+      setActiveAmakaChatSessionId(session.id);
       setMessages(session.messages);
       setHistoryOpen(false);
     },

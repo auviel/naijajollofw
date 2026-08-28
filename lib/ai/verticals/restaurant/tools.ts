@@ -87,7 +87,13 @@ export function createCommerceTools(
       inputSchema: z.object({
         slug: z.string().min(1).max(120),
       }),
-      execute: async ({ slug }) => ({ href: `/item/${slug}`, slug }),
+      execute: async ({ slug }) => {
+        const clean = slug.trim();
+        if (!clean || clean === "undefined" || clean === "null") {
+          return { error: "Missing product slug." };
+        }
+        return { href: `/item/${clean}`, slug: clean };
+      },
     }),
 
     addToCart: tool({

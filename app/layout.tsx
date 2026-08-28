@@ -4,6 +4,7 @@ import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { SanityLive } from "@/lib/sanity/live";
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
+import { getGoogleSiteVerification } from "@/lib/integrations/google/places/config";
 import { siteMetadataBase } from "@/lib/seo/share-metadata";
 import "./globals.css";
 
@@ -20,6 +21,8 @@ const share = buildShareMetadata({
   description: defaultDescription,
   path: "/",
 });
+
+const googleSiteVerification = getGoogleSiteVerification();
 
 export const metadata: Metadata = {
   metadataBase: siteMetadataBase(),
@@ -43,6 +46,9 @@ export const metadata: Metadata = {
   },
   openGraph: share.openGraph,
   twitter: share.twitter,
+  ...(googleSiteVerification
+    ? { verification: { google: googleSiteVerification } }
+    : {}),
 };
 
 /**

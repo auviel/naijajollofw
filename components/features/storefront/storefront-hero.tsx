@@ -1,5 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { GoogleRatingBadge } from "@/components/features/storefront/google-rating-badge";
+import type { PublicGoogleRating } from "@/lib/integrations/google/places/types";
+import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/integrations/google/places/config";
 import type { StoreOpenStatus } from "@/lib/domain/store/hours";
 import { formatStoreProfileAddress } from "@/lib/domain/store/format";
 import type { StoreProfile } from "@/lib/domain/store/types";
@@ -11,6 +14,7 @@ type StorefrontHeroProps = {
   store: StoreProfile;
   openStatus: StoreOpenStatus;
   prepMinutes: number;
+  googleRating?: PublicGoogleRating | null;
   /** When menu has no orderable items while open */
   soldOut?: boolean;
 };
@@ -19,6 +23,7 @@ export function StorefrontHero({
   store,
   openStatus,
   prepMinutes,
+  googleRating = null,
   soldOut = false,
 }: StorefrontHeroProps) {
   const address = formatStoreProfileAddress(store);
@@ -99,8 +104,14 @@ export function StorefrontHero({
               )}
             </Link>
 
+            <GoogleRatingBadge
+              rating={googleRating}
+              className="mt-3"
+              size="sm"
+            />
+
             <a
-              href="https://maps.app.goo.gl/wG9369vQfH76S6BYA"
+              href={GOOGLE_MAPS_REVIEWS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 max-w-sm text-sm leading-relaxed text-text-secondary no-underline transition-colors hover:text-foreground hover:underline"

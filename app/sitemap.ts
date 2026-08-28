@@ -1,9 +1,14 @@
 import type { MetadataRoute } from "next";
 import { client } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { POST_SLUGS_QUERY } from "@/lib/sanity/queries";
+import { POST_SITEMAP_QUERY } from "@/lib/sanity/queries";
 import { absoluteUrl } from "@/lib/seo/site";
 import { getPublicStorefront } from "@/lib/services/storefront/get-public-menu";
+
+type BlogSitemapEntry = {
+  slug: string;
+  publishedAt: string;
+};
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -16,6 +21,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl("/hours"),
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: absoluteUrl("/chat"),
+      changeFrequency: "monthly",
+      priority: 0.75,
     },
     {
       url: absoluteUrl("/blog"),
@@ -48,9 +58,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let blogPages: MetadataRoute.Sitemap = [];
   if (isSanityConfigured()) {
-    const slugs = await client.fetch<string[]>(POST_SLUGS_QUERY);
-    blogPages = slugs.map((slug) => ({
-      url: absoluteUrl(`/blog/${slug}`),
+    const entries = await client.fetch<BlogSitemapEntry[]>(POST_SITEMAP_QUERY);
+    blogPages = entries.map((entry) => ({
+      url: absoluteUrl(`/blog/${entry.slug}`),
+      lastModified: entry.publishedAt,
       changeFrequency: "monthly" as const,
       priority: 0.6,
     }));

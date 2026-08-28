@@ -30,6 +30,12 @@ type StorefrontUiContextValue = {
   addedToCart: AddedToCartItem | null;
   notifyItemAdded: (item: AddedToCartItem) => void;
   dismissAddedToCart: () => void;
+  /** Floating Ask Amaka panel open — suppress header cart popover. */
+  aiChatOpen: boolean;
+  setAiChatOpen: (open: boolean) => void;
+  /** Closes the desktop floating Ask Amaka panel when set. */
+  closeAiChat: () => void;
+  registerCloseAiChat: (fn: (() => void) | null) => void;
 };
 
 const StorefrontUiContext = createContext<StorefrontUiContextValue | null>(
@@ -43,6 +49,8 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
   const [menuSearchQuery, setMenuSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [addedToCart, setAddedToCart] = useState<AddedToCartItem | null>(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const closeAiChatRef = useRef<(() => void) | null>(null);
   const dismissTimerRef = useRef<number | null>(null);
   const menuSearchFocused =
     mobileSearchOpen || Boolean(menuSearchQuery.trim());
@@ -69,13 +77,21 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
     setCartOpen(false);
   }, []);
 
+  const registerCloseAiChat = useCallback((fn: (() => void) | null) => {
+    closeAiChatRef.current = fn;
+  }, []);
+
+  const closeAiChat = useCallback(() => {
+    closeAiChatRef.current?.();
+  }, []);
+
   const notifyItemAdded = useCallback((item: AddedToCartItem) => {
     const desktop =
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 640px)").matches;
 
-    // Mobile: Uber-style “View order” bar (driven by cart count) — no toast.
-    if (!desktop) {
+    // Mobile, or chat open: badge / in-chat feedback only — no header popover.
+    if (!desktop || aiChatOpen) {
       return;
     }
 
@@ -87,7 +103,7 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       setAddedToCart(null);
       dismissTimerRef.current = null;
     }, ADDED_POPOVER_MS);
-  }, []);
+  }, [aiChatOpen]);
 
   const value = useMemo(
     () => ({
@@ -103,6 +119,10 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       addedToCart,
       notifyItemAdded,
       dismissAddedToCart,
+      aiChatOpen,
+      setAiChatOpen,
+      closeAiChat,
+      registerCloseAiChat,
     }),
     [
       mobileSearchOpen,
@@ -115,6 +135,9 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       addedToCart,
       notifyItemAdded,
       dismissAddedToCart,
+      aiChatOpen,
+      closeAiChat,
+      registerCloseAiChat,
     ],
   );
 

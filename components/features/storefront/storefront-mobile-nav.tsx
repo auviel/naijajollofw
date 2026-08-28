@@ -43,19 +43,13 @@ export function StorefrontMobileNav({
     useStorefrontUi();
   const reduce = useReducedMotion();
 
-  if (cartOpen || shouldHideNav(pathname)) {
-    return null;
-  }
-
-  // Focused search with empty cart: no bottom chrome.
-  if (mobileSearchOpen && cartItemCount === 0) {
-    return null;
-  }
-
   const menuActive = pathname === "/" && !cartOpen && !mobileSearchOpen;
   const cartActive =
     cartOpen || pathname === "/cart" || pathname.startsWith("/cart/");
   const chatActive = pathname === "/chat" || pathname.startsWith("/chat/");
+  const showViewOrder = cartItemCount > 0;
+  const hideNav = cartOpen || shouldHideNav(pathname);
+  const hideForEmptySearch = mobileSearchOpen && cartItemCount === 0;
 
   function handleSearch() {
     openMobileSearch();
@@ -64,7 +58,9 @@ export function StorefrontMobileNav({
     }
   }
 
-  const showViewOrder = cartItemCount > 0;
+  if (hideNav || hideForEmptySearch) {
+    return null;
+  }
   const chromeTransition = {
     duration: reduce ? motionDuration.fast : motionDuration.chrome,
     ease: easeOut,

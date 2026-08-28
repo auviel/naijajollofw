@@ -6,11 +6,14 @@ import {
   LegalSection,
 } from "@/components/features/storefront/legal-page-shell";
 
-export const metadata: Metadata = {
+import { buildShareMetadata } from "@/lib/seo/share-metadata";
+
+export const metadata: Metadata = buildShareMetadata({
   title: "Privacy Policy",
   description:
     "How Naija Jollof Waterloo collects, uses, and protects your personal information.",
-};
+  path: "/privacy-policy",
+});
 
 export default function PrivacyPolicyPage() {
   return (

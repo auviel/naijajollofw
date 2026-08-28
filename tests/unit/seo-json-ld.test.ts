@@ -3,12 +3,16 @@ import type { StoreHoursSchedule } from "@/lib/domain/store/hours";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import {
   buildFaqPageJsonLd,
+  buildOrganizationJsonLd,
   buildProductJsonLd,
   buildRestaurantJsonLd,
+  buildWebSiteJsonLd,
   jsonLdGraph,
+  organizationId,
   openingHoursSpecifications,
 } from "@/lib/seo/json-ld";
 import { buildLlmsTxt } from "@/lib/seo/llms";
+import { buildPublicMenuFeed } from "@/lib/seo/menu-feed";
 import { privatePageMetadata } from "@/lib/seo/noindex";
 import { buildStorefrontFaqEntries } from "@/lib/seo/storefront-faq";
 import { getSiteUrl } from "@/lib/seo/site";
@@ -101,6 +105,19 @@ describe("json-ld builders", () => {
       priceCurrency: "CAD",
       price: "15.99",
       availability: "https://schema.org/InStock",
+      seller: { "@id": organizationId() },
+    });
+  });
+
+  it("builds site-wide organization and website schema", () => {
+    const org = buildOrganizationJsonLd(store);
+    const site = buildWebSiteJsonLd();
+    expect(org).toMatchObject({
+      "@type": "Organization",
+      sameAs: ["https://www.instagram.com/naijajollof_waterloo/"],
+    });
+    expect(site.potentialAction).toMatchObject({
+      "@type": "SearchAction",
     });
   });
 
@@ -150,5 +167,45 @@ describe("llms.txt", () => {
     expect(text).toContain("Jollof Rice");
     expect(text).toContain("/item/jollof-rice");
     expect(text).toContain("/sitemap.xml");
+    expect(text).toContain("/menu.json");
+  });
+});
+
+describe("menu feed", () => {
+  it("exports structured menu data for agents", () => {
+    const feed = buildPublicMenuFeed({
+      store,
+      catalog: {
+        categories: [
+          {
+            id: "cat-1",
+            name: "Mains",
+            sortOrder: 0,
+            active: true,
+            items: [
+              {
+                id: "item-1",
+                slug: "jollof-rice",
+                categoryId: "cat-1",
+                categoryName: "Mains",
+                name: "Jollof Rice",
+                description: "Smoky party jollof.",
+                priceCents: 1599,
+                imageUrl: null,
+                available: true,
+                sortOrder: 0,
+                modifierGroupCount: 0,
+                imageCount: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(feed.categories[0]?.items[0]).toMatchObject({
+      slug: "jollof-rice",
+      priceCad: "15.99",
+    });
   });
 });

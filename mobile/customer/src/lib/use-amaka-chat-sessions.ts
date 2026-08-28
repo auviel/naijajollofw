@@ -3,8 +3,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   amakaChatSessionTitle,
   formatAmakaChatWhen,
+  getActiveAmakaChatSessionId,
+  loadActiveAmakaChatSession,
   loadAmakaChatSessions,
   saveAmakaChatSession,
+  setActiveAmakaChatSessionId,
   type AmakaChatSession,
 } from "@/lib/amaka-chat-history";
 
@@ -24,29 +27,70 @@ export function useAmakaChatSessions({
   const [sessions, setSessions] = useState<AmakaChatSession[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const sessionIdRef = useRef(newSessionId());
+  const restoredRef = useRef(false);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   const refreshSessions = useCallback(async () => {
     setSessions(await loadAmakaChatSessions());
   }, []);
 
-  useEffect(() => {
-    void refreshSessions();
-  }, [refreshSessions]);
-
-  const archiveCurrentMessages = useCallback(async () => {
-    if (messages.length === 0) return;
+  const persistCurrentSession = useCallback(async (msgs: UIMessage[]) => {
+    if (msgs.length === 0) return;
     await saveAmakaChatSession({
       id: sessionIdRef.current,
-      title: amakaChatSessionTitle(messages),
+      title: amakaChatSessionTitle(msgs),
       updatedAt: Date.now(),
-      messages,
+      messages: msgs,
     });
+  }, []);
+
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    void (async () => {
+      const active = await loadActiveAmakaChatSession();
+      if (active) {
+        sessionIdRef.current = active.id;
+        setMessages(active.messages);
+      } else {
+        const existingActiveId = await getActiveAmakaChatSessionId();
+        sessionIdRef.current = existingActiveId ?? newSessionId();
+        await setActiveAmakaChatSessionId(sessionIdRef.current);
+      }
+      await refreshSessions();
+    })();
+  }, [refreshSessions, setMessages]);
+
+  useEffect(() => {
+    if (!restoredRef.current || messages.length === 0) return;
+
+    const timeout = setTimeout(() => {
+      void (async () => {
+        await persistCurrentSession(messages);
+        await refreshSessions();
+      })();
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [messages, persistCurrentSession, refreshSessions]);
+
+  useEffect(() => {
+    return () => {
+      void persistCurrentSession(messagesRef.current);
+    };
+  }, [persistCurrentSession]);
+
+  const archiveCurrentMessages = useCallback(async () => {
+    await persistCurrentSession(messages);
     await refreshSessions();
-  }, [messages, refreshSessions]);
+  }, [messages, persistCurrentSession, refreshSessions]);
 
   const startNewChat = useCallback(async () => {
     await archiveCurrentMessages();
     sessionIdRef.current = newSessionId();
+    await setActiveAmakaChatSessionId(sessionIdRef.current);
     setMessages([]);
     setHistoryOpen(false);
   }, [archiveCurrentMessages, setMessages]);
@@ -61,6 +105,7 @@ export function useAmakaChatSessions({
     async (session: AmakaChatSession) => {
       await archiveCurrentMessages();
       sessionIdRef.current = session.id;
+      await setActiveAmakaChatSessionId(session.id);
       setMessages(session.messages);
       setHistoryOpen(false);
     },

@@ -1,20 +1,23 @@
 import { apiFetch } from "@/lib/api";
 import { createDinerChatTransport } from "@/lib/ai-chat-transport";
+import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { AmakaAvatar } from "@/components/amaka-avatar";
 import {
   AmakaChatHistoryPanel,
   AmakaChatToolbar,
 } from "@/components/amaka-chat-menu";
+import { parseChatTextSegments } from "@/lib/format-chat-text";
+import { getChatPendingState, type ChatPendingLabel } from "@/lib/chat-pending-state";
 import { useAmakaChatSessions } from "@/lib/use-amaka-chat-sessions";
 import { formatCadFromCents } from "@naijajollof/api-types";
 import { Button, Colors, Radii, Type } from "@naijajollof/ui";
+import { Ionicons } from "@expo/vector-icons";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -50,6 +53,7 @@ function ProductCards({
 }) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [addedIds, setAddedIds] = useState<Set<string>>(() => new Set());
 
   async function addItem(item: CatalogCardItem) {
     setPendingId(item.id);
@@ -62,6 +66,7 @@ function ProductCards({
           modifierIds: [],
         }),
       });
+      setAddedIds((current) => new Set(current).add(item.id));
       onAdded();
     } catch {
       // Keep UI calm; diner can retry from cart or customize.
@@ -72,37 +77,112 @@ function ProductCards({
 
   if (items.length === 0) return null;
 
+  const validItems = items.filter((item) => {
+    const slug = item.slug?.trim();
+    return Boolean(item.id) && Boolean(slug) && slug !== "undefined";
+  });
+
+  if (validItems.length === 0) return null;
+
   return (
     <View style={styles.cards}>
-      {items.map((item) => (
-        <View key={item.id} style={styles.card}>
-          <View style={styles.cardBody}>
-            <Text style={styles.cardName} numberOfLines={2}>
-              {item.name}
-            </Text>
-            <Text style={Type.meta}>
-              {formatCadFromCents(item.priceCents)}
-              {!item.available ? " · Sold out" : null}
-            </Text>
-          </View>
-          <View style={styles.cardActions}>
-            <Pressable onPress={() => router.push(`/item/${item.slug}`)}>
-              <Text style={styles.link}>View</Text>
-            </Pressable>
-            {item.available ? (
+      {validItems.map((item) => {
+        const added = addedIds.has(item.id);
+        return (
+          <View key={item.id} style={styles.card}>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardName} numberOfLines={2}>
+                {item.name}
+              </Text>
+              <Text style={Type.meta}>
+                {formatCadFromCents(item.priceCents)}
+                {!item.available ? " · Sold out" : null}
+              </Text>
+            </View>
+            <View style={styles.cardActions}>
               <Pressable
-                disabled={pendingId === item.id}
-                onPress={() => void addItem(item)}
-                style={[styles.addBtn, pendingId === item.id && styles.addBtnBusy]}
+                onPress={() => router.push(`/item/${item.slug.trim()}`)}
+                style={styles.viewBtn}
               >
-                <Text style={styles.addLabel}>
-                  {pendingId === item.id ? "…" : "Add"}
-                </Text>
+                <Ionicons name="eye-outline" size={14} color={Colors.text} />
+                <Text style={styles.viewLabel}>View dish</Text>
               </Pressable>
-            ) : null}
+              {item.available ? (
+                <Pressable
+                  disabled={pendingId === item.id || added}
+                  onPress={() => void addItem(item)}
+                  style={[
+                    styles.addBtn,
+                    added && styles.addBtnDone,
+                    (pendingId === item.id || added) && styles.addBtnBusy,
+                  ]}
+                >
+                  {added ? (
+                    <>
+                      <Ionicons name="checkmark" size={14} color="#fff" />
+                      <Text style={styles.addLabel}>Added</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="bag-outline" size={14} color="#fff" />
+                      <Text style={styles.addLabel}>
+                        {pendingId === item.id ? "Adding…" : "Add to cart"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              ) : null}
+            </View>
           </View>
-        </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ChatMessageText({ text }: { text: string }) {
+  const segments = parseChatTextSegments(text);
+  return (
+    <Text style={styles.msgText}>
+      {segments.map((segment, index) => (
+        <Text
+          key={index}
+          style={segment.bold ? [styles.msgText, styles.msgBold] : styles.msgText}
+        >
+          {segment.text}
+        </Text>
       ))}
+    </Text>
+  );
+}
+
+function AssistantTextPart({
+  text,
+  router,
+}: {
+  text: string;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const { user, loading } = useAuth();
+  const isLoggedIn = !loading && Boolean(user);
+  const suggestsSignIn =
+    /sign\s*in|\/signin|saved card|my address|place (an )?order/i.test(text);
+  const suggestsCheckout =
+    /checkout|place (an )?order|proceed with checkout/i.test(text);
+
+  return (
+    <View style={styles.partBlock}>
+      <ChatMessageText text={text} />
+      {isLoggedIn && suggestsCheckout ? (
+        <Pressable onPress={() => router.push("/checkout")}>
+          <Text style={styles.link}>Go to checkout</Text>
+        </Pressable>
+      ) : null}
+      {!isLoggedIn && suggestsSignIn ? (
+        <Pressable onPress={() => router.push("/login")}>
+          <Text style={styles.link}>Sign in</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -114,18 +194,8 @@ function renderPart(
   router: ReturnType<typeof useRouter>,
 ) {
   if (part.type === "text") {
-    const text = part.text;
-    const wantsSignIn =
-      /sign\s*in|\/signin|saved card|my address|place (an )?order/i.test(text);
     return (
-      <View key={key} style={styles.partBlock}>
-        <Text style={styles.msgText}>{text}</Text>
-        {wantsSignIn ? (
-          <Pressable onPress={() => router.push("/login")}>
-            <Text style={styles.link}>Sign in</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      <AssistantTextPart key={key} text={part.text} router={router} />
     );
   }
 
@@ -173,7 +243,9 @@ function renderPart(
     const output = getToolOutput(part as { type: string; output?: unknown });
     if (!isRecord(output) || typeof output.href !== "string") return null;
     const href = String(output.href);
-    const slug = href.replace(/^\/item\//, "");
+    if (href.includes("/undefined") || href.includes("/null")) return null;
+    const slug = href.replace(/^\/item\//, "").trim();
+    if (!slug || slug === "undefined" || slug === "null") return null;
     return (
       <Pressable key={key} onPress={() => router.push(`/item/${slug}`)}>
         <Text style={styles.link}>Open dish</Text>
@@ -213,12 +285,34 @@ function renderPart(
   return null;
 }
 
+function MobileTypingIndicator({ label }: { label: ChatPendingLabel }) {
+  return (
+    <View
+      style={styles.assistantRow}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={label}
+    >
+      <AmakaAvatar size="sm" style={styles.avatar} />
+      <View style={[styles.bubble, styles.botBubble, styles.typingBubble]}>
+        <Text style={styles.typingLabel}>{label}</Text>
+        <View style={styles.dotsRow}>
+          {[0, 1, 2].map((index) => (
+            <View key={index} style={styles.typingDot} />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export function AskAmakaChat() {
   const router = useRouter();
   const { refresh } = useCart();
   const transport = useMemo(() => createDinerChatTransport(), []);
   const { messages, sendMessage, setMessages, status } = useChat({ transport });
   const busy = status === "submitted" || status === "streaming";
+  const pending = getChatPendingState(status, messages);
   const {
     sessions,
     historyOpen,
@@ -229,7 +323,18 @@ export function AskAmakaChat() {
     formatWhen,
   } = useAmakaChatSessions({ messages, setMessages });
   const [input, setInput] = useState("");
+  const inputRef = useRef<TextInput>(null);
+  const refocusAfterReplyRef = useRef(false);
   const seenAddOk = useRef(new Set<string>());
+  const wasBusyRef = useRef(busy);
+
+  useEffect(() => {
+    if (wasBusyRef.current && !busy && refocusAfterReplyRef.current) {
+      refocusAfterReplyRef.current = false;
+      inputRef.current?.focus();
+    }
+    wasBusyRef.current = busy;
+  }, [busy]);
 
   const onAdded = () => {
     void refresh();
@@ -303,7 +408,6 @@ export function AskAmakaChat() {
                   <View key={message.id} style={styles.assistantRow}>
                     <AmakaAvatar size="sm" style={styles.avatar} />
                     <View style={[styles.bubble, styles.botBubble]}>
-                      <Text style={styles.role}>Amaka</Text>
                       {message.parts.map((part, index) =>
                         renderPart(part, `${message.id}-${index}`, onAdded, router),
                       )}
@@ -312,16 +416,15 @@ export function AskAmakaChat() {
                 ),
               )
             )}
-            {busy ? (
-              <ActivityIndicator color={Colors.accent} style={styles.spinner} />
-            ) : null}
+            {pending ? <MobileTypingIndicator label={pending.label} /> : null}
           </ScrollView>
 
           <View style={styles.composer}>
             <TextInput
+              ref={inputRef}
               value={input}
               onChangeText={setInput}
-              placeholder="Ask about food or hours…"
+              placeholder={pending?.label ?? "Ask about food or hours…"}
               placeholderTextColor={Colors.textSecondary}
               editable={!busy}
               style={styles.input}
@@ -333,8 +436,10 @@ export function AskAmakaChat() {
               onPress={() => {
                 const text = input.trim();
                 if (!text || busy) return;
+                refocusAfterReplyRef.current = true;
                 void sendMessage({ text });
                 setInput("");
+                inputRef.current?.focus();
               }}
             />
           </View>
@@ -416,16 +521,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceElevated,
     borderBottomLeftRadius: Radii.sm,
   },
-  role: {
-    ...Type.meta,
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
   msgText: {
     ...Type.body,
     color: Colors.text,
+  },
+  msgBold: {
+    fontWeight: "700",
   },
   partBlock: { gap: 6 },
   link: {
@@ -437,27 +538,61 @@ const styles = StyleSheet.create({
   error: { color: Colors.danger, fontSize: 14, fontWeight: "600" },
   cards: { gap: 8, marginTop: 4 },
   card: {
+    borderRadius: Radii.lg,
+    backgroundColor: "rgba(0,0,0,0.04)",
+    padding: 12,
+    gap: 12,
+  },
+  cardBody: { gap: 2 },
+  cardName: { fontWeight: "700", color: Colors.text, fontSize: 14 },
+  cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  viewBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 36,
     borderRadius: Radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
     backgroundColor: Colors.surface,
-    padding: 10,
+  },
+  viewLabel: { color: Colors.text, fontWeight: "700", fontSize: 12 },
+  addBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 36,
+    backgroundColor: Colors.accent,
+    borderRadius: Radii.md,
+    paddingHorizontal: 10,
+  },
+  addBtnDone: { backgroundColor: Colors.success },
+  addBtnBusy: { opacity: 0.6 },
+  addLabel: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  typingBubble: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  cardBody: { flex: 1, gap: 2 },
-  cardName: { fontWeight: "700", color: Colors.text, fontSize: 14 },
-  cardActions: { flexDirection: "row", alignItems: "center", gap: 10 },
-  addBtn: {
-    backgroundColor: Colors.accent,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radii.sm,
+  typingLabel: {
+    ...Type.meta,
+    color: Colors.textSecondary,
+    fontWeight: "600",
   },
-  addBtnBusy: { opacity: 0.6 },
-  addLabel: { color: "#fff", fontWeight: "700", fontSize: 12 },
-  spinner: { marginVertical: 8 },
+  dotsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.accent,
+    opacity: 0.75,
+  },
   composer: {
     flexDirection: "row",
     alignItems: "flex-end",

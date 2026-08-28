@@ -1,5 +1,6 @@
 import {
   Add01Icon,
+  AiSearch02Icon,
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -86,6 +87,7 @@ function createIcon(icon: IconSvgElement, displayName: string) {
 
 /** Stroke Rounded icons via Hugeicons — Lucide-compatible names for app usage. */
 export const Plus = createIcon(Add01Icon, "Plus");
+export const AiSearch02 = createIcon(AiSearch02Icon, "AiSearch02");
 export const ArrowDown = createIcon(ArrowDown01Icon, "ArrowDown");
 export const ArrowLeft = createIcon(ArrowLeft01Icon, "ArrowLeft");
 export const ArrowUp = createIcon(ArrowUp01Icon, "ArrowUp");

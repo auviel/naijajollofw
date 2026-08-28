@@ -6,6 +6,7 @@ import {
 import type { MenuCatalog } from "@/lib/domain/menu/types";
 import type { StoreOpenStatus } from "@/lib/domain/store/hours";
 import type { StoreProfile } from "@/lib/domain/store/types";
+import type { PublicGoogleRating } from "@/lib/integrations/google/places/types";
 
 type StorefrontMenuProps = {
   store: StoreProfile;
@@ -14,6 +15,7 @@ type StorefrontMenuProps = {
   cartSubtotalCents: number;
   openStatus: StoreOpenStatus;
   prepMinutes: number;
+  googleRating?: PublicGoogleRating | null;
   searchQuery?: string;
 };
 
@@ -22,6 +24,7 @@ export function StorefrontMenu({
   catalog,
   openStatus,
   prepMinutes,
+  googleRating = null,
   searchQuery = "",
 }: StorefrontMenuProps) {
   const shared = {
@@ -29,6 +32,7 @@ export function StorefrontMenu({
     catalog,
     openStatus,
     prepMinutes,
+    googleRating,
     initialQuery: searchQuery,
   };
 

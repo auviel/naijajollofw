@@ -6,11 +6,14 @@ import {
   LegalSection,
 } from "@/components/features/storefront/legal-page-shell";
 
-export const metadata: Metadata = {
+import { buildShareMetadata } from "@/lib/seo/share-metadata";
+
+export const metadata: Metadata = buildShareMetadata({
   title: "Terms and Conditions",
   description:
     "Terms and conditions for ordering from Naija Jollof Waterloo online.",
-};
+  path: "/terms-and-conditions",
+});
 
 export default function TermsAndConditionsPage() {
   return (

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { BlogIndexHero } from "@/components/features/blog/blog-index-hero";
 import { BlogOrderCta } from "@/components/features/blog/blog-order-cta";
 import { BlogPagination } from "@/components/features/blog/blog-pagination";
@@ -8,6 +9,7 @@ import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityFetch } from "@/lib/sanity/live";
 import { POSTS_PAGE_QUERY } from "@/lib/sanity/queries";
 import type { BlogPostListItem } from "@/lib/sanity/types";
+import { buildBlogIndexJsonLd } from "@/lib/seo/json-ld";
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
 
 export const metadata: Metadata = buildShareMetadata({
@@ -65,7 +67,17 @@ export default async function BlogIndexPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <section className="py-2 sm:py-4">
+    <>
+      <JsonLdScript
+        data={buildBlogIndexJsonLd(
+          posts.map((post) => ({
+            title: post.title,
+            slug: post.slug,
+            publishedAt: post.publishedAt,
+          })),
+        )}
+      />
+      <section className="py-2 sm:py-4">
       <BlogIndexHero />
 
       <div className="mt-10 flex items-baseline justify-between gap-4">
@@ -100,5 +112,6 @@ export default async function BlogIndexPage({
       <BlogPagination page={page} totalPages={totalPages} />
       <BlogOrderCta />
     </section>
+    </>
   );
 }

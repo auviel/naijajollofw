@@ -8,6 +8,7 @@ export type AmakaChatSession = {
 };
 
 export const AMAKA_CHAT_HISTORY_KEY = "nj_amaka_chat_history";
+export const AMAKA_CHAT_ACTIVE_ID_KEY = "nj_amaka_chat_active_id";
 export const AMAKA_CHAT_HISTORY_LIMIT = 20;
 
 export function amakaChatSessionTitle(messages: UIMessage[]): string {

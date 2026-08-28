@@ -1,6 +1,7 @@
 import { dayOfWeekLabel, type StoreHoursSchedule } from "@/lib/domain/store/hours";
 import type { MenuItemDetail } from "@/lib/domain/menu/types";
 import type { StoreProfile } from "@/lib/domain/store/types";
+import type { PublicGoogleRating } from "@/lib/integrations/google/places/types";
 import type { StorefrontFaqEntry } from "@/lib/seo/storefront-faq";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo/site";
 
@@ -97,8 +98,9 @@ export function buildWebSiteJsonLd(): JsonLdObject {
 export function buildRestaurantJsonLd(input: {
   store: StoreProfile;
   schedule: StoreHoursSchedule;
+  googleRating?: PublicGoogleRating | null;
 }): JsonLdObject {
-  const { store, schedule } = input;
+  const { store, schedule, googleRating } = input;
   const hours = openingHoursSpecifications(schedule);
 
   return {
@@ -120,6 +122,17 @@ export function buildRestaurantJsonLd(input: {
     menu: absoluteUrl("/menu.json"),
     acceptsReservations: false,
     parentOrganization: { "@id": organizationId() },
+    ...(googleRating
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: googleRating.rating.toFixed(1),
+            reviewCount: googleRating.reviewCount,
+            bestRating: "5",
+            worstRating: "1",
+          },
+        }
+      : {}),
     ...(hours.length > 0 ? { openingHoursSpecification: hours } : {}),
   };
 }

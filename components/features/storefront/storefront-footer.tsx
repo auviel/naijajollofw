@@ -7,6 +7,7 @@ import {
   Location,
   WhatsApp,
 } from "@/components/ui/icons";
+import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/integrations/google/places/config";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
@@ -118,7 +119,7 @@ export async function StorefrontFooter() {
             <FooterColumn title="Restaurant">
               {address ? (
                 <a
-                  href="https://maps.app.goo.gl/wG9369vQfH76S6BYA"
+                  href={GOOGLE_MAPS_REVIEWS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex gap-2 text-sm leading-relaxed text-text-secondary no-underline transition-colors hover:text-foreground"

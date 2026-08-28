@@ -97,10 +97,10 @@ export function CartAddedPopoverHost({
 }: {
   onViewCart: () => void;
 }) {
-  const { addedToCart, dismissAddedToCart } = useStorefrontUi();
+  const { addedToCart, dismissAddedToCart, aiChatOpen } = useStorefrontUi();
   return (
     <AnimatePresence>
-      {addedToCart ? (
+      {addedToCart && !aiChatOpen ? (
         <CartAddedPopover
           key={`${addedToCart.name}-${addedToCart.imageUrl ?? ""}`}
           item={addedToCart}

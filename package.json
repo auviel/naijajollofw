@@ -33,6 +33,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.51",
     "@ai-sdk/react": "^4.0.87",
     "@aws-sdk/client-s3": "^3.1086.0",
     "@hugeicons/core-free-icons": "^4.2.2",

@@ -18,6 +18,7 @@ describe("share metadata", () => {
     expect(meta.twitter).toMatchObject({
       card: "summary_large_image",
     });
+    expect(meta.robots).toMatchObject({ index: true, follow: true });
   });
 
   it("uses an absolute page image when provided", () => {

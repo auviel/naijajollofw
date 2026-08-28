@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AiChatComposer,
   AiChatMessages,
@@ -12,7 +12,10 @@ import {
   AmakaChatOptionsMenu,
 } from "@/components/features/ai/amaka-chat-menu";
 import { AmakaAvatar } from "@/components/features/ai/amaka-avatar";
+import { AmakaChatCartBar } from "@/components/features/ai/amaka-chat-cart-bar";
 import { useAmakaChatSessions } from "@/components/features/ai/use-amaka-chat-sessions";
+import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
+import { getChatPendingState } from "@/lib/ai/chat-pending-state";
 import { X } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 
@@ -23,12 +26,17 @@ type AskAmakaChatShellProps = {
 
 /** Shared Ask Amaka chat panel — full page (mobile web) or floating (desktop). */
 export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps) {
+  const { setAiChatOpen, dismissAddedToCart } = useStorefrontUi();
+  const [cartRefreshKey, setCartRefreshKey] = useState(0);
   const transport = useMemo(
     () => new DefaultChatTransport({ api: "/api/ai/chat" }),
     [],
   );
-  const { messages, sendMessage, setMessages, status } = useChat({ transport });
+  const { messages, sendMessage, setMessages, status, error } = useChat({
+    transport,
+  });
   const busy = status === "submitted" || status === "streaming";
+  const pending = getChatPendingState(status, messages);
   const {
     sessions,
     historyOpen,
@@ -38,9 +46,26 @@ export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps
     backFromHistory,
   } = useAmakaChatSessions({ messages, setMessages });
 
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAiChatOpen(true);
+    dismissAddedToCart();
+    return () => setAiChatOpen(false);
+  }, [setAiChatOpen, dismissAddedToCart]);
+
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, status]);
+
   return (
     <section
-      className={cn("flex min-h-0 flex-1 flex-col overflow-hidden bg-surface", className)}
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden bg-surface",
+        className,
+      )}
       aria-label="Ask Amaka chat"
     >
       {historyOpen ? (
@@ -77,12 +102,26 @@ export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps
               ) : null}
             </div>
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <AiChatMessages messages={messages} />
+          <div
+            ref={messagesRef}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+          >
+            {error ? (
+              <p className="mb-3 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+                {error.message || "Something went wrong. Please try again."}
+              </p>
+            ) : null}
+            <AiChatMessages
+              messages={messages}
+              pending={pending}
+              onCartChange={() => setCartRefreshKey((key) => key + 1)}
+            />
           </div>
+          <AmakaChatCartBar refreshKey={cartRefreshKey} />
           <div className="shrink-0">
             <AiChatComposer
               disabled={busy}
+              pendingLabel={pending?.label}
               onSend={(text) => {
                 void sendMessage({ text });
               }}

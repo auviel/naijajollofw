@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { MenuCatalogBrowse } from "@/components/features/storefront/menu-catalog-browse";
+import { GoogleReviewsStrip } from "@/components/features/storefront/google-reviews-strip";
 import { StorefrontFaq } from "@/components/features/storefront/storefront-faq";
 import { StorefrontHero } from "@/components/features/storefront/storefront-hero";
 import { StorefrontMarketplaceLinks } from "@/components/features/storefront/storefront-marketplace-links";
@@ -12,16 +13,21 @@ import { UtensilsCrossed } from "@/components/ui/icons";
 import {
   countFilteredItems,
   filterCatalogByQuery,
+  filterCatalogByRankedItems,
 } from "@/lib/domain/menu/search";
 import type { MenuCatalog } from "@/lib/domain/menu/types";
 import type { StoreOpenStatus } from "@/lib/domain/store/hours";
 import type { StoreProfile } from "@/lib/domain/store/types";
+import type { PublicGoogleRating } from "@/lib/integrations/google/places/types";
+import { shouldUseAiSearch } from "@/lib/ai/catalog/should-use-ai-search";
+import { useAiMenuSearch } from "@/components/features/storefront/use-ai-menu-search";
 
 type StorefrontMenuViewProps = {
   store: StoreProfile;
   catalog: MenuCatalog;
   openStatus: StoreOpenStatus;
   prepMinutes: number;
+  googleRating?: PublicGoogleRating | null;
   /** SSR / share-link query from `/?q=` */
   initialQuery?: string;
 };
@@ -39,6 +45,7 @@ export function StorefrontMenuView({
   catalog,
   openStatus,
   prepMinutes,
+  googleRating = null,
   initialQuery = "",
 }: StorefrontMenuViewProps) {
   const searchParams = useSearchParams();
@@ -63,7 +70,9 @@ export function StorefrontMenuView({
       catalog={catalog}
       openStatus={openStatus}
       prepMinutes={prepMinutes}
+      googleRating={googleRating}
       needle={needle}
+      committedQuery={urlQuery || (!isClient ? initialQuery.trim() : "")}
       isSearching={isSearching}
       isFocused={isFocused}
     />
@@ -76,6 +85,7 @@ export function StorefrontMenuFallback({
   catalog,
   openStatus,
   prepMinutes,
+  googleRating = null,
   initialQuery = "",
 }: StorefrontMenuViewProps) {
   const needle = initialQuery.trim();
@@ -85,7 +95,9 @@ export function StorefrontMenuFallback({
       catalog={catalog}
       openStatus={openStatus}
       prepMinutes={prepMinutes}
+      googleRating={googleRating}
       needle={needle}
+      committedQuery={needle}
       isSearching={Boolean(needle)}
       isFocused={Boolean(needle)}
     />
@@ -97,7 +109,9 @@ function StorefrontMenuContent({
   catalog,
   openStatus,
   prepMinutes,
+  googleRating = null,
   needle,
+  committedQuery,
   isSearching,
   isFocused,
 }: {
@@ -105,11 +119,27 @@ function StorefrontMenuContent({
   catalog: MenuCatalog;
   openStatus: StoreOpenStatus;
   prepMinutes: number;
+  googleRating?: PublicGoogleRating | null;
   needle: string;
+  /** URL / submitted query — AI runs only on this, not live typeahead draft. */
+  committedQuery: string;
   isSearching: boolean;
   isFocused: boolean;
 }) {
-  const categories = filterCatalogByQuery(catalog, needle);
+  const aiSearch = useAiMenuSearch(committedQuery);
+  const keywordCategories = filterCatalogByQuery(catalog, needle);
+  const useAi = Boolean(committedQuery) && shouldUseAiSearch(committedQuery);
+
+  let categories = keywordCategories;
+  let aiPowered = false;
+
+  if (useAi && !aiSearch.loading && aiSearch.items.length > 0) {
+    categories = filterCatalogByRankedItems(catalog, aiSearch.items);
+    aiPowered = aiSearch.usedAi;
+  } else if (useAi && !aiSearch.loading && aiSearch.error) {
+    categories = keywordCategories;
+  }
+
   const matchCount = countFilteredItems(categories);
 
   const hasAnyMenuItems = catalog.categories.some(
@@ -128,6 +158,7 @@ function StorefrontMenuContent({
             store={store}
             openStatus={openStatus}
             prepMinutes={prepMinutes}
+            googleRating={googleRating}
           />
         ) : null}
         <EmptyState
@@ -153,7 +184,13 @@ function StorefrontMenuContent({
     return (
       <div className="space-y-6">
         <div id="menu" className="scroll-mt-24">
-          {isSearching && categories.length === 0 ? (
+          {useAi && aiSearch.loading ? (
+            <EmptyState
+              icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
+              title="Searching the menu…"
+              description={`Finding dishes for “${committedQuery}”.`}
+            />
+          ) : isSearching && categories.length === 0 ? (
             <EmptyState
               icon={<UtensilsCrossed className="h-6 w-6" aria-hidden />}
               title="No matches"
@@ -169,6 +206,7 @@ function StorefrontMenuContent({
               }
               searchQuery={isSearching ? needle : undefined}
               resultCount={isSearching ? matchCount : undefined}
+              aiPowered={aiPowered}
             />
           )}
         </div>
@@ -182,6 +220,7 @@ function StorefrontMenuContent({
         store={store}
         openStatus={openStatus}
         prepMinutes={prepMinutes}
+        googleRating={googleRating}
         soldOut={!hasOrderable}
       />
 
@@ -195,6 +234,8 @@ function StorefrontMenuContent({
           }
         />
       </div>
+
+      <GoogleReviewsStrip rating={googleRating} />
 
       <StorefrontFaq
         store={store}

@@ -7,7 +7,7 @@ import { displayCategoryName } from "@/components/features/storefront/category-i
 import { CategoryRail } from "@/components/features/storefront/category-rail";
 import { ItemDetailModal } from "@/components/features/storefront/item-detail-modal";
 import { MenuItemThumb } from "@/components/features/storefront/menu-item-thumb";
-import { ChevronLeft, ChevronRight, Plus } from "@/components/ui/icons";
+import { AiSearch02, ChevronLeft, ChevronRight, Plus } from "@/components/ui/icons";
 import type { MenuCategoryView, MenuItemListItem } from "@/lib/domain/menu/types";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
@@ -23,6 +23,7 @@ type MenuCatalogBrowseProps = {
   scheduleLabel?: string | null;
   searchQuery?: string;
   resultCount?: number;
+  aiPowered?: boolean;
 };
 
 function isDesktopViewport() {
@@ -40,6 +41,7 @@ export function MenuCatalogBrowse({
   scheduleLabel = null,
   searchQuery,
   resultCount,
+  aiPowered = false,
 }: MenuCatalogBrowseProps) {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const isSearch = Boolean(searchQuery?.trim());
@@ -51,8 +53,19 @@ export function MenuCatalogBrowse({
   return (
     <>
       {isSearch && typeof resultCount === "number" ? (
-        <p className="mb-4 text-sm text-text-secondary">
-          {`Showing ${resultCount} ${resultCount === 1 ? "item" : "items"} for ‘${searchQuery!.trim()}’`}
+        <p className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-text-secondary">
+          <span>
+            {`Showing ${resultCount} ${resultCount === 1 ? "item" : "items"} for ‘${searchQuery!.trim()}’`}
+          </span>
+          {aiPowered ? (
+            <>
+              <span aria-hidden>·</span>
+              <span className="inline-flex items-center gap-1">
+                <AiSearch02 className="size-4 shrink-0" aria-hidden />
+                Smart search
+              </span>
+            </>
+          ) : null}
         </p>
       ) : null}
       <div className="lg:flex lg:items-start lg:gap-10 xl:gap-12">

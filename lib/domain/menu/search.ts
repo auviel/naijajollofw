@@ -106,6 +106,29 @@ export function countFilteredItems(categories: MenuCategoryView[]): number {
   return categories.reduce((sum, category) => sum + category.items.length, 0);
 }
 
+/** Filter catalog to a pre-ranked item list (AI or merged search results). */
+export function filterCatalogByRankedItems(
+  catalog: MenuCatalog,
+  rankedItems: MenuSearchItem[],
+): MenuCategoryView[] {
+  if (rankedItems.length === 0) return [];
+
+  const rankedIds = new Set(rankedItems.map((item) => item.id));
+  const rankOrder = new Map(rankedItems.map((item, index) => [item.id, index]));
+
+  return catalog.categories
+    .map((category) => ({
+      ...category,
+      items: category.items
+        .filter((item) => rankedIds.has(item.id))
+        .sort(
+          (a, b) =>
+            (rankOrder.get(a.id) ?? 999) - (rankOrder.get(b.id) ?? 999),
+        ),
+    }))
+    .filter((category) => category.items.length > 0);
+}
+
 /**
  * Typeahead rows: matching items + short keyword phrases from item names,
  * plus the caller adds a final “Search for q” action.

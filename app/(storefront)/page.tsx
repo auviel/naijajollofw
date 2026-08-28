@@ -7,6 +7,7 @@ import {
 } from "@/lib/seo/json-ld";
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
 import { buildStorefrontFaqEntries } from "@/lib/seo/storefront-faq";
+import { getPublicGoogleRating } from "@/lib/integrations/google/places/get-public-google-rating";
 import { getCart } from "@/lib/services/cart/cart-actions";
 import {
   getPublicStoreHoursSchedule,
@@ -28,13 +29,14 @@ export const metadata: Metadata = buildShareMetadata({
 });
 
 export default async function StorefrontHomePage({ searchParams }: PageProps) {
-  const [{ q }, { store, catalog, prepMinutes }, cart, openStatus, schedule] =
+  const [{ q }, { store, catalog, prepMinutes }, cart, openStatus, schedule, googleRating] =
     await Promise.all([
       searchParams,
       getPublicStorefront(),
       getCart(),
       getPublicStoreOpenStatus(),
       getPublicStoreHoursSchedule(),
+      getPublicGoogleRating(),
     ]);
 
   const faqEntries = buildStorefrontFaqEntries({
@@ -47,7 +49,7 @@ export default async function StorefrontHomePage({ searchParams }: PageProps) {
     <>
       <JsonLdScript
         data={[
-          buildRestaurantJsonLd({ store, schedule }),
+          buildRestaurantJsonLd({ store, schedule, googleRating }),
           buildFaqPageJsonLd(faqEntries),
         ]}
       />
@@ -58,6 +60,7 @@ export default async function StorefrontHomePage({ searchParams }: PageProps) {
         cartSubtotalCents={cart.subtotalCents}
         openStatus={openStatus}
         prepMinutes={prepMinutes}
+        googleRating={googleRating}
         searchQuery={q?.trim() ?? ""}
       />
     </>

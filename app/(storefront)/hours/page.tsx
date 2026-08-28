@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { HoursOrderingView } from "@/components/features/storefront/hours-ordering-view";
-import { buildRestaurantJsonLd } from "@/lib/seo/json-ld";
+import {
+  buildFaqPageJsonLd,
+  buildRestaurantJsonLd,
+} from "@/lib/seo/json-ld";
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
+import { buildStorefrontFaqEntries } from "@/lib/seo/storefront-faq";
+import { getPublicGoogleRating } from "@/lib/integrations/google/places/get-public-google-rating";
 import {
   getPublicStoreHoursSchedule,
   getPublicStoreOpenStatus,
@@ -17,15 +22,28 @@ export const metadata: Metadata = buildShareMetadata({
 });
 
 export default async function HoursOrderingPage() {
-  const [{ store, prepMinutes }, openStatus, schedule] = await Promise.all([
-    getPublicStorefront(),
-    getPublicStoreOpenStatus(),
-    getPublicStoreHoursSchedule(),
-  ]);
+  const [{ store, prepMinutes }, openStatus, schedule, googleRating] =
+    await Promise.all([
+      getPublicStorefront(),
+      getPublicStoreOpenStatus(),
+      getPublicStoreHoursSchedule(),
+      getPublicGoogleRating(),
+    ]);
+
+  const faqEntries = buildStorefrontFaqEntries({
+    store,
+    prepMinutes,
+    todayLabel: openStatus.todayLabel,
+  });
 
   return (
     <>
-      <JsonLdScript data={buildRestaurantJsonLd({ store, schedule })} />
+      <JsonLdScript
+        data={[
+          buildRestaurantJsonLd({ store, schedule, googleRating }),
+          buildFaqPageJsonLd(faqEntries),
+        ]}
+      />
       <HoursOrderingView
         store={store}
         openStatus={openStatus}
