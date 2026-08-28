@@ -1,5 +1,6 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
+import {StudioLogo} from './components/StudioLogo'
 import {schemaTypes} from './schemaTypes'
 
 export default defineConfig({
@@ -7,6 +8,7 @@ export default defineConfig({
   title: 'Naija Jollof',
   projectId: 'c7b8chvo',
   dataset: 'production',
+  icon: StudioLogo,
   plugins: [
     structureTool({
       structure: (S) =>
