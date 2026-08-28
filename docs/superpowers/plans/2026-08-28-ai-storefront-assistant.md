@@ -25,7 +25,18 @@
 - Rate-limit chat by IP
 - Do not commit secrets; document keys in `.env.example`
 - Prefer existing cart/menu services **inside adapters** over HTTP self-fetch
+- **Cost / caching (required):**
+  - Header search never calls the LLM
+  - Stable system prompt (no per-request timestamps) for provider prompt-cache friendliness
+  - Trim model history to last **12** UI messages (`trimMessagesForModel`)
+  - Cap tool payloads (`searchCatalog` ≤5 items; no full modifier trees in search results)
+  - `stopWhen: stepCountIs(5)` maximum
+  - Per-request memoization for identical read-tool args in one POST
+  - Short TTL in-process cache (~45s) for `searchCatalog` / `getMerchantStatus` / `getProduct` only
+  - **Never** cache `addToCart` results
+  - Reuse existing `unstable_cache` catalog/hours via adapters (do not bypass)
 - YAGNI: no pharmacy adapter in phase 1 — only clean seams
+- YAGNI: no Redis / no LLM completion cache in phase 1
 - After `npm install ai`, verify exports: use `stepCountIs` **or** `isStepCount`, and `toUIMessageStreamResponse` **or** `createUIMessageStreamResponse`/`toUIMessageStream` per installed package typings
 
 ---
@@ -38,6 +49,10 @@
 | `lib/ai/ports/cart.ts` | `CartPort` (addSimple, canAddWithoutCustomize semantics) |
 | `lib/ai/ports/merchant.ts` | `MerchantPort` (open status, hours, fulfillment blurb) |
 | `lib/ai/catalog/rank.ts` | Pure `rankCatalogItems` / suggestions over `CatalogSearchItem` |
+| `lib/ai/core/cost.ts` | `trimMessagesForModel`, tool payload caps, history limit constant |
+| `lib/ai/core/tool-cache.ts` | Per-request memo + short TTL cache for read-only tools |
+| `tests/unit/ai-tool-cache.test.ts` | TTL/memo behavior for read tools |
+| `tests/unit/ai-cost-trim.test.ts` | History trim keeps last N messages |
 | `lib/domain/menu/search.ts` | Thin bridge: menu catalog → `CatalogSearchItem` + re-export rank for header (keep existing callers working) |
 | `tests/unit/catalog-rank.test.ts` | Ranking tests on generic items |
 | `tests/unit/menu-search.test.ts` | Keep/adapt existing menu search tests via bridge |
@@ -285,7 +300,117 @@ EOF
 
 ---
 
-### Task 4: Restaurant adapters + commerce tools
+### Task 4: Cost controls — history trim + read-tool cache
+
+**Files:**
+- Create: `lib/ai/core/cost.ts`
+- Create: `lib/ai/core/tool-cache.ts`
+- Create: `tests/unit/ai-cost-trim.test.ts`
+- Create: `tests/unit/ai-tool-cache.test.ts`
+
+**Interfaces:**
+- Produces:
+  - `AI_MODEL_HISTORY_LIMIT = 12`
+  - `trimMessagesForModel(messages: UIMessage[]): UIMessage[]` — keeps last N messages (preserve order)
+  - `capSearchResults(items, limit=5)` helper
+  - `createReadToolCache(options?: { ttlMs?: number })` with:
+    - `memoizeRequest(fn)` or `runCached(key, fn)` for per-request dedupe
+    - `getOrSet(key, ttlMs, loader)` for process TTL
+  - Key helpers: `searchKey(query, limit)`, `productKey(slugOrId)`, `merchantKey()`
+
+- [ ] **Step 1: Failing tests**
+
+```ts
+// tests/unit/ai-cost-trim.test.ts
+import { describe, expect, it } from "vitest";
+import { trimMessagesForModel, AI_MODEL_HISTORY_LIMIT } from "@/lib/ai/core/cost";
+
+it("keeps only the last N messages", () => {
+  const messages = Array.from({ length: 20 }, (_, i) => ({
+    id: String(i),
+    role: i % 2 === 0 ? "user" : "assistant",
+    parts: [{ type: "text", text: `m${i}` }],
+  }));
+  const trimmed = trimMessagesForModel(messages as never);
+  expect(trimmed).toHaveLength(AI_MODEL_HISTORY_LIMIT);
+  expect(trimmed[0]?.id).toBe(String(20 - AI_MODEL_HISTORY_LIMIT));
+});
+```
+
+```ts
+// tests/unit/ai-tool-cache.test.ts
+import { describe, expect, it, vi } from "vitest";
+import { createReadToolCache } from "@/lib/ai/core/tool-cache";
+
+it("returns cached value within TTL without reloading", async () => {
+  const cache = createReadToolCache({ ttlMs: 60_000 });
+  const loader = vi.fn(async () => ({ isOpen: true }));
+  const a = await cache.getOrSet("merchant", loader);
+  const b = await cache.getOrSet("merchant", loader);
+  expect(a).toEqual(b);
+  expect(loader).toHaveBeenCalledTimes(1);
+});
+
+it("dedupes in-flight loads for the same key", async () => {
+  const cache = createReadToolCache({ ttlMs: 60_000 });
+  let resolve!: (v: string) => void;
+  const loader = vi.fn(
+    () => new Promise<string>((r) => { resolve = r; }),
+  );
+  const p1 = cache.getOrSet("q:jollof", loader);
+  const p2 = cache.getOrSet("q:jollof", loader);
+  resolve("ok");
+  expect(await p1).toBe("ok");
+  expect(await p2).toBe("ok");
+  expect(loader).toHaveBeenCalledTimes(1);
+});
+```
+
+- [ ] **Step 2: Run — expect FAIL**
+
+```bash
+npm test -- tests/unit/ai-cost-trim.test.ts tests/unit/ai-tool-cache.test.ts
+```
+
+- [ ] **Step 3: Implement**
+
+`lib/ai/core/cost.ts`:
+
+```ts
+export const AI_MODEL_HISTORY_LIMIT = 12;
+
+export function trimMessagesForModel<T>(messages: T[]): T[] {
+  if (messages.length <= AI_MODEL_HISTORY_LIMIT) return messages;
+  return messages.slice(-AI_MODEL_HISTORY_LIMIT);
+}
+
+export function capSearchLimit(limit?: number, max = 5): number {
+  return Math.min(Math.max(limit ?? max, 1), max);
+}
+```
+
+`lib/ai/core/tool-cache.ts` — in-process Map with `{ value, expiresAt }` + in-flight Promise map; default `ttlMs = 45_000`. Export `createReadToolCache`. Document: **not** for mutations.
+
+- [ ] **Step 4: Run — PASS**
+
+```bash
+npm test -- tests/unit/ai-cost-trim.test.ts tests/unit/ai-tool-cache.test.ts
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/ai/core/cost.ts lib/ai/core/tool-cache.ts tests/unit/ai-cost-trim.test.ts tests/unit/ai-tool-cache.test.ts
+git commit -m "$(cat <<'EOF'
+feat: add AI history trim and read-tool TTL cache
+
+EOF
+)"
+```
+
+---
+
+### Task 5: Restaurant adapters + commerce tools
 
 **Files:**
 - Create: `lib/ai/verticals/restaurant/ports.ts`
@@ -294,10 +419,10 @@ EOF
 - Create: `lib/ai/verticals/restaurant/create-chat.ts`
 
 **Interfaces:**
-- Consumes: `CatalogPort`, `CartPort`, `MerchantPort`, `rankCatalogItems`, restaurant services
+- Consumes: ports, `rankCatalogItems`, `createReadToolCache`, `trimMessagesForModel`, `capSearchLimit`, restaurant services
 - Produces:
   - `createRestaurantPorts(): { catalog, cart, merchant }`
-  - `createCommerceTools(ports)` → `searchCatalog`, `getProduct`, `getMerchantStatus`, `addToCart`, `openProduct`
+  - `createCommerceTools(ports, readCache)` → `searchCatalog`, `getProduct`, `getMerchantStatus`, `addToCart`, `openProduct`
   - `createRestaurantChatHandler()` used by the route
 
 - [ ] **Step 1: Implement restaurant port adapters**
@@ -310,10 +435,23 @@ Wire:
 
 No Prisma imports outside these adapter files.
 
-- [ ] **Step 2: Bind AI SDK tools to ports**
+- [ ] **Step 2: Bind AI SDK tools to ports (with cost controls)**
 
-Tool names must be the commerce-generic set. `openProduct` returns `{ href: `/item/${slug}`, slug }`.  
-`createRestaurantChatHandler` calls `streamText` with `composeAssistantPrompt({ brandName: "Naija Jollof", verticalInstructions: RESTAURANT_VERTICAL_INSTRUCTIONS, policies: DEFAULT_COMMERCE_POLICIES })`, `AI_CHAT_MODEL`, gateway fallbacks, `createCommerceTools(createRestaurantPorts())`, `stopWhen: stepCountIs(5)`.
+Tool names must be the commerce-generic set. `openProduct` returns `{ href: `/item/${slug}`, slug }`.
+
+Wire read tools through `createReadToolCache({ ttlMs: 45_000 })`:
+- `searchCatalog` → `cache.getOrSet(searchKey(query, limit), () => catalog.search(...))` with `capSearchLimit`
+- `getProduct` → cached by slug/id
+- `getMerchantStatus` → cached under `merchant`
+- `addToCart` → **direct** port call, no cache
+
+`createRestaurantChatHandler`:
+1. Parse messages
+2. `trimMessagesForModel(messages)` before `convertToModelMessages`
+3. `streamText` with stable `composeAssistantPrompt({ brandName: "Naija Jollof", verticalInstructions: RESTAURANT_VERTICAL_INSTRUCTIONS, policies: DEFAULT_COMMERCE_POLICIES })` (no Date.now in prompt)
+4. `AI_CHAT_MODEL` + gateway fallbacks
+5. `createCommerceTools(createRestaurantPorts(), readCache)`
+6. `stopWhen: stepCountIs(5)`
 
 - [ ] **Step 3: Typecheck `lib/ai/**`**
 
@@ -334,7 +472,7 @@ EOF
 
 ---
 
-### Task 5: Thin chat API route
+### Task 6: Thin chat API route
 
 **Files:**
 - Create: `app/api/ai/chat/route.ts`
@@ -394,7 +532,7 @@ EOF
 
 ---
 
-### Task 6: Floating chat UI
+### Task 7: Floating chat UI
 
 **Files:**
 - Create: `components/features/ai/storefront-ai-chat.tsx`
@@ -467,7 +605,7 @@ EOF
 
 ---
 
-### Task 7: Header search alignment + prompt polish
+### Task 8: Header search alignment + prompt polish
 
 **Files:**
 - Modify: `components/features/storefront/menu-search-suggest.tsx` (only if still unsorted after Task 2)
@@ -498,7 +636,7 @@ EOF
 
 ---
 
-### Task 8: Regression pass + spec status
+### Task 9: Regression pass + spec status
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-08-28-ai-storefront-assistant-design.md` (status)
@@ -506,7 +644,7 @@ EOF
 - [ ] **Step 1: Run unit suite**
 
 ```bash
-npm test -- tests/unit/catalog-rank.test.ts tests/unit/menu-search.test.ts tests/unit/ai-can-add-simple.test.ts
+npm test -- tests/unit/catalog-rank.test.ts tests/unit/menu-search.test.ts tests/unit/ai-can-add-simple.test.ts tests/unit/ai-cost-trim.test.ts tests/unit/ai-tool-cache.test.ts
 ```
 
 Expected: PASS
@@ -520,6 +658,8 @@ Expected: PASS
 - [ ] Account ask → sign-in nudge
 - [ ] No invented prices in spot check
 - [ ] Burst chat hits 429
+- [ ] Repeat “are you open?” within ~45s — no extra DB thrash (merchant TTL)
+- [ ] Header typeahead does not create AI provider usage
 
 - [ ] **Step 3: Mark spec status**
 
@@ -548,6 +688,7 @@ EOF
 - Sanity/blog grounding
 - WhatsApp agent
 - Extracting `lib/ai` into a separate npm package (premature)
+- Redis / shared LLM completion cache (phase 1 uses in-process TTL only)
 
 ---
 
@@ -555,15 +696,16 @@ EOF
 
 | Spec requirement | Task |
 |------------------|------|
-| Ports & adapters / vertical-ready core | Tasks 2–4 |
+| Ports & adapters / vertical-ready core | Tasks 2–5 |
 | Smarter catalog ranking, no embeddings | Task 2 |
 | Floating chat web | Task 6 |
-| Tools: searchCatalog/getProduct/merchant/add/open | Task 4–5 |
-| Models 4o-mini → 5-mini | Task 3, 5 |
-| Guest + sign-in nudge | Task 6 |
-| Rate limit | Task 5 |
+| Tools: searchCatalog/getProduct/merchant/add/open | Task 5–6 |
+| Models 4o-mini → 5-mini | Task 3, 6 |
+| Guest + sign-in nudge | Task 7 |
+| Rate limit | Task 6 |
 | Warm host, no invention | Task 3 restaurant prompt |
-| Menu/hours/cart only in restaurant adapter | Task 4 |
-| Unit tests ranking + helpers | Tasks 2–3, 8 |
+| Menu/hours/cart only in restaurant adapter | Task 5 |
+| Unit tests ranking + helpers + cache/trim | Tasks 2–4, 9 |
+| Cost: trim, TTL read cache, no LLM search, no cart cache | Task 4–5 |
 | Pharmacy vertical | Out of scope (seams only) |
 | Mobile app / ordering / companion | Explicitly out of scope |

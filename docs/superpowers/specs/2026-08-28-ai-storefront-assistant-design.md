@@ -40,6 +40,7 @@ Build order for delivery: **web first** → shared API → **mobile chat tab** �
 | Header search | **No LLM** — shared ranking over live catalog only |
 | Model access | Vercel AI SDK via AI Gateway (`provider/model` strings); OpenAI key OK for local/BYOK |
 | Code structure | **Ports & adapters** — vertical-agnostic AI core; restaurant adapter in phase 1; pharmacy later without core rewrite |
+| Cost / caching | Header search = no LLM; stable prompts; history trim; tool caps; per-request memo + short TTL for **read** tools only; never cache cart mutations |
 
 ## Product shape
 
@@ -175,9 +176,9 @@ Commerce-generic names; restaurant adapter supplies behavior.
 
 ### Header search
 
-- Same `searchMenu` brain as chat
+- Same catalog ranking brain as chat (`rankCatalogItems`) — **no LLM**
 - Typeahead lists ranked items
-- Vague queries may show a short assistant hint + matches (not a second product)
+- Vague queries may show a short static hint + matches (not a second LLM product)
 
 ### Edge behaviors
 
@@ -201,10 +202,55 @@ Commerce-generic names; restaurant adapter supplies behavior.
 | `app/api/ai/chat` | Thin route: auth/rate-limit + `createRestaurantChatHandler()` |
 | `components/features/ai/` | Generic chat shell + product cards (vertical labels via props) |
 | Header search | Uses `rankCatalogItems` via menu→catalog mapping (existing menu search can re-export) |
+| `lib/ai/core/cost.ts` | History trim, tool-result caps, stable prompt hashing notes |
+| `lib/ai/core/tool-cache.ts` | Short-TTL in-memory cache for read-only tool results (search / merchant / product) |
 
 **Reuse:** public menu services, store hours/status, cart session/APIs, item slug routes — **only inside the restaurant adapter**. Do not rebuild checkout.
 
 **Do not:** import Prisma/menu repositories from `lib/ai/core` or from UI components.
+
+## Caching & cost control
+
+Goal: keep **4o-mini** bills low without stale prices or wrong cart state.
+
+### What we already reuse
+
+| Data | Mechanism | Notes |
+|------|-----------|--------|
+| Public catalog | `unstable_cache` ~300s + `STOREFRONT_CACHE_TAG` | Adapters call `getPublicStorefront` — do not re-query Prisma per keystroke |
+| Store hours rows | Same tag / revalidate | Merchant status stays cheap |
+
+### AI-layer rules (phase 1)
+
+| Layer | Strategy | Saves |
+|-------|----------|--------|
+| **Header search** | Ranking only — **never** call the LLM | Most “search” traffic is free of token cost |
+| **Stable system prompt** | `composeAssistantPrompt` output must be byte-stable across requests (no timestamps/random). Prefer provider **cached input** discounts when available | Repeated prompt tokens |
+| **History window** | Send only the last **N** UI messages to the model (N=12 default); keep UI transcript full client-side | Input tokens on long chats |
+| **Tool output caps** | `searchCatalog` returns ≤5 items; strip unused fields (no full modifier trees in search results). `getProduct` returns detail only when needed | Output→next-input tokens |
+| **Step budget** | `stopWhen: stepCountIs(5)` max | Runaway tool loops |
+| **Read-tool memo (per request)** | Within one chat POST, memoize identical `searchCatalog` / `getProduct` / `getMerchantStatus` args | Duplicate tool calls in one turn |
+| **Short TTL read cache** | Process-local TTL cache (~30–60s) for normalized `searchCatalog` query + `getMerchantStatus` + `getProduct(slug)`. **Never** cache `addToCart` | Repeated “are you open?” / same craving across users on same isolate |
+| **Mutations** | `addToCart` / `openProduct` — no result caching | Correctness |
+| **Model choice** | Primary `gpt-4o-mini`; fallback only on failure | Sticker price |
+| **Rate limit** | 20 chat req / IP / min | Abuse cost |
+
+### Explicitly out of scope (phase 1)
+
+- Vector/embeddings index (ops + infra cost without proven need)
+- Caching full LLM **completions** (risk of stale/wrong personalized answers)
+- Cross-region Redis for tool cache (start in-process; upgrade if multi-isolate waste shows up)
+- Prompt injection of entire menu into the system prompt (expensive + stale) — always tool-fetch
+
+### Invalidation
+
+- Catalog/hours: existing `revalidateStorefrontCache()` on menu/store writes covers adapter data
+- AI TTL caches: expire by time only (short); no need to hook menu writes for 30–60s windows
+- Cart: never cached at AI layer
+
+### Success metric (cost)
+
+Spot-check: identical “are you open?” within TTL should hit merchant cache (no extra DB). Header typeahead never appears in AI provider logs/usage.
 
 ## Safety & privacy
 
