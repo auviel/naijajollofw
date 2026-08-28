@@ -139,6 +139,7 @@ function AddCardPanel({
       </div>
       <SquareCardSlot
         containerId={cardForm.containerId}
+        ready={cardForm.ready}
         error={cardForm.error}
         onRetry={cardForm.retry}
       />
