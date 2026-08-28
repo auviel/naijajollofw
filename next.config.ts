@@ -161,7 +161,14 @@ const nextConfig: NextConfig = {
       process.env.STORE_TIMEZONE ?? "America/Toronto",
   },
   images: {
-    remotePatterns: r2RemotePatterns(),
+    remotePatterns: [
+      ...r2RemotePatterns(),
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+        pathname: "/images/**",
+      },
+    ],
   },
   async headers() {
     return [
