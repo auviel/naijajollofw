@@ -27,6 +27,7 @@ describe("getDoorDashExternalStoreId", () => {
   });
 
   it("falls back to Store.id when env is unset", () => {
+    vi.stubEnv("DOORDASH_EXTERNAL_STORE_ID", "");
     expect(getDoorDashExternalStoreId(store)).toBe("seed-store-waterloo");
   });
 

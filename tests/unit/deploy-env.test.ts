@@ -2,43 +2,39 @@ import { afterEach, describe, expect, it } from "vitest";
 import { deployEnvironment } from "@/lib/observability/deploy-env";
 
 describe("deployEnvironment", () => {
-  let previousCloudflare: string | undefined;
-  let previousPublicCloudflare: string | undefined;
-  let previousVercel: string | undefined;
-  let previousPublicVercel: string | undefined;
+  const envKeys = [
+    "APP_ENV",
+    "NEXT_PUBLIC_APP_ENV",
+    "CLOUDFLARE_ENV",
+    "NEXT_PUBLIC_CLOUDFLARE_ENV",
+    "VERCEL_ENV",
+    "NEXT_PUBLIC_VERCEL_ENV",
+  ] as const;
+
+  const previous: Record<(typeof envKeys)[number], string | undefined> = {
+    APP_ENV: undefined,
+    NEXT_PUBLIC_APP_ENV: undefined,
+    CLOUDFLARE_ENV: undefined,
+    NEXT_PUBLIC_CLOUDFLARE_ENV: undefined,
+    VERCEL_ENV: undefined,
+    NEXT_PUBLIC_VERCEL_ENV: undefined,
+  };
 
   afterEach(() => {
-    if (previousCloudflare === undefined) {
-      delete process.env.CLOUDFLARE_ENV;
-    } else {
-      process.env.CLOUDFLARE_ENV = previousCloudflare;
-    }
-    if (previousPublicCloudflare === undefined) {
-      delete process.env.NEXT_PUBLIC_CLOUDFLARE_ENV;
-    } else {
-      process.env.NEXT_PUBLIC_CLOUDFLARE_ENV = previousPublicCloudflare;
-    }
-    if (previousVercel === undefined) {
-      delete process.env.VERCEL_ENV;
-    } else {
-      process.env.VERCEL_ENV = previousVercel;
-    }
-    if (previousPublicVercel === undefined) {
-      delete process.env.NEXT_PUBLIC_VERCEL_ENV;
-    } else {
-      process.env.NEXT_PUBLIC_VERCEL_ENV = previousPublicVercel;
+    for (const key of envKeys) {
+      if (previous[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
     }
   });
 
   function stash() {
-    previousCloudflare = process.env.CLOUDFLARE_ENV;
-    previousPublicCloudflare = process.env.NEXT_PUBLIC_CLOUDFLARE_ENV;
-    previousVercel = process.env.VERCEL_ENV;
-    previousPublicVercel = process.env.NEXT_PUBLIC_VERCEL_ENV;
-    delete process.env.CLOUDFLARE_ENV;
-    delete process.env.NEXT_PUBLIC_CLOUDFLARE_ENV;
-    delete process.env.VERCEL_ENV;
-    delete process.env.NEXT_PUBLIC_VERCEL_ENV;
+    for (const key of envKeys) {
+      previous[key] = process.env[key];
+      delete process.env[key];
+    }
   }
 
   it("prefers APP_ENV over legacy Cloudflare and Vercel", () => {
