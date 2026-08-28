@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a warm-host storefront AI chat (floating widget) plus smarter shared menu ranking so diners can ask food/hours questions, browse matches, open items, and add simple items to cart — without checkout in chat.
+**Goal:** Ship a warm-host storefront AI chat (floating widget) plus smarter shared catalog ranking so diners can ask food/hours questions, browse matches, open products, and add simple items to cart — without checkout in chat — on a ports-and-adapters core reusable for other ecommerce verticals.
 
-**Architecture:** Upgrade pure menu ranking in `lib/domain/menu/search.ts` (no embeddings). Add `lib/ai/` (prompt, models, tools) and `POST /api/ai/chat` streaming via Vercel AI SDK with tool calling. Tools wrap existing `getPublicStorefront` / `getPublicMenuItem` / `getPublicStoreOpenStatus` / `addCartItem`. Floating chat mounts in storefront layout; header typeahead consumes the same ranking helpers.
+**Architecture:** Ports-and-adapters commerce AI: vertical-agnostic core (`lib/ai/core`, `lib/ai/ports`, `lib/ai/catalog` ranking) plus a **restaurant** adapter that wires existing menu/hours/cart services. `POST /api/ai/chat` is a thin route. Floating chat + header search share catalog ranking. Pharmacy/other verticals later = new adapter, not a fork.
 
-**Tech Stack:** Next.js App Router, `ai` + `@ai-sdk/react`, Zod, Vitest, existing Prisma menu/cart/store services.
+**Tech Stack:** Next.js App Router, `ai` + `@ai-sdk/react`, Zod, Vitest, existing Prisma menu/cart/store services (adapter only).
 
 **Spec:** `docs/superpowers/specs/2026-08-28-ai-storefront-assistant-design.md`
 
@@ -14,15 +14,18 @@
 
 - Primary model: **`openai/gpt-4o-mini`**
 - Fallback model: **`openai/gpt-5-mini`** via `providerOptions.gateway.models`
-- Header search: **no LLM** — shared ranking only
-- Phase 1 tools only: `searchMenu`, `getItem`, `getStoreStatus`, `addToCart`, `openItem`
+- Header search: **no LLM** — shared catalog ranking only
+- Phase 1 tools only: `searchCatalog`, `getProduct`, `getMerchantStatus`, `addToCart`, `openProduct`
+- Core must not import menu Prisma/repos — only ports + restaurant adapter
+- Generic types: `CatalogSearchItem` (not `MenuItem*` inside `lib/ai/core` / `lib/ai/catalog`)
 - No checkout, payment, address mutation, or order-status tools
 - Facts (price, availability, hours) **only** from tools — never invent
-- Voice: warm host, short replies
+- Voice: warm host, short replies (restaurant prompt fragment)
 - Guests OK; account asks → sign-in nudge (no fake success)
 - Rate-limit chat by IP
 - Do not commit secrets; document keys in `.env.example`
-- Prefer existing cart/menu services over HTTP self-fetch inside tools
+- Prefer existing cart/menu services **inside adapters** over HTTP self-fetch
+- YAGNI: no pharmacy adapter in phase 1 — only clean seams
 - After `npm install ai`, verify exports: use `stepCountIs` **or** `isStepCount`, and `toUIMessageStreamResponse` **or** `createUIMessageStreamResponse`/`toUIMessageStream` per installed package typings
 
 ---
@@ -31,20 +34,26 @@
 
 | Path | Responsibility |
 |------|----------------|
-| `lib/domain/menu/search.ts` | Shared ranking + suggestions (header + tools) |
-| `tests/unit/menu-search.test.ts` | Ranking / vague-query tests |
-| `lib/ai/models.ts` | Primary + gateway fallback config |
-| `lib/ai/prompt.ts` | System / instructions string |
-| `lib/ai/tools.ts` | Tool defs + execute (menu, hours, cart, open) |
-| `lib/ai/types.ts` | Shared tool result / UI message types |
-| `lib/ai/can-add-simple.ts` | Whether item can add without customize UI |
-| `app/api/ai/chat/route.ts` | Streaming chat endpoint |
-| `components/features/ai/storefront-ai-chat.tsx` | Floating launcher + panel shell |
-| `components/features/ai/ai-chat-messages.tsx` | Message list, item cards, sign-in nudge |
+| `lib/ai/ports/catalog.ts` | `CatalogPort` + `CatalogSearchItem` / product detail types |
+| `lib/ai/ports/cart.ts` | `CartPort` (addSimple, canAddWithoutCustomize semantics) |
+| `lib/ai/ports/merchant.ts` | `MerchantPort` (open status, hours, fulfillment blurb) |
+| `lib/ai/catalog/rank.ts` | Pure `rankCatalogItems` / suggestions over `CatalogSearchItem` |
+| `lib/domain/menu/search.ts` | Thin bridge: menu catalog → `CatalogSearchItem` + re-export rank for header (keep existing callers working) |
+| `tests/unit/catalog-rank.test.ts` | Ranking tests on generic items |
+| `tests/unit/menu-search.test.ts` | Keep/adapt existing menu search tests via bridge |
+| `lib/ai/core/models.ts` | Primary + gateway fallback |
+| `lib/ai/core/prompt.ts` | `composeAssistantPrompt({ brand, vertical, policies })` |
+| `lib/ai/core/create-chat-handler.ts` | Shared streamText + tools factory |
+| `lib/ai/verticals/restaurant/ports.ts` | Implement Catalog/Cart/Merchant ports |
+| `lib/ai/verticals/restaurant/prompt.ts` | Restaurant voice + food policies |
+| `lib/ai/verticals/restaurant/tools.ts` | Bind ports → AI SDK tools |
+| `lib/ai/verticals/restaurant/create-chat.ts` | `createRestaurantChatHandler()` |
+| `app/api/ai/chat/route.ts` | Rate limit + call restaurant handler |
+| `components/features/ai/storefront-ai-chat.tsx` | Floating launcher + panel |
+| `components/features/ai/ai-chat-messages.tsx` | Messages + product cards + sign-in nudge |
 | `app/(storefront)/layout.tsx` | Mount floating chat |
-| `components/features/storefront/menu-search-suggest.tsx` | Consume ranked suggestions (if API changes) |
-| `.env.example` | `OPENAI_API_KEY` / AI Gateway notes |
-| `tests/unit/ai-can-add-simple.test.ts` | Pure helper tests |
+| `.env.example` | AI env keys |
+| `tests/unit/ai-can-add-simple.test.ts` | Pure cart eligibility helper (port-level) |
 
 ---
 
@@ -91,114 +100,93 @@ EOF
 
 ---
 
-### Task 2: Smarter menu ranking (shared brain, no LLM)
+### Task 2: Catalog ranking core + menu bridge
 
 **Files:**
-- Modify: `lib/domain/menu/search.ts`
+- Create: `lib/ai/ports/catalog.ts` (minimal `CatalogSearchItem` type)
+- Create: `lib/ai/catalog/rank.ts`
+- Create: `tests/unit/catalog-rank.test.ts`
+- Modify: `lib/domain/menu/search.ts` (map menu → catalog rank; keep existing exports)
 - Modify: `tests/unit/menu-search.test.ts`
 
 **Interfaces:**
-- Consumes: `MenuSearchIndex`, `MenuSearchItem`
 - Produces:
-  - `rankMenuItems(index: MenuSearchIndex, query: string, limit?: number): MenuSearchItem[]`
-  - `buildSearchSuggestions` / `filterCatalogByQuery` use ranking (available items preferred; token overlap)
+  - `CatalogSearchItem` `{ id, slug, name, description, priceCents, imageUrl, available }`
+  - `rankCatalogItems(items: CatalogSearchItem[], query: string, limit?: number): CatalogSearchItem[]`
+  - Menu bridge: `rankMenuItems` / `buildSearchSuggestions` call `rankCatalogItems` so header keeps working
 
-- [ ] **Step 1: Write failing tests**
-
-Add to `tests/unit/menu-search.test.ts` (extend catalog fixture if needed):
-
-```ts
-import { rankMenuItems, buildSearchIndex } from "@/lib/domain/menu/search";
-
-it("ranks exact name hits above weak substring noise", () => {
-  const index = buildSearchIndex(catalog);
-  const ranked = rankMenuItems(index, "fried plantain", 5);
-  expect(ranked[0]?.slug).toBe("fried-plantain");
-});
-
-it("returns matches from description tokens", () => {
-  const index = buildSearchIndex(catalog);
-  const ranked = rankMenuItems(index, "smoky party rice", 5);
-  expect(ranked.some((i) => i.slug.includes("jollof"))).toBe(true);
-});
-
-it("prefers available items when scores tie", () => {
-  const index = buildSearchIndex(catalog);
-  const ranked = rankMenuItems(index, "jollof", 10);
-  const firstUnavailable = ranked.findIndex((i) => !i.available);
-  const firstAvailable = ranked.findIndex((i) => i.available);
-  if (firstUnavailable !== -1 && firstAvailable !== -1) {
-    expect(firstAvailable).toBeLessThan(firstUnavailable);
-  }
-});
-```
-
-- [ ] **Step 2: Run tests — expect FAIL**
-
-```bash
-npm test -- tests/unit/menu-search.test.ts
-```
-
-Expected: FAIL — `rankMenuItems` not exported / weak ranking.
-
-- [ ] **Step 3: Implement ranking**
-
-In `lib/domain/menu/search.ts`:
+- [ ] **Step 1: Failing catalog-rank tests**
 
 ```ts
-function tokenize(q: string): string[] {
-  return normalizeNeedle(q).split(/[^a-z0-9+]+/).filter((t) => t.length > 1);
-}
+// tests/unit/catalog-rank.test.ts
+import { describe, expect, it } from "vitest";
+import { rankCatalogItems } from "@/lib/ai/catalog/rank";
+import type { CatalogSearchItem } from "@/lib/ai/ports/catalog";
 
-function scoreItem(item: MenuSearchItem, tokens: string[], needle: string): number {
-  if (!needle) return 0;
-  const name = item.name.toLowerCase();
-  const desc = (item.description ?? "").toLowerCase();
-  let score = 0;
-  if (name === needle) score += 100;
-  if (name.startsWith(needle)) score += 40;
-  if (name.includes(needle)) score += 25;
-  if (desc.includes(needle)) score += 10;
-  for (const token of tokens) {
-    if (name.includes(token)) score += 12;
-    else if (desc.includes(token)) score += 5;
-  }
-  if (item.available) score += 3;
-  return score;
-}
+const items: CatalogSearchItem[] = [
+  {
+    id: "1",
+    slug: "jollof-rice-plantain-and-chicken",
+    name: "Jollof Rice, Plantain and Chicken",
+    description: "Smoky party-style jollof.",
+    priceCents: 2399,
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: "3",
+    slug: "fried-plantain",
+    name: "Fried Plantain",
+    description: "Sweet ripe plantain.",
+    priceCents: 599,
+    imageUrl: null,
+    available: true,
+  },
+];
 
-export function rankMenuItems(
-  index: MenuSearchIndex,
-  query: string,
-  limit = 8,
-): MenuSearchItem[] {
-  const needle = normalizeNeedle(query);
-  if (!needle) return [];
-  const tokens = tokenize(needle);
-  return [...index.items]
-    .map((item) => ({ item, score: scoreItem(item, tokens, needle) }))
-    .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name))
-    .slice(0, limit)
-    .map((row) => row.item);
-}
+describe("rankCatalogItems", () => {
+  it("ranks exact-ish name hits first", () => {
+    expect(rankCatalogItems(items, "fried plantain", 5)[0]?.slug).toBe(
+      "fried-plantain",
+    );
+  });
+
+  it("matches description tokens", () => {
+    expect(
+      rankCatalogItems(items, "smoky party rice", 5).some((i) =>
+        i.slug.includes("jollof"),
+      ),
+    ).toBe(true);
+  });
+});
 ```
 
-Update `buildSearchSuggestions` to use `rankMenuItems(index, draft, itemLimit)` instead of filter+slice.  
-Update `filterCatalogByQuery` so when `q` is non-empty, categories only include ranked items (preserve category grouping; order items by rank score).
-
-- [ ] **Step 4: Run tests — expect PASS**
+- [ ] **Step 2: Run — expect FAIL**
 
 ```bash
-npm test -- tests/unit/menu-search.test.ts
+npm test -- tests/unit/catalog-rank.test.ts
+```
+
+- [ ] **Step 3: Implement ports type + pure ranker**
+
+`lib/ai/ports/catalog.ts` — export `CatalogSearchItem` (and later `CatalogPort` interface stub with `search` / `getBySlugOrId` method signatures only — implement in Task 4).
+
+`lib/ai/catalog/rank.ts` — token scoring (exact/startswith/includes/desc/available boost) identical spirit to prior plan; **no menu imports**.
+
+Bridge in `lib/domain/menu/search.ts`: map `MenuSearchItem` ↔ `CatalogSearchItem`, implement `rankMenuItems` via `rankCatalogItems`, wire `buildSearchSuggestions` / `filterCatalogByQuery` to ranked results.
+
+- [ ] **Step 4: Run tests — PASS**
+
+```bash
+npm test -- tests/unit/catalog-rank.test.ts tests/unit/menu-search.test.ts
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/domain/menu/search.ts tests/unit/menu-search.test.ts
+git add lib/ai/ports/catalog.ts lib/ai/catalog/rank.ts tests/unit/catalog-rank.test.ts lib/domain/menu/search.ts tests/unit/menu-search.test.ts
 git commit -m "$(cat <<'EOF'
-feat: rank storefront menu search by token relevance
+feat: add vertical-agnostic catalog ranking for AI search
 
 EOF
 )"
@@ -206,42 +194,30 @@ EOF
 
 ---
 
-### Task 3: AI prompt, models, and pure tool helpers
+### Task 3: AI core (models, prompt composer, cart eligibility)
 
 **Files:**
-- Create: `lib/ai/models.ts`
-- Create: `lib/ai/prompt.ts`
-- Create: `lib/ai/types.ts`
-- Create: `lib/ai/can-add-simple.ts`
+- Create: `lib/ai/core/models.ts`
+- Create: `lib/ai/core/prompt.ts`
+- Create: `lib/ai/core/can-add-simple.ts`
+- Create: `lib/ai/ports/cart.ts` (types + `CartPort` interface)
+- Create: `lib/ai/ports/merchant.ts` (`MerchantPort` interface)
+- Create: `lib/ai/verticals/restaurant/prompt.ts`
 - Create: `tests/unit/ai-can-add-simple.test.ts`
 
 **Interfaces:**
-- Consumes: none from Task 2 beyond shared search (later)
 - Produces:
-  - `AI_CHAT_MODEL = "openai/gpt-4o-mini"`
-  - `AI_CHAT_FALLBACK_MODELS = ["openai/gpt-5-mini"]`
-  - `aiChatProviderOptions` for gateway failover
-  - `STOREFRONT_AI_INSTRUCTIONS: string`
+  - `AI_CHAT_MODEL`, `AI_CHAT_FALLBACK_MODELS`, `aiChatProviderOptions`
+  - `composeAssistantPrompt({ brandName, verticalInstructions, policies })`
+  - `RESTAURANT_VERTICAL_INSTRUCTIONS` (food voice; plate/tray; no medical claims)
   - `canAddWithoutCustomize(groups: { required: boolean; minSelect: number }[]): boolean`
+  - Port interfaces only (no restaurant service imports in `core/` or `ports/`)
 
-- [ ] **Step 1: Failing test for can-add helper**
+- [ ] **Step 1: Failing can-add tests**
 
 ```ts
-// tests/unit/ai-can-add-simple.test.ts
-import { describe, expect, it } from "vitest";
-import { canAddWithoutCustomize } from "@/lib/ai/can-add-simple";
-
-describe("canAddWithoutCustomize", () => {
-  it("allows add when no required modifiers", () => {
-    expect(canAddWithoutCustomize([{ required: false, minSelect: 0 }])).toBe(true);
-    expect(canAddWithoutCustomize([])).toBe(true);
-  });
-
-  it("blocks add when a group is required or minSelect > 0", () => {
-    expect(canAddWithoutCustomize([{ required: true, minSelect: 0 }])).toBe(false);
-    expect(canAddWithoutCustomize([{ required: false, minSelect: 1 }])).toBe(false);
-  });
-});
+import { canAddWithoutCustomize } from "@/lib/ai/core/can-add-simple";
+// same cases as before: empty/optional OK; required or minSelect>0 blocked
 ```
 
 - [ ] **Step 2: Run — expect FAIL**
@@ -250,56 +226,47 @@ describe("canAddWithoutCustomize", () => {
 npm test -- tests/unit/ai-can-add-simple.test.ts
 ```
 
-- [ ] **Step 3: Implement helpers + prompt + models**
+- [ ] **Step 3: Implement core + ports + restaurant prompt fragment**
 
-`lib/ai/can-add-simple.ts`:
-
-```ts
-export function canAddWithoutCustomize(
-  groups: { required: boolean; minSelect: number }[],
-): boolean {
-  return groups.every((g) => !g.required && g.minSelect <= 0);
-}
-```
-
-`lib/ai/models.ts`:
+Port sketches:
 
 ```ts
-export const AI_CHAT_MODEL = "openai/gpt-4o-mini" as const;
-export const AI_CHAT_FALLBACK_MODELS = ["openai/gpt-5-mini"] as const;
-
-export const aiChatProviderOptions = {
-  gateway: {
-    models: [...AI_CHAT_FALLBACK_MODELS],
-  },
+// lib/ai/ports/catalog.ts (extend)
+export type CatalogPort = {
+  search(query: string, limit?: number): Promise<CatalogSearchItem[]>;
+  getBySlugOrId(slugOrId: string): Promise<CatalogProductDetail | null>;
 };
-```
 
-`lib/ai/prompt.ts` — export `STOREFRONT_AI_INSTRUCTIONS` covering: warm short Nigerian hospitality; never invent prices/hours/availability; always use tools for facts; clarify plate vs tray before add; required modifiers → `openItem`; account/pay/address/place-order → politely nudge sign-in or checkout (no tools); prefer 1–3 suggestions.
+// lib/ai/ports/cart.ts
+export type CartPort = {
+  addSimple(input: {
+    productId: string;
+    quantity: number;
+  }): Promise<
+    | { ok: true; name: string; quantity: number }
+    | { ok: false; needsCustomize: true; slug: string; reason: string }
+    | { ok: false; error: string }
+  >;
+};
 
-`lib/ai/types.ts`:
-
-```ts
-export type SearchMenuToolResult = {
-  items: Array<{
-    id: string;
-    slug: string;
-    name: string;
-    priceCents: number;
-    available: boolean;
-    description: string | null;
+// lib/ai/ports/merchant.ts
+export type MerchantPort = {
+  getStatus(): Promise<{
+    isOpen: boolean;
+    message: string;
+    todayLabel?: string | null;
+    nextOpenLabel?: string | null;
+    timezone: string;
+    fulfillmentBlurb: string;
   }>;
 };
-
-export type OpenItemToolResult = { href: string; slug: string };
-
-export type AddToCartToolResult =
-  | { ok: true; name: string; quantity: number }
-  | { ok: false; needsCustomize: true; slug: string; reason: string }
-  | { ok: false; error: string };
 ```
 
-- [ ] **Step 4: Run tests — PASS**
+`composeAssistantPrompt` concatenates: safety policies (never invent catalog/merchant facts; tools only) + brand line + vertical instructions.
+
+Restaurant fragment: warm host; food cravings; plate vs tray; modifiers → `openProduct`; account/pay → `/signin` or checkout.
+
+- [ ] **Step 4: Run — PASS**
 
 ```bash
 npm test -- tests/unit/ai-can-add-simple.test.ts
@@ -308,9 +275,9 @@ npm test -- tests/unit/ai-can-add-simple.test.ts
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/ai tests/unit/ai-can-add-simple.test.ts
+git add lib/ai/core lib/ai/ports lib/ai/verticals/restaurant/prompt.ts tests/unit/ai-can-add-simple.test.ts
 git commit -m "$(cat <<'EOF'
-feat: add AI prompt, models, and simple-add helper
+feat: add AI core ports, models, and restaurant prompt
 
 EOF
 )"
@@ -318,181 +285,48 @@ EOF
 
 ---
 
-### Task 4: Implement AI tools
+### Task 4: Restaurant adapters + commerce tools
 
 **Files:**
-- Create: `lib/ai/tools.ts`
+- Create: `lib/ai/verticals/restaurant/ports.ts`
+- Create: `lib/ai/verticals/restaurant/tools.ts`
+- Create: `lib/ai/core/create-tools.ts` (optional thin binder: ports → tool())
+- Create: `lib/ai/verticals/restaurant/create-chat.ts`
 
 **Interfaces:**
-- Consumes: `rankMenuItems`, `buildSearchIndex`, `getPublicStorefront`, `getPublicMenuItem`, `getPublicStoreOpenStatus`, `getPublicStoreHoursSchedule`, `addCartItem`, `canAddWithoutCustomize`
-- Produces: `createStorefrontAiTools()` → tools `searchMenu`, `getItem`, `getStoreStatus`, `addToCart`, `openItem`
+- Consumes: `CatalogPort`, `CartPort`, `MerchantPort`, `rankCatalogItems`, restaurant services
+- Produces:
+  - `createRestaurantPorts(): { catalog, cart, merchant }`
+  - `createCommerceTools(ports)` → `searchCatalog`, `getProduct`, `getMerchantStatus`, `addToCart`, `openProduct`
+  - `createRestaurantChatHandler()` used by the route
 
-- [ ] **Step 1: Implement `createStorefrontAiTools`**
+- [ ] **Step 1: Implement restaurant port adapters**
 
-Read `lib/services/storefront/get-public-menu.ts` first and match the exact return shape (e.g. `catalog` vs nested fields).
+Wire:
+- catalog.search → `getPublicStorefront` + `rankCatalogItems`
+- catalog.getBySlugOrId → `getPublicMenuItem` mapped to `CatalogProductDetail` (include option groups for can-add)
+- merchant.getStatus → `getPublicStoreOpenStatus` + hours schedule + fixed fulfillment blurb
+- cart.addSimple → `canAddWithoutCustomize` then `addCartItem` (map productId → menuItemId)
 
-```ts
-// lib/ai/tools.ts
-import { tool } from "ai";
-import { z } from "zod";
-import { buildSearchIndex, rankMenuItems } from "@/lib/domain/menu/search";
-import {
-  getPublicMenuItem,
-  getPublicStorefront,
-} from "@/lib/services/storefront/get-public-menu";
-import {
-  getPublicStoreOpenStatus,
-  getPublicStoreHoursSchedule,
-} from "@/lib/services/store/store-hours";
-import { addCartItem } from "@/lib/services/cart/cart-actions";
-import { canAddWithoutCustomize } from "@/lib/ai/can-add-simple";
-import { AppError } from "@/lib/utils/errors";
+No Prisma imports outside these adapter files.
 
-export function createStorefrontAiTools() {
-  return {
-    searchMenu: tool({
-      description:
-        "Search the live menu by craving, name, or keywords. Use before recommending dishes.",
-      inputSchema: z.object({
-        query: z.string().min(1).max(120),
-        limit: z.number().int().min(1).max(8).optional(),
-      }),
-      execute: async ({ query, limit }) => {
-        const storefront = await getPublicStorefront();
-        const catalog = storefront.catalog;
-        const items = rankMenuItems(
-          buildSearchIndex(catalog),
-          query,
-          limit ?? 5,
-        );
-        return {
-          items: items.map((i) => ({
-            id: i.id,
-            slug: i.slug,
-            name: i.name,
-            priceCents: i.priceCents,
-            available: i.available,
-            description: i.description,
-          })),
-        };
-      },
-    }),
+- [ ] **Step 2: Bind AI SDK tools to ports**
 
-    getItem: tool({
-      description:
-        "Get one menu item price, availability, description, and modifier requirements by slug or id.",
-      inputSchema: z.object({ slugOrId: z.string().min(1).max(120) }),
-      execute: async ({ slugOrId }) => {
-        const { item } = await getPublicMenuItem(slugOrId);
-        return {
-          id: item.id,
-          slug: item.slug,
-          name: item.name,
-          description: item.description,
-          priceCents: item.priceCents,
-          available: item.available,
-          modifierGroups: item.modifierGroups.map((g) => ({
-            id: g.id,
-            name: g.name,
-            required: g.required,
-            minSelect: g.minSelect,
-            maxSelect: g.maxSelect,
-            modifiers: g.modifiers.map((m) => ({
-              id: m.id,
-              name: m.name,
-              priceDeltaCents: m.priceDeltaCents,
-              available: m.available,
-            })),
-          })),
-        };
-      },
-    }),
+Tool names must be the commerce-generic set. `openProduct` returns `{ href: `/item/${slug}`, slug }`.  
+`createRestaurantChatHandler` calls `streamText` with `composeAssistantPrompt({ brandName: "Naija Jollof", verticalInstructions: RESTAURANT_VERTICAL_INSTRUCTIONS, policies: DEFAULT_COMMERCE_POLICIES })`, `AI_CHAT_MODEL`, gateway fallbacks, `createCommerceTools(createRestaurantPorts())`, `stopWhen: stepCountIs(5)`.
 
-    getStoreStatus: tool({
-      description:
-        "Get whether the store is open, today’s hours message, and pickup/delivery basics.",
-      inputSchema: z.object({}),
-      execute: async () => {
-        const [status, schedule] = await Promise.all([
-          getPublicStoreOpenStatus(),
-          getPublicStoreHoursSchedule(),
-        ]);
-        return {
-          isOpen: status.isOpen,
-          message: status.message,
-          todayLabel: status.todayLabel,
-          nextOpenLabel: status.nextOpenLabel,
-          timezone: status.timezone,
-          hoursConfigured: schedule.configured,
-          fulfillment:
-            "Customers choose pickup or delivery at checkout. Chat cannot place the order yet — guide them to cart/checkout.",
-        };
-      },
-    }),
-
-    openItem: tool({
-      description:
-        "Open the item customize page when modifiers are required or the user wants to see the dish.",
-      inputSchema: z.object({ slug: z.string().min(1).max(120) }),
-      execute: async ({ slug }) => ({ href: `/item/${slug}`, slug }),
-    }),
-
-    addToCart: tool({
-      description:
-        "Add a simple menu item to the session cart when no required modifiers. If customize is required, return needsCustomize instead.",
-      inputSchema: z.object({
-        menuItemId: z.string().cuid(),
-        quantity: z.number().int().min(1).max(99).optional(),
-      }),
-      execute: async ({ menuItemId, quantity }) => {
-        const { item } = await getPublicMenuItem(menuItemId);
-        if (!item.available) {
-          return { ok: false as const, error: "This item is sold out." };
-        }
-        if (!canAddWithoutCustomize(item.modifierGroups)) {
-          return {
-            ok: false as const,
-            needsCustomize: true as const,
-            slug: item.slug,
-            reason: "This dish needs customization. Open the item page.",
-          };
-        }
-        try {
-          await addCartItem({
-            menuItemId: item.id,
-            quantity: quantity ?? 1,
-            modifierIds: [],
-          });
-          return {
-            ok: true as const,
-            name: item.name,
-            quantity: quantity ?? 1,
-          };
-        } catch (err) {
-          const message =
-            err instanceof AppError ? err.message : "Could not add to cart.";
-          return { ok: false as const, error: message };
-        }
-      },
-    }),
-  };
-}
-```
-
-- [ ] **Step 2: Typecheck tools file**
+- [ ] **Step 3: Typecheck `lib/ai/**`**
 
 ```bash
 npx tsc --noEmit -p tsconfig.json 2>&1 | head -50
 ```
 
-Fix until `lib/ai/tools.ts` typechecks (or at least resolve errors in `lib/ai/**`).
-
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add lib/ai/tools.ts
+git add lib/ai
 git commit -m "$(cat <<'EOF'
-feat: add storefront AI tool implementations
+feat: wire restaurant AI adapters and commerce tools
 
 EOF
 )"
@@ -500,31 +334,21 @@ EOF
 
 ---
 
-### Task 5: Chat API route
+### Task 5: Thin chat API route
 
 **Files:**
 - Create: `app/api/ai/chat/route.ts`
 
 **Interfaces:**
-- Consumes: `createStorefrontAiTools`, `STOREFRONT_AI_INSTRUCTIONS`, `AI_CHAT_MODEL`, `aiChatProviderOptions`
-- Produces: `POST /api/ai/chat` UI message stream; rate limit **20 req / IP / minute** via `checkRateLimit`
+- Consumes: `createRestaurantChatHandler` (or equivalent), `getRequestIpFromRequest`, `checkRateLimit`
+- Produces: `POST /api/ai/chat`; **20 req / IP / minute**
 
 - [ ] **Step 1: Implement route**
 
-Use `getRequestIpFromRequest` from `lib/utils/request-ip.ts` (same as `app/api/cart/route.ts`).
-
 ```ts
-import {
-  convertToModelMessages,
-  streamText,
-  stepCountIs,
-  type UIMessage,
-} from "ai";
-import { createStorefrontAiTools } from "@/lib/ai/tools";
-import { STOREFRONT_AI_INSTRUCTIONS } from "@/lib/ai/prompt";
-import { AI_CHAT_MODEL, aiChatProviderOptions } from "@/lib/ai/models";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { createRestaurantChatHandler } from "@/lib/ai/verticals/restaurant/create-chat";
 
 export const maxDuration = 30;
 
@@ -536,34 +360,17 @@ export async function POST(req: Request) {
       { error: "Too many messages. Try again shortly." },
       {
         status: 429,
-        headers: {
-          "Retry-After": String(limited.retryAfterSeconds ?? 60),
-        },
+        headers: { "Retry-After": String(limited.retryAfterSeconds ?? 60) },
       },
     );
   }
-
-  const body = await req.json();
-  const messages = body.messages as UIMessage[];
-
-  const result = streamText({
-    model: AI_CHAT_MODEL,
-    providerOptions: aiChatProviderOptions,
-    instructions: STOREFRONT_AI_INSTRUCTIONS,
-    messages: await convertToModelMessages(messages),
-    tools: createStorefrontAiTools(),
-    stopWhen: stepCountIs(5),
-  });
-
-  return result.toUIMessageStreamResponse();
+  return createRestaurantChatHandler(req);
 }
 ```
 
-If `stepCountIs` / `toUIMessageStreamResponse` are missing from installed `ai`, switch to the package’s documented equivalents (`isStepCount`, `createUIMessageStreamResponse` + `toUIMessageStream`).
+Handler parses `{ messages }`, runs `streamText`, returns UI message stream (match installed `ai` API).
 
-- [ ] **Step 2: Smoke the route locally**
-
-With `npm run dev` and `OPENAI_API_KEY` set:
+- [ ] **Step 2: Smoke curl**
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/ai/chat \
@@ -572,7 +379,7 @@ curl -sS -X POST http://localhost:3000/api/ai/chat \
   | head -c 500
 ```
 
-Expected: streaming chunks (not HTTP 500). Adjust UIMessage JSON shape if the installed SDK expects a different client body.
+Expected: stream chunks, not 500.
 
 - [ ] **Step 3: Commit**
 
@@ -605,7 +412,7 @@ In `ai-chat-messages.tsx`:
 - Map `message.parts`
 - `text` → paragraph
 - Tool parts for `searchMenu` / `getItem` → cards: name, `formatCadFromCents(priceCents)`, **View** (`Link` `/item/[slug]`), **Add** via client `POST /api/cart` with `{ menuItemId, quantity: 1 }` when available and simple; otherwise View only
-- `openItem` → “Open dish” link from `href`
+- `openProduct` → “Open dish” link from `href`
 - `addToCart` success → confirmation; `needsCustomize` → item link
 - If assistant text clearly asks to sign in → show `Link` to `/signin`
 
@@ -628,7 +435,7 @@ UI requirements:
 - Collapsed: fixed bottom-end button (high z-index)
 - Expanded: panel `min(420px, calc(100vw - 2rem))`, title **Ask Naija**, close control, welcome “What are you craving today?”
 - Input + send; disable while streaming
-- Do not auto-navigate on `openItem` — require user click
+- Do not auto-navigate on `openProduct` — require user click
 
 - [ ] **Step 3: Mount in layout**
 
@@ -664,7 +471,7 @@ EOF
 
 **Files:**
 - Modify: `components/features/storefront/menu-search-suggest.tsx` (only if still unsorted after Task 2)
-- Modify: `lib/ai/prompt.ts` if manual tests show invention / verbosity
+- Modify: `lib/ai/verticals/restaurant/prompt.ts` if manual tests show invention / verbosity
 
 **Interfaces:**
 - Consumes: `buildSearchSuggestions` / `rankMenuItems`
@@ -681,7 +488,7 @@ Tighten instructions if the model invents prices or skips tools.
 - [ ] **Step 3: Commit if changes**
 
 ```bash
-git add components/features/storefront/menu-search-suggest.tsx lib/ai/prompt.ts
+git add components/features/storefront/menu-search-suggest.tsx lib/ai/verticals/restaurant/prompt.ts
 git commit -m "$(cat <<'EOF'
 fix: align header search ranking and AI prompt polish
 
@@ -699,7 +506,7 @@ EOF
 - [ ] **Step 1: Run unit suite**
 
 ```bash
-npm test -- tests/unit/menu-search.test.ts tests/unit/ai-can-add-simple.test.ts
+npm test -- tests/unit/catalog-rank.test.ts tests/unit/menu-search.test.ts tests/unit/ai-can-add-simple.test.ts
 ```
 
 Expected: PASS
@@ -733,12 +540,14 @@ EOF
 
 ## Out of scope (do not build in this plan)
 
+- Pharmacy (or other) vertical adapter — leave ports only
 - Mobile diner bottom-nav chat / profile header move
 - Checkout, cards, addresses in chat
 - Order status companion / pushes
 - Embeddings / vector DB
 - Sanity/blog grounding
 - WhatsApp agent
+- Extracting `lib/ai` into a separate npm package (premature)
 
 ---
 
@@ -746,13 +555,15 @@ EOF
 
 | Spec requirement | Task |
 |------------------|------|
-| Smarter search, no embeddings | Task 2 |
+| Ports & adapters / vertical-ready core | Tasks 2–4 |
+| Smarter catalog ranking, no embeddings | Task 2 |
 | Floating chat web | Task 6 |
-| Tools: search/getItem/store/add/open | Task 4–5 |
+| Tools: searchCatalog/getProduct/merchant/add/open | Task 4–5 |
 | Models 4o-mini → 5-mini | Task 3, 5 |
 | Guest + sign-in nudge | Task 6 |
 | Rate limit | Task 5 |
-| Warm host, no invention | Task 3 prompt |
-| Reuse cart/menu/hours | Task 4 |
-| Unit tests search + helpers | Tasks 2–3, 8 |
+| Warm host, no invention | Task 3 restaurant prompt |
+| Menu/hours/cart only in restaurant adapter | Task 4 |
+| Unit tests ranking + helpers | Tasks 2–3, 8 |
+| Pharmacy vertical | Out of scope (seams only) |
 | Mobile app / ordering / companion | Explicitly out of scope |

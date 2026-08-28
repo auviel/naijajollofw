@@ -39,6 +39,7 @@ Build order for delivery: **web first** → shared API → **mobile chat tab** �
 | Chat model (fallback) | **`openai/gpt-5-mini`** — if 4o-mini errors / unavailable |
 | Header search | **No LLM** — shared ranking over live catalog only |
 | Model access | Vercel AI SDK via AI Gateway (`provider/model` strings); OpenAI key OK for local/BYOK |
+| Code structure | **Ports & adapters** — vertical-agnostic AI core; restaurant adapter in phase 1; pharmacy later without core rewrite |
 
 ## Product shape
 
@@ -61,7 +62,53 @@ A storefront assistant that:
 - WhatsApp / SMS agent
 - Staff/kitchen AI
 
-## Architecture
+## Architecture principles (scale & reuse)
+
+Build a **commerce assistant core** with **vertical adapters** — not a restaurant-only chatbot. Phase 1 ships the **restaurant** adapter for Naija Jollof; the same core should later plug into pharmacy / retail with new adapters, not a rewrite.
+
+### Layering (ports & adapters)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Presentation                                                │
+│  Header search · Floating chat shell · Product result cards │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────┐
+│ AI core (vertical-agnostic)                                 │
+│  models · rate limit · stream route · tool registry         │
+│  prompt composer (brand + vertical + safety)                │
+│  catalog ranking (pure: id/slug/name/description/price…)    │
+└────────────────────────────┬────────────────────────────────┘
+                             │ ports (interfaces)
+        ┌────────────────────┼────────────────────┐
+        ▼                    ▼                    ▼
+  CatalogPort          CartPort            MerchantPort
+  search / getById     addSimple /         open status,
+                       needsCustomize      hours, fulfillment
+        │                    │                    │
+        ▼                    ▼                    ▼
+  Restaurant adapter   Restaurant cart     Restaurant store
+  (menu services)      (session cart)      (hours/status)
+```
+
+**Rules for reuse**
+
+| Principle | Practice |
+|-----------|----------|
+| Dependency inversion | Core depends on **ports** (interfaces), not Prisma menu types |
+| One vertical adapter | `lib/ai/verticals/restaurant/` implements ports + voice copy |
+| Generic catalog shape | Rank over `CatalogSearchItem` (id, slug, name, description, priceCents, available, imageUrl) — menu/pharmacy map into it |
+| Generic tool names | `searchCatalog`, `getProduct`, `getMerchantStatus`, `addToCart`, `openProduct` |
+| Prompt composition | `composeAssistantPrompt({ brand, vertical, policies })` — restaurant “cravings” vs pharmacy “symptoms/OTC” is vertical copy only |
+| UI shell is generic | Chat widget talks “products”; restaurant CSS/copy injected via props/config |
+| YAGNI | Do **not** build a pharmacy vertical in phase 1 — only leave clean seams |
+| No shared DB coupling in core | Adapters call existing services; core never imports `menu.repository` |
+
+**Vertical swap example (later)**  
+Pharmacy adapter: same tools; `CatalogPort` → SKUs; prompt forbids diagnosis; `addToCart` may require age/Rx gates via port methods the restaurant adapter leaves as no-ops.
+
+### Runtime shape (phase 1)
 
 ```
 ┌─────────────────┐              ┌─────────────────┐
@@ -70,27 +117,24 @@ A storefront assistant that:
 └────────┬────────┘              └────────┬────────┘
          │                                │
          ▼                                ▼
-  shared searchMenu              POST /api/ai/chat
-  ranking service                (streaming + tools)
+  catalog ranking                 POST /api/ai/chat
+  (pure + CatalogPort)            (core + restaurant tools)
          │                                │
-         │              ┌─────────────────┼─────────────────┐
-         │              ▼                 ▼                 ▼
-         └──────► searchMenu / getItem   getStoreStatus   addToCart
-                  (same ranking)         (hours/ops)      openItem
-                         │                 │                 │
-                         ▼                 ▼                 ▼
-                  Public menu        Store config      Session cart
-                  services           / hours           APIs
+         └──────────► searchCatalog / getProduct / getMerchantStatus
+                      addToCart / openProduct
+                              │
+                              ▼
+                   Restaurant adapters → menu, hours, cart
 ```
 
-**Rules**
+**Runtime rules**
 
-- Header search calls the **shared ranking service directly** (fast, no LLM required per keystroke)
-- Chat may call the same `searchMenu` tool via the model when answering cravings / Q&A
-- Chat model: `openai/gpt-4o-mini`, with failover to `openai/gpt-5-mini` on provider/model failure
-- System prompt sets warm-host voice and “never invent menu/ops facts”
+- Header search calls **catalog ranking** directly (fast, no LLM per keystroke)
+- Chat uses the same ranking via `searchCatalog`
+- Chat model: `openai/gpt-4o-mini`, failover `openai/gpt-5-mini`
+- Prompt: brand + restaurant vertical + “never invent catalog/merchant facts”
 - Tools are the source of truth for prices, availability, hours
-- Client never trusts model-invented cart lines — cart mutations go through existing cart session/APIs
+- Client never trusts model-invented cart lines — cart mutations through `CartPort` → existing session APIs
 - Rate-limit chat per IP/session
 
 ## Models
@@ -105,15 +149,17 @@ Wire through AI SDK with gateway-style model strings and ordered failover (prima
 
 ## Tools (phase 1)
 
+Commerce-generic names; restaurant adapter supplies behavior.
+
 | Tool | Purpose | Notes |
 |------|---------|--------|
-| `searchMenu` | Natural-language / intent menu search | Shared by chat + header search |
-| `getItem` | Item detail, price, modifiers, availability | No invention |
-| `getStoreStatus` | Open/closed, hours, pickup vs delivery basics | Existing store config |
-| `addToCart` | Add item with clear/simple selection | Required/ambiguous modifiers → `openItem` |
-| `openItem` | Navigate to `/item/[slug]` | Customize / “show me” |
+| `searchCatalog` | Natural-language / intent product search | Shared by chat + header ranking |
+| `getProduct` | Detail, price, options/modifiers, availability | No invention |
+| `getMerchantStatus` | Open/closed, hours, fulfillment basics | Store config via MerchantPort |
+| `addToCart` | Add simple product | Required options → `openProduct` |
+| `openProduct` | Deep-link to product page | `/item/[slug]` for restaurant |
 
-**Deferred tools (later phases):** set fulfillment, choose address, list/pay with saved card, place order, get order status, subscribe to order updates.
+**Deferred tools (later phases):** set fulfillment, choose address, list/pay with saved card, place order, get order status, subscribe to order updates. Same core; new tools register on the tool registry.
 
 ## UX
 
@@ -138,7 +184,7 @@ Wire through AI SDK with gateway-style model strings and ordered failover (prima
 | Case | Behavior |
 |------|----------|
 | Ambiguous item (“jollof”) | Clarify plate vs tray / size before add |
-| Required modifiers | “Let’s customize” + open item page |
+| Required modifiers | “Let’s customize” + open product page |
 | Unavailable item | Say so; suggest close alternatives via search |
 | Store closed | State status + hours; browse/cart follow existing storefront rules |
 | Tool failure | Apology + link to menu — never fabricate items |
@@ -148,12 +194,17 @@ Wire through AI SDK with gateway-style model strings and ordered failover (prima
 
 | Area | Responsibility |
 |------|----------------|
-| `app/api/ai/chat` | Streaming chat endpoint |
-| `lib/ai/` | Prompt, tool defs, helpers, ranking |
-| Chat UI components | Shell, message list, item cards, sign-in nudge |
-| Header search | Call shared search (tool or service used by the tool) |
+| `lib/ai/core/` | Models, rate limit helpers, prompt composer, stream/chat factory |
+| `lib/ai/ports/` | `CatalogPort`, `CartPort`, `MerchantPort` (+ types) |
+| `lib/ai/catalog/` | Pure `rankCatalogItems` over generic `CatalogSearchItem` |
+| `lib/ai/verticals/restaurant/` | Adapters + restaurant prompt fragment + tool wiring |
+| `app/api/ai/chat` | Thin route: auth/rate-limit + `createRestaurantChatHandler()` |
+| `components/features/ai/` | Generic chat shell + product cards (vertical labels via props) |
+| Header search | Uses `rankCatalogItems` via menu→catalog mapping (existing menu search can re-export) |
 
-**Reuse:** public menu services, store hours/status, cart session/APIs, item slug routes. Do not rebuild checkout.
+**Reuse:** public menu services, store hours/status, cart session/APIs, item slug routes — **only inside the restaurant adapter**. Do not rebuild checkout.
+
+**Do not:** import Prisma/menu repositories from `lib/ai/core` or from UI components.
 
 ## Safety & privacy
 
