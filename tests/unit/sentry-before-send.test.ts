@@ -60,4 +60,53 @@ describe("sentryBeforeSend", () => {
     const incoming = event("Square payment failed");
     expect(sentryBeforeSend(incoming, hint(err))).toBe(incoming);
   });
+
+  it("drops injected addEventListener stack overflows", () => {
+    const incoming = {
+      type: undefined,
+      message: "Maximum call stack size exceeded",
+      exception: {
+        values: [
+          {
+            type: "RangeError",
+            value: "Maximum call stack size exceeded",
+            stacktrace: {
+              frames: [
+                { function: "top.addEventListener", filename: "<anonymous>" },
+                { function: "top.addEventListener", filename: "<anonymous>" },
+                { function: "addEL_hook", filename: "<anonymous>" },
+              ],
+            },
+          },
+        ],
+      },
+    } as ErrorEvent;
+
+    expect(sentryBeforeSend(incoming, hint(undefined))).toBeNull();
+  });
+
+  it("keeps real app RangeErrors", () => {
+    const incoming = {
+      type: undefined,
+      message: "Maximum call stack size exceeded",
+      exception: {
+        values: [
+          {
+            type: "RangeError",
+            value: "Maximum call stack size exceeded",
+            stacktrace: {
+              frames: [
+                {
+                  function: "CartProvider",
+                  filename: "app/components/cart.tsx",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    } as ErrorEvent;
+
+    expect(sentryBeforeSend(incoming, hint(undefined))).toBe(incoming);
+  });
 });

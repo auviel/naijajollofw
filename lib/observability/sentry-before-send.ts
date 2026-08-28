@@ -39,6 +39,32 @@ function eventMessage(event: ErrorEvent, hint: EventHint): string {
   );
 }
 
+/**
+ * Injected scripts / extensions often monkey-patch EventTarget.addEventListener
+ * (e.g. `addEL_hook`) and recurse until the stack overflows. Stacks are anonymous
+ * with no in-app frames — not actionable app bugs.
+ */
+function isInjectedAddEventListenerStackOverflow(
+  event: ErrorEvent,
+  message: string,
+  exceptionType: string,
+): boolean {
+  if (
+    exceptionType !== "RangeError" ||
+    !/Maximum call stack size exceeded/i.test(message)
+  ) {
+    return false;
+  }
+
+  const frames =
+    event.exception?.values?.[0]?.stacktrace?.frames?.map(
+      (frame) => `${frame.function ?? ""} ${frame.filename ?? ""}`,
+    ) ?? [];
+  const joined = frames.join("\n");
+
+  return /addEL_hook/i.test(joined) || /(?:^|\W)(?:top\.)?addEventListener/i.test(joined);
+}
+
 /** Drop expected / non-actionable noise so real diner/staff bugs stay visible. */
 export function sentryBeforeSend(
   event: ErrorEvent,
@@ -80,6 +106,10 @@ export function sentryBeforeSend(
     /Module build failed/i.test(message) ||
     /Unexpected end of JSON input/i.test(message)
   ) {
+    return null;
+  }
+
+  if (isInjectedAddEventListenerStackOverflow(event, message, exceptionType)) {
     return null;
   }
 
