@@ -5,7 +5,7 @@ import {
 } from "@/lib/db/repositories/email-verification-token.repository";
 import { userRepository } from "@/lib/db/repositories/user.repository";
 import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
-import { sendEmailInBackground } from "@/lib/integrations/email/send";
+import { sendEmail, type SendEmailResult } from "@/lib/integrations/email/send";
 import { buildEmailVerificationEmail } from "@/lib/integrations/email/templates";
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
@@ -20,7 +20,7 @@ async function issueVerificationEmail(
     name: string;
   },
   options: { welcome?: boolean } = {},
-): Promise<void> {
+): Promise<SendEmailResult> {
   const rawToken = generateEmailVerificationToken();
   const tokenHash = hashEmailVerificationToken(rawToken);
   const expiresAt = new Date(Date.now() + VERIFY_TTL_MS);
@@ -38,7 +38,7 @@ async function issueVerificationEmail(
     verifyUrl,
     welcome: options.welcome,
   });
-  sendEmailInBackground({
+  return sendEmail({
     to: user.email,
     subject: mail.subject,
     html: mail.html,
@@ -55,14 +55,14 @@ export async function sendDinerEmailVerification(
     name: string;
   },
   options: { welcome?: boolean } = {},
-): Promise<void> {
-  await issueVerificationEmail(user, options);
+): Promise<SendEmailResult> {
+  return issueVerificationEmail(user, options);
 }
 
-export async function resendDinerEmailVerification(userId: string): Promise<{
-  ok: true;
-  alreadyVerified: boolean;
-}> {
+export async function resendDinerEmailVerification(userId: string): Promise<
+  | { ok: true; alreadyVerified: boolean; throttled?: boolean }
+  | { ok: false; error: string }
+> {
   const user = await userRepository.findById(userId);
   if (!user || user.role !== "DINER") {
     throw new AppError("FORBIDDEN", "Diner account required", 403);
@@ -80,14 +80,22 @@ export async function resendDinerEmailVerification(userId: string): Promise<{
     Date.now() - latest.createdAt.getTime() < RESEND_COOLDOWN_MS
   ) {
     logger.info("email_verify.resend_throttled", { userId: user.id });
-    return { ok: true, alreadyVerified: false };
+    return { ok: true, alreadyVerified: false, throttled: true };
   }
 
-  await issueVerificationEmail({
+  const result = await issueVerificationEmail({
     id: user.id,
     email: user.email,
     name: user.name,
   });
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.skipped
+        ? "Email is not configured on the server."
+        : result.error ?? "Could not send verification email.",
+    };
+  }
   return { ok: true, alreadyVerified: false };
 }
 

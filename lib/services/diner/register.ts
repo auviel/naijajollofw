@@ -89,7 +89,7 @@ export async function registerDiner(
   }
 
   try {
-    await sendDinerEmailVerification(
+    const result = await sendDinerEmailVerification(
       {
         id: user.id,
         email: user.email,
@@ -97,6 +97,13 @@ export async function registerDiner(
       },
       { welcome: true },
     );
+    if (!result.ok) {
+      logger.error("email_verify.send_on_register_failed", {
+        userId: user.id,
+        skipped: result.skipped,
+        error: result.error,
+      });
+    }
   } catch (error) {
     logger.error("email_verify.send_on_register_failed", {
       userId: user.id,

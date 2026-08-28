@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton } from "@/components/ui/icon-button";
-import { X } from "@/components/ui/icons";
+import { Plus, X } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import type { SavedCardView } from "@/lib/integrations/payments/square/cards";
 import { THIRD_PARTY_BLOCKED } from "@/lib/utils/third-party-blocked";
@@ -20,31 +20,31 @@ async function readApiError(response: Response): Promise<string> {
   return body.error ?? "Something went wrong.";
 }
 
-type AccountPaymentClientProps = {
-  available: boolean;
-  initialCards: SavedCardView[];
-  applicationId: string | null;
-  locationId: string | null;
+type AddCardPanelProps = {
+  applicationId: string;
+  locationId: string;
   environment: string;
   dinerName: string;
+  pending: boolean;
+  onPendingChange: (pending: boolean) => void;
+  onSaved: (card: SavedCardView) => void;
+  onCancel: () => void;
 };
 
-export function AccountPaymentClient({
-  available,
-  initialCards,
+function AddCardPanel({
   applicationId,
   locationId,
   environment,
   dinerName,
-}: AccountPaymentClientProps) {
-  const router = useRouter();
+  pending,
+  onPendingChange,
+  onSaved,
+  onCancel,
+}: AddCardPanelProps) {
   const { success, error: toastError } = useToast();
-  const [cards, setCards] = useState(initialCards);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [scriptFailed, setScriptFailed] = useState(false);
-  const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<SavedCardView | null>(null);
 
   const squareSrc =
     environment === "production"
@@ -52,13 +52,13 @@ export function AccountPaymentClient({
       : "https://sandbox.web.squarecdn.com/v1/square.js";
 
   const cardForm = useSquareCardForm({
-    applicationId: applicationId ?? "",
-    locationId: locationId ?? "",
-    disabled: !available || !scriptLoaded || !applicationId || !locationId,
+    applicationId,
+    locationId,
+    disabled: !scriptLoaded,
   });
 
   useEffect(() => {
-    if (!available || scriptLoaded || scriptFailed) {
+    if (scriptLoaded || scriptFailed) {
       return;
     }
     const timeout = window.setTimeout(() => {
@@ -68,11 +68,10 @@ export function AccountPaymentClient({
       }
     }, 12_000);
     return () => window.clearTimeout(timeout);
-  }, [available, scriptLoaded, scriptFailed]);
+  }, [scriptLoaded, scriptFailed]);
 
   async function saveCard() {
-    if (!available) return;
-    setPending(true);
+    onPendingChange(true);
     setFormError(null);
     try {
       const givenName = dinerName.trim().split(/\s+/)[0] || dinerName;
@@ -100,17 +99,88 @@ export function AccountPaymentClient({
         throw new Error(await readApiError(response));
       }
       const body = (await response.json()) as { data: SavedCardView };
-      setCards((current) => [body.data, ...current]);
+      onSaved(body.data);
       success("Card saved");
-      router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not save card.";
       setFormError(message);
       toastError(message);
     } finally {
-      setPending(false);
+      onPendingChange(false);
     }
   }
+
+  return (
+    <div className="space-y-3 rounded-2xl bg-surface-elevated p-4">
+      <Script
+        src={squareSrc}
+        strategy="afterInteractive"
+        onLoad={() => {
+          setScriptLoaded(true);
+          setScriptFailed(false);
+        }}
+        onError={() => {
+          setScriptLoaded(false);
+          setScriptFailed(true);
+          setFormError(THIRD_PARTY_BLOCKED.square);
+        }}
+      />
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-foreground">Add a card</h2>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-8 px-2 text-sm"
+          disabled={pending}
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+      </div>
+      <SquareCardSlot
+        containerId={cardForm.containerId}
+        error={cardForm.error}
+        onRetry={cardForm.retry}
+      />
+      {formError ? (
+        <p className="text-sm text-error" role="alert">
+          {formError}
+        </p>
+      ) : null}
+      <Button
+        type="button"
+        disabled={pending || !cardForm.ready}
+        onClick={() => void saveCard()}
+      >
+        {pending ? "Saving…" : "Save card"}
+      </Button>
+    </div>
+  );
+}
+
+type AccountPaymentClientProps = {
+  available: boolean;
+  initialCards: SavedCardView[];
+  applicationId: string | null;
+  locationId: string | null;
+  environment: string;
+  dinerName: string;
+};
+
+export function AccountPaymentClient({
+  available,
+  initialCards,
+  applicationId,
+  locationId,
+  environment,
+  dinerName,
+}: AccountPaymentClientProps) {
+  const router = useRouter();
+  const { success, error: toastError } = useToast();
+  const [cards, setCards] = useState(initialCards);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SavedCardView | null>(null);
 
   async function removeCard(id: string) {
     setPending(true);
@@ -132,107 +202,115 @@ export function AccountPaymentClient({
     }
   }
 
-  if (!available) {
-    return (
-      <p className="text-sm text-text-secondary">
-        Saved cards will be available once Square payments are configured.
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      <Script
-        src={squareSrc}
-        strategy="afterInteractive"
-        onLoad={() => {
-          setScriptLoaded(true);
-          setScriptFailed(false);
-        }}
-        onError={() => {
-          setScriptLoaded(false);
-          setScriptFailed(true);
-          setFormError(THIRD_PARTY_BLOCKED.square);
-        }}
-      />
-
-      <ul className="space-y-3">
-        {cards.length === 0 ? (
-          <li className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-text-secondary">
-            No saved cards yet.
-          </li>
-        ) : (
-          cards.map((card) => (
-            <li
-              key={card.id}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-surface-elevated px-4 py-3"
+    <section className="space-y-6">
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+            Payment
+          </h1>
+          {available && !showAddForm ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 gap-2"
+              onClick={() => setShowAddForm(true)}
             >
-              <div className="min-w-0 text-sm text-foreground">
-                <p className="font-medium">
-                  {card.brand ?? "Card"} ···· {card.last4 ?? "????"}
-                </p>
-                {card.expMonth && card.expYear ? (
-                  <p className="mt-0.5 text-text-secondary">
-                    Exp {String(card.expMonth).padStart(2, "0")}/{card.expYear}
-                  </p>
-                ) : null}
-              </div>
-              <IconButton
-                className="h-9 w-9"
-                disabled={pending}
-                onClick={() => setDeleteTarget(card)}
-                aria-label="Remove card"
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </IconButton>
-            </li>
-          ))
-        )}
-      </ul>
-
-      <div className="space-y-3 rounded-2xl bg-surface-elevated p-4">
-        <h2 className="text-sm font-semibold text-foreground">Add a card</h2>
-        <SquareCardSlot
-          containerId={cardForm.containerId}
-          error={cardForm.error}
-          onRetry={cardForm.retry}
-        />
-        {formError ? (
-          <p className="text-sm text-error" role="alert">
-            {formError}
-          </p>
-        ) : null}
-        <Button
-          type="button"
-          disabled={pending || !cardForm.ready}
-          onClick={() => void saveCard()}
-        >
-          {pending ? "Saving…" : "Save card"}
-        </Button>
+              <Plus className="h-4 w-4" aria-hidden />
+              Add card
+            </Button>
+          ) : null}
+        </div>
+        <p className="text-sm text-text-secondary">
+          Cards are stored securely with Square.
+        </p>
       </div>
 
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        title="Remove this card?"
-        description={
-          deleteTarget
-            ? `${deleteTarget.brand ?? "Card"} ···· ${deleteTarget.last4 ?? "????"} will be deleted from your account.`
-            : undefined
-        }
-        confirmLabel="Remove card"
-        cancelLabel="Keep card"
-        pending={pending && deleteTarget !== null}
-        onCancel={() => {
-          if (!pending) {
-            setDeleteTarget(null);
-          }
-        }}
-        onConfirm={() => {
-          if (deleteTarget) {
-            void removeCard(deleteTarget.id);
-          }
-        }}
-      />
-    </div>
+      {!available ? (
+        <p className="text-sm text-text-secondary">
+          Saved cards will be available once Square payments are configured.
+        </p>
+      ) : (
+        <div className="space-y-8">
+          <ul className="space-y-3">
+            {cards.length === 0 ? (
+              <li className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-text-secondary">
+                No saved cards yet.
+              </li>
+            ) : (
+              cards.map((card) => (
+                <li
+                  key={card.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-surface-elevated px-4 py-3"
+                >
+                  <div className="min-w-0 text-sm text-foreground">
+                    <p className="font-medium">
+                      {card.brand ?? "Card"} ···· {card.last4 ?? "????"}
+                    </p>
+                    {card.expMonth && card.expYear ? (
+                      <p className="mt-0.5 text-text-secondary">
+                        Exp {String(card.expMonth).padStart(2, "0")}/{card.expYear}
+                      </p>
+                    ) : null}
+                  </div>
+                  <IconButton
+                    className="h-9 w-9"
+                    disabled={pending}
+                    onClick={() => setDeleteTarget(card)}
+                    aria-label="Remove card"
+                  >
+                    <X className="h-4 w-4" aria-hidden />
+                  </IconButton>
+                </li>
+              ))
+            )}
+          </ul>
+
+          {showAddForm && applicationId && locationId ? (
+            <AddCardPanel
+              applicationId={applicationId}
+              locationId={locationId}
+              environment={environment}
+              dinerName={dinerName}
+              pending={pending}
+              onPendingChange={setPending}
+              onSaved={(card) => {
+                setCards((current) => [card, ...current]);
+                setShowAddForm(false);
+                router.refresh();
+              }}
+              onCancel={() => {
+                if (!pending) {
+                  setShowAddForm(false);
+                }
+              }}
+            />
+          ) : null}
+
+          <ConfirmDialog
+            open={deleteTarget !== null}
+            title="Remove this card?"
+            description={
+              deleteTarget
+                ? `${deleteTarget.brand ?? "Card"} ···· ${deleteTarget.last4 ?? "????"} will be deleted from your account.`
+                : undefined
+            }
+            confirmLabel="Remove card"
+            cancelLabel="Keep card"
+            pending={pending && deleteTarget !== null}
+            onCancel={() => {
+              if (!pending) {
+                setDeleteTarget(null);
+              }
+            }}
+            onConfirm={() => {
+              if (deleteTarget) {
+                void removeCard(deleteTarget.id);
+              }
+            }}
+          />
+        </div>
+      )}
+    </section>
   );
 }

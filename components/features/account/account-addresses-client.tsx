@@ -17,24 +17,28 @@ async function readApiError(response: Response): Promise<string> {
   return body.error ?? "Something went wrong.";
 }
 
-export function AccountAddressesClient({
-  initialAddresses,
-}: {
-  initialAddresses: CustomerAddressView[];
-}) {
-  const router = useRouter();
+type AddAddressPanelProps = {
+  pending: boolean;
+  onPendingChange: (pending: boolean) => void;
+  onSaved: (address: CustomerAddressView) => void;
+  onCancel: () => void;
+  defaultIsFirst: boolean;
+};
+
+function AddAddressPanel({
+  pending,
+  onPendingChange,
+  onSaved,
+  onCancel,
+  defaultIsFirst,
+}: AddAddressPanelProps) {
   const { success, error: toastError } = useToast();
-  const [addresses, setAddresses] = useState(initialAddresses);
   const [query, setQuery] = useState("");
   const [geocoded, setGeocoded] = useState<GeocodedAddress | null>(null);
   const [verifiedQuery, setVerifiedQuery] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [label, setLabel] = useState("");
-  const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<CustomerAddressView | null>(
-    null,
-  );
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -81,7 +85,7 @@ export function AccountAddressesClient({
       setFormError("Confirm a valid address first.");
       return;
     }
-    setPending(true);
+    onPendingChange(true);
     setFormError(null);
     try {
       const addr = geocoded.address;
@@ -99,28 +103,77 @@ export function AccountAddressesClient({
           longitude: addr.longitude,
           formatted: addr.formatted || query.trim(),
           label: label.trim() || null,
-          isDefault: addresses.length === 0,
+          isDefault: defaultIsFirst,
         }),
       });
       if (!response.ok) {
         throw new Error(await readApiError(response));
       }
       const body = (await response.json()) as { data: CustomerAddressView };
-      setAddresses((current) => [body.data, ...current]);
-      setQuery("");
-      setLabel("");
-      setGeocoded(null);
-      setVerifiedQuery(null);
+      onSaved(body.data);
       success("Address saved");
-      router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not save.";
       setFormError(message);
       toastError(message);
     } finally {
-      setPending(false);
+      onPendingChange(false);
     }
   }
+
+  return (
+    <div className="space-y-3 rounded-2xl bg-surface-elevated p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-foreground">Add address</h2>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-8 px-2 text-sm"
+          disabled={pending}
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+      </div>
+      <AddressAutocomplete
+        value={query}
+        onChange={setQuery}
+        verified={verified}
+        isVerifying={isGeocoding}
+        verifyError={formError}
+        placeholder="Start typing an address"
+      />
+      <input
+        value={label}
+        onChange={(event) => setLabel(event.target.value)}
+        placeholder="Label (Home, Work…)"
+        className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
+        maxLength={40}
+      />
+      <Button
+        type="button"
+        disabled={pending || !verified}
+        onClick={() => void addAddress()}
+      >
+        {pending ? "Saving…" : "Save address"}
+      </Button>
+    </div>
+  );
+}
+
+export function AccountAddressesClient({
+  initialAddresses,
+}: {
+  initialAddresses: CustomerAddressView[];
+}) {
+  const router = useRouter();
+  const { success, error: toastError } = useToast();
+  const [addresses, setAddresses] = useState(initialAddresses);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CustomerAddressView | null>(
+    null,
+  );
 
   async function removeAddress(id: string) {
     setPending(true);
@@ -217,31 +270,27 @@ export function AccountAddressesClient({
         )}
       </ul>
 
-      <div className="space-y-3 rounded-2xl bg-surface-elevated p-4">
-        <h2 className="text-sm font-semibold text-foreground">Add address</h2>
-        <AddressAutocomplete
-          value={query}
-          onChange={setQuery}
-          verified={verified}
-          isVerifying={isGeocoding}
-          verifyError={formError}
-          placeholder="Start typing an address"
+      {showAddForm ? (
+        <AddAddressPanel
+          pending={pending}
+          onPendingChange={setPending}
+          defaultIsFirst={addresses.length === 0}
+          onSaved={(address) => {
+            setAddresses((current) => [address, ...current]);
+            setShowAddForm(false);
+            router.refresh();
+          }}
+          onCancel={() => {
+            if (!pending) {
+              setShowAddForm(false);
+            }
+          }}
         />
-        <input
-          value={label}
-          onChange={(event) => setLabel(event.target.value)}
-          placeholder="Label (Home, Work…)"
-          className="h-11 w-full rounded-md border border-border bg-surface-elevated px-3 text-sm"
-          maxLength={40}
-        />
-        <Button
-          type="button"
-          disabled={pending || !verified}
-          onClick={() => void addAddress()}
-        >
-          {pending ? "Saving…" : "Save address"}
+      ) : (
+        <Button type="button" variant="outline" onClick={() => setShowAddForm(true)}>
+          Add address
         </Button>
-      </div>
+      )}
 
       <ConfirmDialog
         open={deleteTarget !== null}

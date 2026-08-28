@@ -7,6 +7,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
+import { normalizePublicMediaUrl } from "@/lib/integrations/r2/public-url";
 import { MODIFIER_GROUP_MAX_SELECT_DEFAULT } from "@/lib/domain/menu/limits";
 import { resolveModifierGroupView } from "@/lib/domain/menu/resolve-modifiers";
 import type {
@@ -107,12 +108,13 @@ function mapImages(
   if (images.length > 0) {
     return images.map((image) => ({
       id: image.id,
-      url: image.url,
+      url: normalizePublicMediaUrl(image.url) ?? image.url,
       sortOrder: image.sortOrder,
     }));
   }
-  if (fallbackUrl) {
-    return [{ id: "legacy", url: fallbackUrl, sortOrder: 0 }];
+  const normalizedFallback = normalizePublicMediaUrl(fallbackUrl);
+  if (normalizedFallback) {
+    return [{ id: "legacy", url: normalizedFallback, sortOrder: 0 }];
   }
   return [];
 }
@@ -158,7 +160,8 @@ export function mapMenuItemToListItem(
     name: item.name,
     description: item.description,
     priceCents: item.priceCents,
-    imageUrl: item.images[0]?.url ?? item.imageUrl,
+    imageUrl:
+      normalizePublicMediaUrl(item.images[0]?.url ?? item.imageUrl) ?? null,
     available: item.available,
     sortOrder: item.sortOrder,
     modifierGroupCount: item.modifierGroups.length,
@@ -178,7 +181,8 @@ export function mapMenuItemToDetail(item: ItemWithRelations): MenuItemDetail {
     name: item.name,
     description: item.description,
     priceCents: item.priceCents,
-    imageUrl: item.imageUrl,
+    imageUrl:
+      normalizePublicMediaUrl(item.images[0]?.url ?? item.imageUrl) ?? null,
     images: mapImages(item.images, item.imageUrl),
     available: item.available,
     sortOrder: item.sortOrder,

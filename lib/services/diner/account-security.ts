@@ -35,10 +35,19 @@ export async function changeDinerEmail(
   }
 
   const updated = await userRepository.updateEmail(userId, email);
-  await sendDinerEmailVerification({
+  const sent = await sendDinerEmailVerification({
     id: updated.id,
     email: updated.email,
     name: updated.name,
   });
+  if (!sent.ok) {
+    throw new AppError(
+      "PROVIDER_ERROR",
+      sent.skipped
+        ? "Email updated, but verification email is not configured."
+        : sent.error ?? "Email updated, but verification email could not be sent.",
+      503,
+    );
+  }
   return { email: updated.email };
 }

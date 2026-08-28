@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
   getEmailFrom,
   getEmailReplyTo,
@@ -72,13 +73,22 @@ export async function sendEmail(
   return { ok: true, id: data?.id ?? "" };
 }
 
-/** Fire-and-forget helper — never throws to callers. */
-export function sendEmailInBackground(input: SendEmailInput): void {
-  void sendEmail(input).catch((error) => {
+function scheduleBackgroundEmail(task: Promise<SendEmailResult>): void {
+  const tracked = task.catch((error) => {
     logger.error("email.background_failed", {
-      to: input.to,
-      subject: input.subject,
       error: error instanceof Error ? error.message : String(error),
     });
+    return { ok: false as const, error: "Background email failed" };
   });
+
+  try {
+    getCloudflareContext().ctx.waitUntil(tracked);
+  } catch {
+    void tracked;
+  }
+}
+
+/** Fire-and-forget helper — never throws to callers. */
+export function sendEmailInBackground(input: SendEmailInput): void {
+  scheduleBackgroundEmail(sendEmail(input));
 }

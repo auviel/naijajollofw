@@ -102,29 +102,38 @@ export function AccountNav({ userName }: { userName: string }) {
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-56 shrink-0 md:block lg:w-60">
-        <p className="text-xs font-semibold tracking-wide text-text-tertiary uppercase">
-          Account
-        </p>
-        <p className="mt-1 truncate text-sm text-text-secondary">{userName}</p>
-        <nav className="mt-5 flex flex-col gap-0.5" aria-label="Account">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "rounded-2xl px-3 py-2.5 text-sm no-underline transition-colors",
-                item.match(pathname)
-                  ? "bg-accent-subtle font-semibold text-accent"
-                  : "font-medium text-text-secondary hover:bg-surface hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="mt-6 border-t border-border pt-4">
-          <DinerSignOutButton />
+      <aside className="hidden w-56 shrink-0 self-start md:block lg:w-60">
+        <div className="sticky top-[calc(var(--storefront-header-offset)+1.5rem)] rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm">
+          <div className="border-b border-border pb-4">
+            <p className="text-xs font-semibold tracking-wide text-text-tertiary uppercase">
+              Account
+            </p>
+            <p className="mt-1 truncate text-sm font-medium text-foreground">
+              {userName}
+            </p>
+          </div>
+          <nav
+            className="mt-4 flex flex-col gap-0.5"
+            aria-label="Account"
+          >
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "rounded-xl px-3 py-2.5 text-sm no-underline transition-colors",
+                  item.match(pathname)
+                    ? "bg-accent-subtle font-semibold text-accent"
+                    : "font-medium text-text-secondary hover:bg-surface hover:text-foreground",
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="mt-4 border-t border-border pt-4">
+            <DinerSignOutButton />
+          </div>
         </div>
       </aside>
     </>

@@ -22,23 +22,13 @@ export default async function AccountPaymentPage() {
   const available = canManageSquareCards();
 
   return (
-    <section className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-          Payment
-        </h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Cards are stored securely with Square.
-        </p>
-      </div>
-      <AccountPaymentClient
-        available={available}
-        initialCards={state.cards}
-        applicationId={available ? getSquareApplicationId() : null}
-        locationId={available ? getSquareLocationId() : null}
-        environment={getSquareEnvironment()}
-        dinerName={user.name}
-      />
-    </section>
+    <AccountPaymentClient
+      available={available}
+      initialCards={state.cards}
+      applicationId={available ? getSquareApplicationId() : null}
+      locationId={available ? getSquareLocationId() : null}
+      environment={getSquareEnvironment()}
+      dinerName={user.name}
+    />
   );
 }

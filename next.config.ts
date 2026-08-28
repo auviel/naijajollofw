@@ -91,26 +91,55 @@ const securityHeaders = [
   },
 ];
 
+function r2RemotePattern(base: string): NonNullable<
+  NonNullable<NextConfig["images"]>["remotePatterns"]
+>[number] {
+  const url = new URL(base);
+  return {
+    protocol: url.protocol.replace(":", "") as "http" | "https",
+    hostname: url.hostname,
+    port: url.port || "",
+    pathname: "/**",
+  };
+}
+
 function r2RemotePatterns(): NonNullable<
   NonNullable<NextConfig["images"]>["remotePatterns"]
 > {
-  const base = process.env.R2_PUBLIC_BASE_URL?.trim();
-  if (!base) {
-    return [];
+  const bases = [
+    process.env.R2_PUBLIC_BASE_URL?.trim(),
+    process.env.R2_LEGACY_PUBLIC_BASE_URL?.trim(),
+  ].filter((value): value is string => Boolean(value));
+
+  const patterns: NonNullable<
+    NonNullable<NextConfig["images"]>["remotePatterns"]
+  > = [];
+  const seenHostnames = new Set<string>();
+
+  for (const base of bases) {
+    try {
+      const pattern = r2RemotePattern(base);
+      if (seenHostnames.has(pattern.hostname)) {
+        continue;
+      }
+      seenHostnames.add(pattern.hostname);
+      patterns.push(pattern);
+    } catch {
+      // Skip invalid base URLs at build time.
+    }
   }
-  try {
-    const url = new URL(base);
-    return [
-      {
-        protocol: url.protocol.replace(":", "") as "http" | "https",
-        hostname: url.hostname,
-        port: url.port || "",
-        pathname: "/**",
-      },
-    ];
-  } catch {
-    return [];
+
+  // Fallback for dev DBs / caches that still reference legacy r2.dev URLs.
+  if (!seenHostnames.has("pub-a89a3e110634439d96e35518678ffd25.r2.dev")) {
+    patterns.push({
+      protocol: "https",
+      hostname: "pub-a89a3e110634439d96e35518678ffd25.r2.dev",
+      port: "",
+      pathname: "/**",
+    });
   }
+
+  return patterns;
 }
 
 const nextConfig: NextConfig = {

@@ -1,7 +1,7 @@
 import type { UserRole } from "@/lib/domain/auth/types";
 import type { NextAuthConfig } from "next-auth";
 
-/** Auth.js config safe to import from root `middleware.ts` (Edge runtime). */
+/** Auth.js config safe to import from root `proxy.ts` (Edge runtime). */
 export const authConfig = {
   trustHost: true,
   secret: process.env.AUTH_SECRET,

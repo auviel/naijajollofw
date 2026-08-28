@@ -1,5 +1,6 @@
 import type { Cart, CartItem, MenuItem, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
+import { normalizePublicMediaUrl } from "@/lib/integrations/r2/public-url";
 import type { CartModifierSelection, CartView } from "@/lib/domain/cart/types";
 import {
   lineUnitPriceCents,
@@ -50,7 +51,7 @@ function mapLine(item: CartItemWithMenu) {
     menuItemId: item.menuItemId,
     name: item.menuItem.name,
     description: item.menuItem.description,
-    imageUrl: item.menuItem.imageUrl,
+    imageUrl: normalizePublicMediaUrl(item.menuItem.imageUrl),
     unitPriceCents,
     quantity: item.quantity,
     available: item.menuItem.available,
