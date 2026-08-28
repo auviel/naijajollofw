@@ -35,7 +35,7 @@ const loadPublicStorefront = unstable_cache(
     };
   },
   ["public-storefront"],
-  { revalidate: 60, tags: [STOREFRONT_CACHE_TAG] },
+  { revalidate: 300, tags: [STOREFRONT_CACHE_TAG] },
 );
 
 export const getPublicStorefront = cache(async function getPublicStorefront(): Promise<PublicStorefront> {

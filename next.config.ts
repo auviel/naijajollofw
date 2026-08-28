@@ -120,11 +120,14 @@ const nextConfig: NextConfig = {
     ".prisma/client",
     "@prisma/adapter-pg",
     "pg",
+    "pg-cloudflare",
   ],
   env: {
     NEXT_PUBLIC_VERCEL_ENV:
-      process.env.CLOUDFLARE_ENV ?? process.env.VERCEL_ENV ?? "",
-    NEXT_PUBLIC_CLOUDFLARE_ENV: process.env.CLOUDFLARE_ENV ?? "",
+      process.env.APP_ENV ?? process.env.CLOUDFLARE_ENV ?? process.env.VERCEL_ENV ?? "",
+    NEXT_PUBLIC_CLOUDFLARE_ENV:
+      process.env.APP_ENV ?? process.env.CLOUDFLARE_ENV ?? "",
+    NEXT_PUBLIC_APP_ENV: process.env.APP_ENV ?? process.env.CLOUDFLARE_ENV ?? "",
     NEXT_PUBLIC_STORE_TIMEZONE:
       process.env.STORE_TIMEZONE ?? "America/Toronto",
   },

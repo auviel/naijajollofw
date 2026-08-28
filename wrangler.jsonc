@@ -12,7 +12,19 @@
     "binding": "IMAGES",
   },
   "vars": {
-    "CLOUDFLARE_ENV": "production",
+    // Do not use CLOUDFLARE_ENV here — Wrangler reserves that name for `--env` selection.
+    "APP_ENV": "production",
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "invocation_logs": true,
+      "head_sampling_rate": 1,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+    },
   },
   "services": [
     {

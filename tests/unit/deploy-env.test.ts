@@ -41,6 +41,14 @@ describe("deployEnvironment", () => {
     delete process.env.NEXT_PUBLIC_VERCEL_ENV;
   }
 
+  it("prefers APP_ENV over legacy Cloudflare and Vercel", () => {
+    stash();
+    process.env.APP_ENV = "production";
+    process.env.CLOUDFLARE_ENV = "preview";
+    process.env.VERCEL_ENV = "preview";
+    expect(deployEnvironment()).toBe("production");
+  });
+
   it("prefers Cloudflare over Vercel", () => {
     stash();
     process.env.CLOUDFLARE_ENV = "production";

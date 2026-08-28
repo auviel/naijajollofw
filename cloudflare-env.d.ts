@@ -12,4 +12,5 @@ interface CloudflareEnv {
   ASSETS?: unknown;
   WORKER_SELF_REFERENCE?: unknown;
   CLOUDFLARE_ENV?: string;
+  APP_ENV?: string;
 }

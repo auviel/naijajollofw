@@ -33,7 +33,7 @@ const loadPublicHoursRows = unstable_cache(
     }));
   },
   ["public-store-hours"],
-  { revalidate: 60, tags: [STOREFRONT_CACHE_TAG] },
+  { revalidate: 300, tags: [STOREFRONT_CACHE_TAG] },
 );
 
 export async function getStaffStoreHours(): Promise<StoreHoursSchedule> {
