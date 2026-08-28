@@ -1,7 +1,7 @@
 # AI Storefront Assistant Design
 
 **Date:** 2026-08-28  
-**Status:** Approved for spec  
+**Status:** Phase 1 implemented  
 **Surfaces:** Web storefront (phase 1); mobile diner app (phase 2+)  
 **Approach:** Tool-calling agent (shared brain for search + chat)
 
