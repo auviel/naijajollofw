@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
+import { isSanityConfigured } from "@/lib/sanity/env";
+import { SanityLive } from "@/lib/sanity/live";
 import "./globals.css";
 
 const inter = Inter({
@@ -53,6 +55,7 @@ export default function RootLayout({
         <AuthSessionProvider>
           <div className="flex min-h-dvh flex-1 flex-col">{children}</div>
         </AuthSessionProvider>
+        {isSanityConfigured() && SanityLive ? <SanityLive /> : null}
       </body>
     </html>
   );

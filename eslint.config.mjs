@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "coverage/**",
     "mobile/**",
+    "studio/**",
     ".open-next/**",
     ".wrangler/**",
     "test-results/**",
