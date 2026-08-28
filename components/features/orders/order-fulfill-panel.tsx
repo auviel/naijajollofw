@@ -165,7 +165,7 @@ function ManualFulfillForm({
           rows={2}
           maxLength={500}
           placeholder="SkipTheDishes driver, friend picking up, …"
-          className="w-full rounded-md border border-border bg-background px-3 py-2"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-base"
         />
       </label>
       <div className="flex flex-wrap gap-2">

@@ -34,6 +34,7 @@ import {
   Notification01Icon,
   NoodlesIcon,
   Package01Icon,
+  PencilEdit01Icon,
   RiceBowl01Icon,
   Scooter01Icon,
   Search01Icon,
@@ -115,6 +116,7 @@ export const LogOut = createIcon(Logout01Icon, "LogOut");
 export const MoreHorizontal = createIcon(MoreHorizontalIcon, "MoreHorizontal");
 export const Bell = createIcon(Notification01Icon, "Bell");
 export const Package = createIcon(Package01Icon, "Package");
+export const Pencil = createIcon(PencilEdit01Icon, "Pencil");
 export const Scooter = createIcon(Scooter01Icon, "Scooter");
 export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");

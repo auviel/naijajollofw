@@ -145,7 +145,7 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
                       updateDay(day.dayOfWeek, { openTime: e.target.value })
                     }
                     className={cn(
-                      "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
+                      "h-10 rounded-md border bg-surface-elevated px-2 text-base",
                       dayError ? "border-error" : "border-border",
                     )}
                   />
@@ -163,7 +163,7 @@ export function HoursScheduleForm({ initial }: HoursScheduleFormProps) {
                       updateDay(day.dayOfWeek, { closeTime: e.target.value })
                     }
                     className={cn(
-                      "h-10 rounded-md border bg-surface-elevated px-2 text-sm",
+                      "h-10 rounded-md border bg-surface-elevated px-2 text-base",
                       dayError ? "border-error" : "border-border",
                     )}
                   />

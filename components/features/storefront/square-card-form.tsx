@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
   SquareCard,
   SquareVerificationDetails,
@@ -179,14 +180,21 @@ export function SquareCardSlot({
         Card
       </label>
       <div className="relative">
-        <div
-          id={containerId}
-          className="min-h-[56px]"
-        />
+        <div id={containerId} className="min-h-[56px]" />
         {!ready && !error ? (
-          <p className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-text-tertiary">
-            Loading secure card form…
-          </p>
+          <div
+            className="pointer-events-none absolute inset-0 flex min-h-[56px] items-center rounded-md border border-border-strong bg-background px-4"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <span className="sr-only">Loading secure card form</span>
+            <div className="flex w-full items-center gap-3">
+              <Skeleton className="h-4 w-8 shrink-0" />
+              <Skeleton className="h-4 min-w-0 flex-1" />
+              <Skeleton className="h-4 w-12 shrink-0" />
+              <Skeleton className="h-4 w-10 shrink-0" />
+            </div>
+          </div>
         ) : null}
       </div>
       {error ? (

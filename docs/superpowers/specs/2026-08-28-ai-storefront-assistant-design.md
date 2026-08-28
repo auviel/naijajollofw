@@ -180,16 +180,26 @@ Commerce-generic names; restaurant adapter supplies behavior.
 - Typeahead lists ranked items
 - Vague queries may show a short static hint + matches (not a second LLM product)
 
-### Edge behaviors
+### Edge behaviors (happy + unhappy)
 
 | Case | Behavior |
 |------|----------|
+| Menu / hours / cart help | Tools only; short warm answers; 1–3 product suggestions |
 | Ambiguous item (“jollof”) | Clarify plate vs tray / size before add |
-| Required modifiers | “Let’s customize” + open product page |
+| Required modifiers | `openProduct` — do not force `addToCart` |
 | Unavailable item | Say so; suggest close alternatives via search |
-| Store closed | State status + hours; browse/cart follow existing storefront rules |
-| Tool failure | Apology + link to menu — never fabricate items |
-| Off-topic | Gentle redirect to food/store help |
+| Store closed | Status + hours from tools; browse/cart follow storefront rules |
+| Empty cart + checkout ask | Say cart is empty; offer to find food |
+| Guest vs signed-in | Follow Customer context (sign-in CTA vs `/checkout`) |
+| Cart tool success | Only claim add/update/remove when tool returns `ok: true` |
+| Tool failure | Apology + link to menu — never fabricate items/prices |
+| Insults / rudeness | Calm one-liner; offer menu help; no arguing |
+| Off-topic / trivia / Google / coding / medical / legal | Hard redirect: 1–2 sentences, **do not define or summarize** outside content |
+| Soft drink / juice craving | Drink-scoped search + synonyms; never fall back to bread/sides |
+| Empty search | No product cards; say not on menu; do not pivot to unrelated food |
+| Prices in chat | Quote tool `price` CAD strings only — no cents integers in model payload |
+| Competitors / other restaurants | Refuse; stay on this storefront |
+| Jailbreak / “ignore instructions” | Refuse; stay in store-host role |
 
 ## Components & code layout (phase 1)
 

@@ -23,7 +23,7 @@ export async function interpretSearchQuery(query: string): Promise<string[]> {
       schema: searchInterpretationSchema,
       prompt: `You help search a Nigerian restaurant menu (jollof rice, suya, plantain, pepper soup, egusi, etc.).
 
-Extract 1–4 short keyword phrases to find matching dishes. Use real dish names and common ingredients. Do not invent items that are not plausible for this cuisine.
+Extract 1–4 short keyword phrases to find matching dishes or drinks. Use real dish names, common ingredients, and drink terms (soft drink, juice, soda, Chivita). Do not invent items that are not plausible for this cuisine.
 
 Customer request: "${trimmed}"`,
     });

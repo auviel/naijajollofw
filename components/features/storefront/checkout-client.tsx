@@ -14,6 +14,8 @@ import {
   SquareCardSlot,
   useSquareCardForm,
 } from "@/components/features/storefront/square-card-form";
+import { useBodyScrollLock } from "@/components/hooks/use-body-scroll-lock";
+import { MotionSheet } from "@/components/motion/primitives";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormBanner } from "@/components/ui/form-banner";
 import { FormField } from "@/components/ui/form-field";
@@ -131,6 +133,23 @@ export function CheckoutClient({
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+
+  useBodyScrollLock(orderDetailsOpen);
+
+  useEffect(() => {
+    if (!orderDetailsOpen) {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOrderDetailsOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [orderDetailsOpen]);
 
   const mustSchedule = !openStatus.isOpen;
   const scheduleLabel = scheduledFor
@@ -512,35 +531,40 @@ export function CheckoutClient({
         </div>
       </section>
 
-      {orderDetailsOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="checkout-order-details-title"
-          onClick={() => setOrderDetailsOpen(false)}
-        >
-          <div
-            className="flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-surface-elevated shadow-xl sm:rounded-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+      <MotionSheet
+        open={orderDetailsOpen}
+        onClose={() => setOrderDetailsOpen(false)}
+        labelledBy="checkout-order-details-title"
+        desktopLabelledBy="checkout-order-details-title-desktop"
+      >
+        {(slot) => (
+          <>
+            {slot === "mobile" ? (
+              <div className="flex justify-center pt-3">
+                <span className="h-1 w-10 rounded-full bg-border" aria-hidden />
+              </div>
+            ) : null}
+            <div className="flex shrink-0 items-center justify-between px-5 py-3">
               <h2
-                id="checkout-order-details-title"
-                className="font-display text-2xl font-semibold text-foreground"
+                id={
+                  slot === "desktop"
+                    ? "checkout-order-details-title-desktop"
+                    : "checkout-order-details-title"
+                }
+                className="font-display text-lg font-semibold text-foreground"
               >
                 Your order
               </h2>
               <button
                 type="button"
                 onClick={() => setOrderDetailsOpen(false)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground hover:bg-surface"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>
             </div>
-            <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+            <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-2 pb-4">
               {initialCart.items.map((line) => (
                 <li
                   key={line.id}
@@ -568,7 +592,7 @@ export function CheckoutClient({
                 </li>
               ))}
             </ul>
-            <div className="border-t border-border px-5 py-4">
+            <div className="shrink-0 border-t border-border px-5 py-4">
               <Link
                 href="/cart"
                 className="flex h-11 w-full items-center justify-center rounded-md border border-border text-sm font-medium text-foreground transition-colors hover:bg-surface"
@@ -576,9 +600,9 @@ export function CheckoutClient({
                 Edit cart
               </Link>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        )}
+      </MotionSheet>
 
       {!configured && !simulatePayments ? (
         <div className="rounded-2xl bg-surface-elevated px-4 py-3 text-sm text-text-secondary">

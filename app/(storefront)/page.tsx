@@ -8,7 +8,6 @@ import {
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
 import { buildStorefrontFaqEntries } from "@/lib/seo/storefront-faq";
 import { getPublicGoogleRating } from "@/lib/integrations/google/places/get-public-google-rating";
-import { getCart } from "@/lib/services/cart/cart-actions";
 import {
   getPublicStoreHoursSchedule,
   getPublicStoreOpenStatus,
@@ -22,6 +21,9 @@ type PageProps = {
 const homeDescription =
   "Order smoky jollof, rich stews, and party trays from Naija Jollof Waterloo. Pickup or delivery.";
 
+/** Public catalog page — no cookies(); OpenNext ISR can cache the document. */
+export const revalidate = 300;
+
 export const metadata: Metadata = buildShareMetadata({
   title: "Naija Jollof Waterloo",
   description: homeDescription,
@@ -29,11 +31,10 @@ export const metadata: Metadata = buildShareMetadata({
 });
 
 export default async function StorefrontHomePage({ searchParams }: PageProps) {
-  const [{ q }, { store, catalog, prepMinutes }, cart, openStatus, schedule, googleRating] =
+  const [{ q }, { store, catalog, prepMinutes }, openStatus, schedule, googleRating] =
     await Promise.all([
       searchParams,
       getPublicStorefront(),
-      getCart(),
       getPublicStoreOpenStatus(),
       getPublicStoreHoursSchedule(),
       getPublicGoogleRating(),
@@ -56,8 +57,6 @@ export default async function StorefrontHomePage({ searchParams }: PageProps) {
       <StorefrontMenu
         store={store}
         catalog={catalog}
-        cartItemCount={cart.itemCount}
-        cartSubtotalCents={cart.subtotalCents}
         openStatus={openStatus}
         prepMinutes={prepMinutes}
         googleRating={googleRating}

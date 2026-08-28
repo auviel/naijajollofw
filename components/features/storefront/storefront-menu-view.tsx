@@ -79,7 +79,7 @@ export function StorefrontMenuView({
   );
 }
 
-/** Suspense fallback — uses SSR `initialQuery` only (no searchParams). */
+/** @deprecated Prefer a lightweight Suspense skeleton — full fallback doubled HTML. */
 export function StorefrontMenuFallback({
   store,
   catalog,

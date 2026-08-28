@@ -23,8 +23,9 @@ async function readApiError(response: Response): Promise<string> {
 type AddCardPanelProps = {
   applicationId: string;
   locationId: string;
-  environment: string;
   dinerName: string;
+  scriptLoaded: boolean;
+  scriptFailed: boolean;
   pending: boolean;
   onPendingChange: (pending: boolean) => void;
   onSaved: (card: SavedCardView) => void;
@@ -34,41 +35,28 @@ type AddCardPanelProps = {
 function AddCardPanel({
   applicationId,
   locationId,
-  environment,
   dinerName,
+  scriptLoaded,
+  scriptFailed,
   pending,
   onPendingChange,
   onSaved,
   onCancel,
 }: AddCardPanelProps) {
   const { success, error: toastError } = useToast();
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [scriptFailed, setScriptFailed] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  const squareSrc =
-    environment === "production"
-      ? "https://web.squarecdn.com/v1/square.js"
-      : "https://sandbox.web.squarecdn.com/v1/square.js";
 
   const cardForm = useSquareCardForm({
     applicationId,
     locationId,
-    disabled: !scriptLoaded,
+    disabled: !scriptLoaded || scriptFailed,
   });
 
   useEffect(() => {
-    if (scriptLoaded || scriptFailed) {
-      return;
+    if (scriptFailed) {
+      setFormError(THIRD_PARTY_BLOCKED.square);
     }
-    const timeout = window.setTimeout(() => {
-      if (!window.Square) {
-        setScriptFailed(true);
-        setFormError(THIRD_PARTY_BLOCKED.square);
-      }
-    }, 12_000);
-    return () => window.clearTimeout(timeout);
-  }, [scriptLoaded, scriptFailed]);
+  }, [scriptFailed]);
 
   async function saveCard() {
     onPendingChange(true);
@@ -112,19 +100,6 @@ function AddCardPanel({
 
   return (
     <div className="space-y-3 rounded-2xl bg-surface-elevated p-4">
-      <Script
-        src={squareSrc}
-        strategy="afterInteractive"
-        onLoad={() => {
-          setScriptLoaded(true);
-          setScriptFailed(false);
-        }}
-        onError={() => {
-          setScriptLoaded(false);
-          setScriptFailed(true);
-          setFormError(THIRD_PARTY_BLOCKED.square);
-        }}
-      />
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-foreground">Add a card</h2>
         <Button
@@ -140,10 +115,10 @@ function AddCardPanel({
       <SquareCardSlot
         containerId={cardForm.containerId}
         ready={cardForm.ready}
-        error={cardForm.error}
-        onRetry={cardForm.retry}
+        error={cardForm.error ?? (scriptFailed ? THIRD_PARTY_BLOCKED.square : null)}
+        onRetry={scriptFailed ? undefined : cardForm.retry}
       />
-      {formError ? (
+      {formError && !cardForm.error && !scriptFailed ? (
         <p className="text-sm text-error" role="alert">
           {formError}
         </p>
@@ -182,6 +157,27 @@ export function AccountPaymentClient({
   const [showAddForm, setShowAddForm] = useState(false);
   const [pending, setPending] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SavedCardView | null>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(
+    () => typeof window !== "undefined" && Boolean(window.Square),
+  );
+  const [scriptFailed, setScriptFailed] = useState(false);
+
+  const squareSrc =
+    environment === "production"
+      ? "https://web.squarecdn.com/v1/square.js"
+      : "https://sandbox.web.squarecdn.com/v1/square.js";
+
+  useEffect(() => {
+    if (!available || scriptLoaded || scriptFailed) {
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      if (!window.Square) {
+        setScriptFailed(true);
+      }
+    }, 12_000);
+    return () => window.clearTimeout(timeout);
+  }, [available, scriptLoaded, scriptFailed]);
 
   async function removeCard(id: string) {
     setPending(true);
@@ -205,6 +201,21 @@ export function AccountPaymentClient({
 
   return (
     <section className="space-y-6">
+      {available ? (
+        <Script
+          src={squareSrc}
+          strategy="afterInteractive"
+          onLoad={() => {
+            setScriptLoaded(true);
+            setScriptFailed(false);
+          }}
+          onError={() => {
+            setScriptLoaded(false);
+            setScriptFailed(true);
+          }}
+        />
+      ) : null}
+
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
@@ -271,8 +282,9 @@ export function AccountPaymentClient({
             <AddCardPanel
               applicationId={applicationId}
               locationId={locationId}
-              environment={environment}
               dinerName={dinerName}
+              scriptLoaded={scriptLoaded}
+              scriptFailed={scriptFailed}
               pending={pending}
               onPendingChange={setPending}
               onSaved={(card) => {

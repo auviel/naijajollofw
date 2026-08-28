@@ -11,6 +11,7 @@ const item = (id: string, name: string): CatalogSearchItem => ({
   priceCents: 1000,
   imageUrl: null,
   available: true,
+  categoryName: null,
 });
 
 describe("shouldUseAiSearch", () => {

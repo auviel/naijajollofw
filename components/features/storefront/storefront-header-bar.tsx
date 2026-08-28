@@ -17,19 +17,18 @@ import { ItemDetailModal } from "@/components/features/storefront/item-detail-mo
 import { MenuSearchSuggest } from "@/components/features/storefront/menu-search-suggest";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { ArrowLeft, Search, ShoppingBag, User, X } from "@/components/ui/icons";
+import { useCartSummary } from "@/components/features/ai/amaka-chat-cart-bar";
 import type { MenuSearchIndex, MenuSearchItem } from "@/lib/domain/menu/search";
 import { cn } from "@/lib/utils/cn";
 import { saveMenuScroll } from "@/lib/utils/menu-scroll";
 
 type StorefrontHeaderBarProps = {
   storeName: string;
-  cartItemCount: number;
   searchIndex: MenuSearchIndex;
 };
 
 export function StorefrontHeaderBar({
   storeName,
-  cartItemCount,
   searchIndex,
 }: StorefrontHeaderBarProps) {
   const { data: session, status } = useSession();
@@ -37,8 +36,9 @@ export function StorefrontHeaderBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
-  const { mobileSearchOpen, setMobileSearchOpen, setMenuSearchQuery } =
+  const { mobileSearchOpen, setMobileSearchOpen, setMenuSearchQuery, cartRevision } =
     useStorefrontUi();
+  const { itemCount: cartItemCount } = useCartSummary(cartRevision);
   const [scrolled, setScrolled] = useState(false);
   const urlQuery = searchParams.get("q") ?? "";
   const [draftQuery, setDraftQuery] = useState<string | null>(null);

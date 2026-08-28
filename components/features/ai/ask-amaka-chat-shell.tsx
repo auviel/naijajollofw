@@ -1,7 +1,6 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AiChatComposer,
@@ -16,6 +15,10 @@ import { AmakaChatCartBar } from "@/components/features/ai/amaka-chat-cart-bar";
 import { useAmakaChatSessions } from "@/components/features/ai/use-amaka-chat-sessions";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { getChatPendingState } from "@/lib/ai/chat-pending-state";
+import {
+  createStorefrontChatTransport,
+  ensureStorefrontCartSession,
+} from "@/lib/ai/storefront-chat-transport";
 import { X } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 
@@ -28,10 +31,7 @@ type AskAmakaChatShellProps = {
 export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps) {
   const { setAiChatOpen, dismissAddedToCart } = useStorefrontUi();
   const [cartRefreshKey, setCartRefreshKey] = useState(0);
-  const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/ai/chat" }),
-    [],
-  );
+  const transport = useMemo(() => createStorefrontChatTransport(), []);
   const { messages, sendMessage, setMessages, status, error } = useChat({
     transport,
   });
@@ -51,6 +51,7 @@ export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps
   useEffect(() => {
     setAiChatOpen(true);
     dismissAddedToCart();
+    void ensureStorefrontCartSession();
     return () => setAiChatOpen(false);
   }, [setAiChatOpen, dismissAddedToCart]);
 
@@ -59,6 +60,10 @@ export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, status]);
+
+  function bumpCart() {
+    setCartRefreshKey((key) => key + 1);
+  }
 
   return (
     <section
@@ -114,7 +119,7 @@ export function AskAmakaChatShell({ className, onClose }: AskAmakaChatShellProps
             <AiChatMessages
               messages={messages}
               pending={pending}
-              onCartChange={() => setCartRefreshKey((key) => key + 1)}
+              onCartChange={bumpCart}
             />
           </div>
           <AmakaChatCartBar refreshKey={cartRefreshKey} />

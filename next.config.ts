@@ -161,6 +161,10 @@ const nextConfig: NextConfig = {
       process.env.STORE_TIMEZONE ?? "America/Toronto",
   },
   images: {
+    // Menu thumbs are ~96–176px CSS; avoid emitting 2048/3840w srcSet entries
+    // that bloat the homepage HTML (~0.5MB of repeated R2 URLs in prod).
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [96, 128, 256, 384],
     remotePatterns: [
       ...r2RemotePatterns(),
       {

@@ -36,7 +36,7 @@ const CHANNELS: Array<{ id: StaffOrderChannel; label: string }> = [
 ];
 
 const filterTriggerClassName =
-  "h-12 border-border bg-surface-elevated px-3 text-sm";
+  "h-12 border-border bg-surface-elevated px-3 text-base";
 
 type OrderListFiltersProps = {
   filter: StaffOrderListFilter;

@@ -8,7 +8,14 @@ import type { CatalogSearchItem } from "@/lib/ai/ports/catalog";
 
 export type MenuSearchItem = Pick<
   MenuItemListItem,
-  "id" | "slug" | "name" | "description" | "priceCents" | "imageUrl" | "available"
+  | "id"
+  | "slug"
+  | "name"
+  | "description"
+  | "priceCents"
+  | "imageUrl"
+  | "available"
+  | "categoryName"
 >;
 
 export type MenuSearchIndex = {
@@ -33,6 +40,7 @@ function toCatalogItem(item: MenuSearchItem): CatalogSearchItem {
     priceCents: item.priceCents,
     imageUrl: item.imageUrl,
     available: item.available,
+    categoryName: item.categoryName,
   };
 }
 
@@ -52,10 +60,25 @@ export function buildSearchIndex(catalog: MenuCatalog): MenuSearchIndex {
         priceCents: item.priceCents,
         imageUrl: item.imageUrl,
         available: item.available,
+        categoryName: item.categoryName,
       });
     }
   }
   return { items };
+}
+
+/**
+ * Header typeahead payload — drop descriptions to shrink RSC props.
+ * Ranking still uses name/slug/category; full index stays for AI tools.
+ */
+export function buildHeaderSearchIndex(catalog: MenuCatalog): MenuSearchIndex {
+  const { items } = buildSearchIndex(catalog);
+  return {
+    items: items.map(({ description: _description, ...item }) => ({
+      ...item,
+      description: null,
+    })),
+  };
 }
 
 /** Rank menu search items via shared catalog ranker. */

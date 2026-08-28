@@ -45,7 +45,7 @@ export async function createRestaurantChatHandler(
     instructions,
     messages: await convertToModelMessages(trimmed),
     tools,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(6),
   });
 
   return result.toUIMessageStreamResponse();

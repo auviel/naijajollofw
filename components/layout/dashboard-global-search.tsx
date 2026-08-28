@@ -136,7 +136,7 @@ export function DashboardGlobalSearch() {
           }
         }}
         placeholder="Search NJ-1084, name, or customer"
-        className="h-10 border-border bg-surface-elevated pl-10 text-sm sm:h-11"
+        className="h-10 border-border bg-surface-elevated pl-10 text-base sm:h-11"
         autoComplete="off"
         role="combobox"
         aria-expanded={showPanel}

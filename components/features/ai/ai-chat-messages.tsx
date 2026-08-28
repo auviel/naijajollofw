@@ -19,13 +19,21 @@ type CatalogCardItem = {
   id: string;
   slug: string;
   name: string;
-  priceCents: number;
+  price: string;
   available: boolean;
   description?: string | null;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function cardPriceFromTool(row: Record<string, unknown>): string {
+  if (typeof row.price === "string" && row.price.trim()) return row.price.trim();
+  if (typeof row.priceCents === "number" && Number.isFinite(row.priceCents)) {
+    return formatCadFromCents(row.priceCents);
+  }
+  return "";
 }
 
 function getToolOutput(part: { type: string; output?: unknown }): unknown {
@@ -92,7 +100,7 @@ function ProductCards({
             <div className="min-w-0">
               <p className="text-sm font-semibold text-ink">{item.name}</p>
               <p className="mt-0.5 text-xs text-ink-muted">
-                {formatCadFromCents(item.priceCents)}
+                {item.price}
                 {!item.available ? " · Sold out" : null}
               </p>
             </div>
@@ -170,6 +178,43 @@ function AssistantTextPart({ text }: { text: string }) {
   );
 }
 
+function CartToolResult({
+  children,
+  sessionId,
+  onCartChange,
+}: {
+  children: React.ReactNode;
+  sessionId?: unknown;
+  onCartChange?: () => void;
+}) {
+  const router = useRouter();
+  const syncedRef = useRef(false);
+
+  useEffect(() => {
+    if (syncedRef.current) return;
+    syncedRef.current = true;
+    if (typeof sessionId === "string" && sessionId) {
+      rememberCartSessionId(sessionId);
+      void fetch("/api/cart/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ sessionId }),
+      }).then(async (response) => {
+        if (!response.ok) return;
+        const body = (await response.json().catch(() => ({}))) as {
+          data?: { sessionId?: string | null };
+        };
+        rememberCartSessionId(body.data?.sessionId ?? sessionId);
+      });
+    }
+    onCartChange?.();
+    router.refresh();
+  }, [sessionId, onCartChange, router]);
+
+  return children;
+}
+
 function renderPart(
   part: UIMessage["parts"][number],
   key: string,
@@ -184,16 +229,23 @@ function renderPart(
     if (!isRecord(output)) return null;
 
     if (part.type === "tool-searchCatalog" && Array.isArray(output.items)) {
+      if (output.empty === true || output.items.length === 0) return null;
       const items = output.items.filter(isRecord).map((row) => ({
         id: String(row.id ?? ""),
         slug: String(row.slug ?? ""),
         name: String(row.name ?? ""),
-        priceCents: Number(row.priceCents ?? 0),
+        price: cardPriceFromTool(row),
         available: Boolean(row.available),
         description:
           typeof row.description === "string" ? row.description : null,
       }));
-      return <ProductCards key={key} items={items.filter((i) => i.id)} onCartChange={onCartChange} />;
+      return (
+        <ProductCards
+          key={key}
+          items={items.filter((i) => i.id)}
+          onCartChange={onCartChange}
+        />
+      );
     }
 
     if (part.type === "tool-getProduct" && typeof output.id === "string") {
@@ -205,7 +257,7 @@ function renderPart(
               id: String(output.id),
               slug: String(output.slug ?? ""),
               name: String(output.name ?? ""),
-              priceCents: Number(output.priceCents ?? 0),
+              price: cardPriceFromTool(output),
               available: Boolean(output.available),
             },
           ]}
@@ -235,17 +287,76 @@ function renderPart(
     );
   }
 
-  if (part.type === "tool-addToCart") {
+  if (part.type === "tool-getCart") {
     const output = getToolOutput(part as { type: string; output?: unknown });
     if (!isRecord(output)) return null;
-    if (output.ok === true) {
+    const itemCount = Number(output.itemCount ?? 0);
+    const subtotalCents = Number(output.subtotalCents ?? 0);
+    const subtotalLabel =
+      typeof output.subtotal === "string"
+        ? output.subtotal
+        : formatCadFromCents(subtotalCents);
+    if (itemCount <= 0) {
       return (
-        <p key={key} className="mt-1 text-sm text-success">
-          Added {String(output.name)} to your cart.
+        <p key={key} className="mt-1 text-sm text-ink-muted">
+          Your cart is empty.
         </p>
       );
     }
-    if (output.needsCustomize === true && typeof output.slug === "string") {
+    return (
+      <p key={key} className="mt-1 text-sm text-ink-muted">
+        Cart: {itemCount} item{itemCount === 1 ? "" : "s"} · {subtotalLabel}
+      </p>
+    );
+  }
+
+  if (
+    part.type === "tool-addToCart" ||
+    part.type === "tool-updateCartItem" ||
+    part.type === "tool-removeCartItem"
+  ) {
+    const output = getToolOutput(part as { type: string; output?: unknown });
+    if (!isRecord(output)) return null;
+
+    if (part.type === "tool-addToCart" && output.ok === true) {
+      return (
+        <CartToolResult
+          key={key}
+          sessionId={output.sessionId}
+          onCartChange={onCartChange}
+        >
+          <p className="mt-1 text-sm text-success">
+            Added {String(output.name)} to your cart.
+          </p>
+        </CartToolResult>
+      );
+    }
+
+    if (
+      (part.type === "tool-updateCartItem" ||
+        part.type === "tool-removeCartItem") &&
+      output.ok === true
+    ) {
+      return (
+        <CartToolResult
+          key={key}
+          sessionId={output.sessionId}
+          onCartChange={onCartChange}
+        >
+          <p className="mt-1 text-sm text-success">
+            {typeof output.message === "string"
+              ? output.message
+              : "Cart updated."}
+          </p>
+        </CartToolResult>
+      );
+    }
+
+    if (
+      part.type === "tool-addToCart" &&
+      output.needsCustomize === true &&
+      typeof output.slug === "string"
+    ) {
       return (
         <Link
           key={key}
@@ -256,6 +367,7 @@ function renderPart(
         </Link>
       );
     }
+
     if (typeof output.error === "string") {
       return (
         <p key={key} className="mt-1 text-sm text-danger">

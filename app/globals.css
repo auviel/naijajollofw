@@ -127,17 +127,18 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+}
 
-  /*
-   * iOS Safari zooms the page when focusing inputs under 16px.
-   * Keep ≥16px on touch devices instead of maximum-scale=1 (blocks pinch-zoom).
-   */
-  @media (hover: none) and (pointer: coarse) {
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),
-    textarea,
-    select {
-      font-size: 16px;
-    }
+/*
+ * iOS Safari zooms the page when focusing inputs under 16px.
+ * Keep ≥16px on touch devices instead of maximum-scale=1 (blocks pinch-zoom).
+ * Unlayered so this wins over Tailwind utilities like text-sm (@layer utilities).
+ */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),
+  textarea,
+  select {
+    font-size: 16px !important;
   }
 }
 

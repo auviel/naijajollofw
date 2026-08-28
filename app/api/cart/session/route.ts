@@ -37,6 +37,23 @@ export async function POST(request: Request) {
     const cookieSid = await readCartSessionId();
 
     if (cookieSid) {
+      const backup = body.sessionId?.trim();
+      // Prefer a backup session that actually has items when the cookie cart is empty
+      // (AI chat tools may have written to the remembered sid via x-cart-sid).
+      if (backup && backup !== cookieSid && isCartSessionId(backup)) {
+        const storeId = await resolvePublicStoreId();
+        const [cookieCart, backupCart] = await Promise.all([
+          cartRepository.findByStoreAndSession(storeId, cookieSid),
+          cartRepository.findByStoreAndSession(storeId, backup),
+        ]);
+        const cookieEmpty = !cookieCart || cookieCart.items.length === 0;
+        const backupHasItems = Boolean(backupCart && backupCart.items.length > 0);
+        if (cookieEmpty && backupHasItems) {
+          const restored = await restoreCartSessionId(backup);
+          return NextResponse.json({ data: { sessionId: restored } });
+        }
+      }
+
       await touchCartSessionCookie(cookieSid);
       return NextResponse.json({ data: { sessionId: cookieSid } });
     }

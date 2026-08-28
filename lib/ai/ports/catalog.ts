@@ -7,6 +7,8 @@ export type CatalogSearchItem = {
   priceCents: number;
   imageUrl: string | null;
   available: boolean;
+  /** Storefront shelf name — used for drink/category-aware ranking. */
+  categoryName?: string | null;
 };
 
 export type CatalogOptionGroup = {

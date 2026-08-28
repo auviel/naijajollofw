@@ -5,15 +5,11 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import { AmakaAvatar } from "@/components/features/ai/amaka-avatar";
 import { ViewOrderBar } from "@/components/features/storefront/view-order-bar";
+import { useCartSummary } from "@/components/features/ai/amaka-chat-cart-bar";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { Home, Search, ShoppingBag, ChatBubble } from "@/components/ui/icons";
 import { easeOut, motionDuration } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils/cn";
-
-type StorefrontMobileNavProps = {
-  cartItemCount: number;
-  cartSubtotalCents: number;
-};
 
 const HIDDEN_PREFIXES = [
   "/blog",
@@ -34,14 +30,13 @@ function shouldHideNav(pathname: string) {
   );
 }
 
-export function StorefrontMobileNav({
-  cartItemCount,
-  cartSubtotalCents,
-}: StorefrontMobileNavProps) {
+export function StorefrontMobileNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { openMobileSearch, openCart, cartOpen, mobileSearchOpen } =
+  const { openMobileSearch, openCart, cartOpen, mobileSearchOpen, cartRevision } =
     useStorefrontUi();
+  const { itemCount: cartItemCount, subtotalCents: cartSubtotalCents } =
+    useCartSummary(cartRevision);
   const reduce = useReducedMotion();
 
   const menuActive = pathname === "/" && !cartOpen && !mobileSearchOpen;

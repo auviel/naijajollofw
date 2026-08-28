@@ -32,12 +32,20 @@ type CatalogCardItem = {
   id: string;
   slug: string;
   name: string;
-  priceCents: number;
+  price: string;
   available: boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function cardPriceFromTool(row: Record<string, unknown>): string {
+  if (typeof row.price === "string" && row.price.trim()) return row.price.trim();
+  if (typeof row.priceCents === "number" && Number.isFinite(row.priceCents)) {
+    return formatCadFromCents(row.priceCents);
+  }
+  return "";
 }
 
 function getToolOutput(part: { type: string; output?: unknown }): unknown {
@@ -95,7 +103,7 @@ function ProductCards({
                 {item.name}
               </Text>
               <Text style={Type.meta}>
-                {formatCadFromCents(item.priceCents)}
+                {item.price}
                 {!item.available ? " · Sold out" : null}
               </Text>
             </View>
@@ -204,11 +212,12 @@ function renderPart(
     if (!isRecord(output)) return null;
 
     if (part.type === "tool-searchCatalog" && Array.isArray(output.items)) {
+      if (output.empty === true || output.items.length === 0) return null;
       const items = output.items.filter(isRecord).map((row) => ({
         id: String(row.id ?? ""),
         slug: String(row.slug ?? ""),
         name: String(row.name ?? ""),
-        priceCents: Number(row.priceCents ?? 0),
+        price: cardPriceFromTool(row),
         available: Boolean(row.available),
       }));
       return (
@@ -229,7 +238,7 @@ function renderPart(
               id: String(output.id),
               slug: String(output.slug ?? ""),
               name: String(output.name ?? ""),
-              priceCents: Number(output.priceCents ?? 0),
+              price: cardPriceFromTool(output),
               available: Boolean(output.available),
             },
           ]}

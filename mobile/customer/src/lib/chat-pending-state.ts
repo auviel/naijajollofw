@@ -55,6 +55,17 @@ function partHasVisibleContent(part: UIMessage["parts"][number]): boolean {
       typeof output.error === "string"
     );
   }
+  if (
+    part.type === "tool-getCart" ||
+    part.type === "tool-updateCartItem" ||
+    part.type === "tool-removeCartItem"
+  ) {
+    return (
+      typeof output.itemCount === "number" ||
+      output.ok === true ||
+      typeof output.error === "string"
+    );
+  }
 
   return false;
 }
@@ -63,6 +74,7 @@ function assistantHasVisibleReply(message: UIMessage): boolean {
   return message.parts.some(partHasVisibleContent);
 }
 
+/** When to show the typing/thinking indicator below the message list. */
 export function getChatPendingState(
   status: string,
   messages: UIMessage[],

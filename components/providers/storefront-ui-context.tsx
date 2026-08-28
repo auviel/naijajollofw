@@ -27,6 +27,9 @@ type StorefrontUiContextValue = {
   cartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
+  /** Bumps when cart contents likely changed — client badges refetch `/api/cart`. */
+  cartRevision: number;
+  bumpCartRevision: () => void;
   addedToCart: AddedToCartItem | null;
   notifyItemAdded: (item: AddedToCartItem) => void;
   dismissAddedToCart: () => void;
@@ -48,12 +51,17 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [menuSearchQuery, setMenuSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartRevision, setCartRevision] = useState(0);
   const [addedToCart, setAddedToCart] = useState<AddedToCartItem | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const closeAiChatRef = useRef<(() => void) | null>(null);
   const dismissTimerRef = useRef<number | null>(null);
   const menuSearchFocused =
     mobileSearchOpen || Boolean(menuSearchQuery.trim());
+
+  const bumpCartRevision = useCallback(() => {
+    setCartRevision((n) => n + 1);
+  }, []);
 
   const dismissAddedToCart = useCallback(() => {
     if (dismissTimerRef.current != null) {
@@ -75,7 +83,8 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
 
   const closeCart = useCallback(() => {
     setCartOpen(false);
-  }, []);
+    bumpCartRevision();
+  }, [bumpCartRevision]);
 
   const registerCloseAiChat = useCallback((fn: (() => void) | null) => {
     closeAiChatRef.current = fn;
@@ -86,6 +95,7 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const notifyItemAdded = useCallback((item: AddedToCartItem) => {
+    bumpCartRevision();
     const desktop =
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 640px)").matches;
@@ -103,7 +113,7 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       setAddedToCart(null);
       dismissTimerRef.current = null;
     }, ADDED_POPOVER_MS);
-  }, [aiChatOpen]);
+  }, [aiChatOpen, bumpCartRevision]);
 
   const value = useMemo(
     () => ({
@@ -116,6 +126,8 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       cartOpen,
       openCart,
       closeCart,
+      cartRevision,
+      bumpCartRevision,
       addedToCart,
       notifyItemAdded,
       dismissAddedToCart,
@@ -132,6 +144,8 @@ export function StorefrontUiProvider({ children }: { children: ReactNode }) {
       cartOpen,
       openCart,
       closeCart,
+      cartRevision,
+      bumpCartRevision,
       addedToCart,
       notifyItemAdded,
       dismissAddedToCart,
