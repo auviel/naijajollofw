@@ -4,6 +4,7 @@ import {
   buildSearchSuggestions,
   countFilteredItems,
   filterCatalogByQuery,
+  rankMenuItems,
 } from "@/lib/domain/menu/search";
 import type { MenuCatalog } from "@/lib/domain/menu/types";
 
@@ -86,6 +87,16 @@ describe("filterCatalogByQuery", () => {
     const filtered = filterCatalogByQuery(catalog, "smoky");
     expect(countFilteredItems(filtered)).toBe(1);
     expect(filtered[0]!.items[0]!.id).toBe("1");
+  });
+});
+
+describe("rankMenuItems", () => {
+  const index = buildSearchIndex(catalog);
+
+  it("ranks fried plantain above jollof for plantain query", () => {
+    expect(rankMenuItems(index, "fried plantain", 5)[0]?.slug).toBe(
+      "fried-plantain",
+    );
   });
 });
 

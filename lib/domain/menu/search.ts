@@ -3,6 +3,8 @@ import type {
   MenuCategoryView,
   MenuItemListItem,
 } from "@/lib/domain/menu/types";
+import { rankCatalogItems } from "@/lib/ai/catalog/rank";
+import type { CatalogSearchItem } from "@/lib/ai/ports/catalog";
 
 export type MenuSearchItem = Pick<
   MenuItemListItem,
@@ -22,12 +24,16 @@ function normalizeNeedle(q: string): string {
   return q.trim().toLowerCase();
 }
 
-function itemMatches(item: MenuSearchItem, needle: string): boolean {
-  if (!needle) return true;
-  return (
-    item.name.toLowerCase().includes(needle) ||
-    (item.description?.toLowerCase().includes(needle) ?? false)
-  );
+function toCatalogItem(item: MenuSearchItem): CatalogSearchItem {
+  return {
+    id: item.id,
+    slug: item.slug,
+    name: item.name,
+    description: item.description,
+    priceCents: item.priceCents,
+    imageUrl: item.imageUrl,
+    available: item.available,
+  };
 }
 
 /** Flatten catalog items for header typeahead (no modifiers). */
@@ -52,6 +58,23 @@ export function buildSearchIndex(catalog: MenuCatalog): MenuSearchIndex {
   return { items };
 }
 
+/** Rank menu search items via shared catalog ranker. */
+export function rankMenuItems(
+  index: MenuSearchIndex,
+  query: string,
+  limit = 8,
+): MenuSearchItem[] {
+  const ranked = rankCatalogItems(
+    index.items.map(toCatalogItem),
+    query,
+    limit,
+  );
+  const byId = new Map(index.items.map((item) => [item.id, item]));
+  return ranked
+    .map((item) => byId.get(item.id))
+    .filter((item): item is MenuSearchItem => Boolean(item));
+}
+
 export function filterCatalogByQuery(
   catalog: MenuCatalog,
   q: string,
@@ -61,10 +84,20 @@ export function filterCatalogByQuery(
     return catalog.categories;
   }
 
+  const index = buildSearchIndex(catalog);
+  const ranked = rankMenuItems(index, q, 500);
+  const rankedIds = new Set(ranked.map((i) => i.id));
+  const rankOrder = new Map(ranked.map((item, i) => [item.id, i]));
+
   return catalog.categories
     .map((category) => ({
       ...category,
-      items: category.items.filter((item) => itemMatches(item, needle)),
+      items: category.items
+        .filter((item) => rankedIds.has(item.id))
+        .sort(
+          (a, b) =>
+            (rankOrder.get(a.id) ?? 999) - (rankOrder.get(b.id) ?? 999),
+        ),
     }))
     .filter((category) => category.items.length > 0);
 }
@@ -90,9 +123,7 @@ export function buildSearchSuggestions(
     return { items: [], keywords: [] };
   }
 
-  const items = index.items
-    .filter((item) => itemMatches(item, needle))
-    .slice(0, itemLimit);
+  const items = rankMenuItems(index, draft, itemLimit);
 
   const keywords: string[] = [];
   const seen = new Set<string>();
@@ -109,7 +140,6 @@ export function buildSearchSuggestions(
     if (keywords.length >= keywordLimit) break;
   }
 
-  // Also suggest shorter token phrases (e.g. "jollof rice") when useful.
   if (keywords.length < keywordLimit) {
     for (const item of index.items) {
       const tokens = item.name
