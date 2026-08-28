@@ -35,6 +35,10 @@ Build order for delivery: **web first** → shared API → **mobile chat tab** �
 | Embeddings DB | **Out of scope** for phase 1 — smarter ranking over live catalog |
 | Checkout in chat | Deferred to phase A |
 | In-chat order push alerts | Deferred to phase C |
+| Chat model (primary) | **`openai/gpt-4o-mini`** — cheap, tools, sufficient for grounded Q&A + cart |
+| Chat model (fallback) | **`openai/gpt-5-mini`** — if 4o-mini errors / unavailable |
+| Header search | **No LLM** — shared ranking over live catalog only |
+| Model access | Vercel AI SDK via AI Gateway (`provider/model` strings); OpenAI key OK for local/BYOK |
 
 ## Product shape
 
@@ -83,10 +87,21 @@ A storefront assistant that:
 
 - Header search calls the **shared ranking service directly** (fast, no LLM required per keystroke)
 - Chat may call the same `searchMenu` tool via the model when answering cravings / Q&A
+- Chat model: `openai/gpt-4o-mini`, with failover to `openai/gpt-5-mini` on provider/model failure
 - System prompt sets warm-host voice and “never invent menu/ops facts”
 - Tools are the source of truth for prices, availability, hours
 - Client never trusts model-invented cart lines — cart mutations go through existing cart session/APIs
 - Rate-limit chat per IP/session
+
+## Models
+
+| Role | Slug | Notes |
+|------|------|--------|
+| Primary chat | `openai/gpt-4o-mini` | Lowest OpenAI cost; tool calling; phase 1 default |
+| Fallback chat | `openai/gpt-5-mini` | Stronger mini if 4o-mini fails or quality regresses |
+| Not used (phase 1) | `gpt-5.4`, Haiku, Gemini, DeepSeek, free Gateway models | Revisit only if cost/quality needs change |
+
+Wire through AI SDK with gateway-style model strings and ordered failover (primary → fallback). Do not send typeahead keystrokes through either model.
 
 ## Tools (phase 1)
 
