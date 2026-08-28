@@ -33,6 +33,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@ai-sdk/react": "^4.0.87",
     "@aws-sdk/client-s3": "^3.1086.0",
     "@hugeicons/core-free-icons": "^4.2.2",
     "@hugeicons/react": "^1.1.9",
@@ -42,6 +43,7 @@
     "@prisma/client": "^6.19.0",
     "@sanity/image-url": "^2.1.1",
     "@sentry/nextjs": "^10.65.0",
+    "ai": "^7.0.84",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
     "motion": "^12.42.2",
