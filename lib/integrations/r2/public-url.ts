@@ -1,4 +1,4 @@
-import { getR2Config, isR2Configured } from "@/lib/integrations/r2/config";
+import { getR2Config } from "@/lib/integrations/r2/config";
 import { tryParseR2ObjectKeyFromPublicUrl } from "@/lib/integrations/r2/keys";
 
 function configuredPublicBaseUrl(): string | null {
