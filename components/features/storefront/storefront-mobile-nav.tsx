@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
+import { AmakaAvatar } from "@/components/features/ai/amaka-avatar";
 import { ViewOrderBar } from "@/components/features/storefront/view-order-bar";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { Home, Search, ShoppingBag, ChatBubble } from "@/components/ui/icons";
@@ -75,12 +76,30 @@ export function StorefrontMobileNav({
         {showViewOrder ? (
           <motion.div
             key="view-order"
-            className="pointer-events-auto mx-auto flex justify-center"
+            className="pointer-events-auto mx-auto flex w-full max-w-lg items-center gap-2"
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
             animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
             transition={chromeTransition}
           >
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-elevated/95 p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="inline-flex size-11 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface"
+                aria-label="Search menu"
+              >
+                <Search className="h-5 w-5" aria-hidden />
+              </button>
+              <Link
+                href="/chat"
+                className="inline-flex size-11 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-surface"
+                aria-label="Ask Amaka"
+                aria-current={chatActive ? "page" : undefined}
+              >
+                <AmakaAvatar size="sm" className="size-8 ring-0" />
+              </Link>
+            </div>
             <ViewOrderBar
               itemCount={cartItemCount}
               subtotalCents={cartSubtotalCents}

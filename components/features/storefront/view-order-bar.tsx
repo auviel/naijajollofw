@@ -1,18 +1,21 @@
 "use client";
 
 import { formatCadFromCents } from "@/lib/utils/currency";
+import { cn } from "@/lib/utils/cn";
 
 type ViewOrderBarProps = {
   itemCount: number;
   subtotalCents: number;
   onViewOrder: () => void;
+  className?: string;
 };
 
-/** Uber-style mobile “View order” pill when the cart has items. */
+/** Compact mobile “View order” pill when the cart has items. */
 export function ViewOrderBar({
   itemCount,
   subtotalCents,
   onViewOrder,
+  className,
 }: ViewOrderBarProps) {
   const countLabel = itemCount > 99 ? "99+" : String(itemCount);
   const amount = formatCadFromCents(subtotalCents);
@@ -21,11 +24,13 @@ export function ViewOrderBar({
     <button
       type="button"
       onClick={onViewOrder}
-      className="grid h-[3.5rem] w-full max-w-lg grid-cols-[2rem_1fr_2rem] items-center gap-2 rounded-full bg-accent px-4 text-left text-text-inverse shadow-[0_8px_28px_rgba(204,84,0,0.35)] transition-colors hover:bg-accent-hover active:opacity-95"
+      className={cn(
+        "inline-flex h-14 min-w-0 flex-1 items-center justify-between gap-2 rounded-full bg-accent pl-4 pr-2 text-left text-text-inverse shadow-[0_8px_28px_rgba(204,84,0,0.35)] transition-colors hover:bg-accent-hover active:opacity-95",
+        className,
+      )}
       aria-label={`View order, ${itemCount} item${itemCount === 1 ? "" : "s"}, ${amount}`}
     >
-      <span aria-hidden className="h-8 w-8" />
-      <span className="min-w-0 text-center">
+      <span className="min-w-0">
         <span className="block text-[11px] font-medium leading-tight text-text-inverse/85">
           View order
         </span>
