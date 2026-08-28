@@ -399,7 +399,7 @@ export function AiChatComposer({
             pendingLabel ? pendingLabel : "Ask about food or hours…"
           }
           disabled={disabled}
-          className="min-h-9 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-sm leading-5 text-ink outline-none placeholder:text-ink-muted disabled:opacity-60"
+          className="min-h-9 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-base leading-5 text-ink outline-none placeholder:text-ink-muted disabled:opacity-60"
           style={{ maxHeight: COMPOSER_MAX_HEIGHT }}
         />
         <button
