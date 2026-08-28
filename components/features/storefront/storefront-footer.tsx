@@ -178,15 +178,7 @@ export async function StorefrontFooter() {
             </Link>
           </nav>
           <p className="shrink-0 text-sm whitespace-nowrap text-text-tertiary sm:text-right">
-            © {YEAR} {storeName}. Designed by{" "}
-            <a
-              href="https://auviel.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-text-tertiary no-underline transition-colors hover:text-foreground"
-            >
-              Auviel
-            </a>
+            © {YEAR} {storeName}
           </p>
         </div>
       </div>
