@@ -2,7 +2,9 @@
 
 Minimal Studio for the storefront blog. **Posts only.**
 
-## Setup
+**Live:** https://naija-jollof.sanity.studio/
+
+## Local
 
 ```bash
 cd studio
@@ -13,6 +15,16 @@ npm run dev
 Opens at http://localhost:3333
 
 Project: `c7b8chvo` · Dataset: `production` · Org: Naija Jollof
+
+## Deploy (push to Sanity hosting)
+
+```bash
+cd studio
+npm run deploy
+# same as: npx sanity deploy
+```
+
+First deploy created hostname `naija-jollof`. Later deploys reuse `appId` in `sanity.cli.ts`.
 
 ## Editing
 
