@@ -16,10 +16,12 @@
     "APP_ENV": "production",
   },
   "observability": {
+    // Keep observability on, but sample aggressively — 100% logs burns quota
+    // and noise (esp. /monitoring Sentry tunnel) without helping a small site.
     "enabled": true,
     "logs": {
-      "invocation_logs": true,
-      "head_sampling_rate": 1,
+      "invocation_logs": false,
+      "head_sampling_rate": 0.1,
     },
     "traces": {
       "enabled": true,
