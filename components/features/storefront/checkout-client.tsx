@@ -9,6 +9,7 @@ import {
   canRequestQuote,
 } from "@/components/features/deliveries/address-preview";
 import { CartLineThumbnail } from "@/components/features/storefront/cart-line-thumbnail";
+import { CheckoutSummaryRow } from "@/components/features/storefront/checkout-summary-row";
 import { ScheduleOrderPicker } from "@/components/features/storefront/schedule-order-picker";
 import {
   SquareCardSlot,
@@ -133,6 +134,17 @@ export function CheckoutClient({
   const [schedulePickerOpen, setSchedulePickerOpen] = useState(false);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+  const [contactEditing, setContactEditing] = useState(
+    () =>
+      !(
+        initialCustomerName.trim() &&
+        initialCustomerPhone.trim() &&
+        initialCustomerEmail.trim()
+      ),
+  );
+  const [addressEditing, setAddressEditing] = useState(
+    () => !initialDeliveryAddress.trim(),
+  );
 
   useBodyScrollLock(orderDetailsOpen);
 
@@ -341,6 +353,16 @@ export function CheckoutClient({
     });
     setFieldErrors(nextFieldErrors);
     if (Object.keys(nextFieldErrors).length > 0) {
+      if (
+        nextFieldErrors.customerName ||
+        nextFieldErrors.customerPhone ||
+        nextFieldErrors.customerEmail
+      ) {
+        setContactEditing(true);
+      }
+      if (nextFieldErrors.dropoffAddress) {
+        setAddressEditing(true);
+      }
       if (nextFieldErrors.scheduledFor) {
         setSchedulePickerOpen(true);
       }
@@ -423,6 +445,16 @@ export function CheckoutClient({
           ...current,
           ...apiFields,
         }));
+        if (
+          apiFields.customerName ||
+          apiFields.customerPhone ||
+          apiFields.customerEmail
+        ) {
+          setContactEditing(true);
+        }
+        if (apiFields.dropoffAddress) {
+          setAddressEditing(true);
+        }
         setFormError(message);
         return;
       }
@@ -747,76 +779,121 @@ export function CheckoutClient({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
           Contact
         </h2>
-        <FormField
-          id="checkout-name"
-          label="Name"
-          error={fieldErrors.customerName}
-        >
-          <Input
-            value={customerName}
-            onChange={(e) => {
-              setCustomerName(e.target.value);
-              clearFieldError("customerName");
-            }}
-            autoComplete="name"
-          />
-        </FormField>
-        <PhoneField
-          id="checkout-phone"
-          value={customerPhone}
-          error={fieldErrors.customerPhone}
-          onChange={(next) => {
-            setCustomerPhone(next);
-            clearFieldError("customerPhone");
-          }}
-        />
-        <FormField
-          id="checkout-email"
-          label="Email"
-          error={fieldErrors.customerEmail}
-        >
-          <Input
-            type="email"
-            value={customerEmail}
-            onChange={(e) => {
-              setCustomerEmail(e.target.value);
-              clearFieldError("customerEmail");
-            }}
-            autoComplete="email"
-            placeholder="you@example.com"
-            required
-          />
-        </FormField>
-        {fulfillmentType === "delivery" ? (
+        {!contactEditing &&
+        customerName.trim() &&
+        customerPhone.trim() &&
+        customerEmail.trim() ? (
+          <div className="rounded-xl border border-border bg-surface-elevated px-4">
+            <CheckoutSummaryRow
+              label="Name"
+              value={customerName.trim()}
+              onEdit={() => setContactEditing(true)}
+            />
+            <CheckoutSummaryRow
+              label="Phone"
+              value={customerPhone.trim()}
+              onEdit={() => setContactEditing(true)}
+            />
+            <CheckoutSummaryRow
+              label="Email"
+              value={customerEmail.trim()}
+              onEdit={() => setContactEditing(true)}
+            />
+          </div>
+        ) : (
           <>
             <FormField
-              id="checkout-address"
-              label="Delivery address"
-              error={fieldErrors.dropoffAddress ?? geocodeError}
+              id="checkout-name"
+              label="Name"
+              error={fieldErrors.customerName}
             >
-              <AddressAutocomplete
-                value={address}
-                onChange={(next) => {
-                  setAddress(next);
-                  clearFieldError("dropoffAddress");
+              <Input
+                value={customerName}
+                onChange={(e) => {
+                  setCustomerName(e.target.value);
+                  clearFieldError("customerName");
                 }}
-                autoComplete="shipping street-address"
-                placeholder="Start typing your address"
-                verified={addressVerified && fulfillmentType === "delivery"}
-                isVerifying={isGeocoding}
+                autoComplete="name"
               />
             </FormField>
-            <FormField id="checkout-unit" label="Apt/Unit number (optional)">
+            <PhoneField
+              id="checkout-phone"
+              value={customerPhone}
+              error={fieldErrors.customerPhone}
+              onChange={(next) => {
+                setCustomerPhone(next);
+                clearFieldError("customerPhone");
+              }}
+            />
+            <FormField
+              id="checkout-email"
+              label="Email"
+              error={fieldErrors.customerEmail}
+            >
               <Input
-                type="text"
-                value={addressUnit}
-                onChange={(e) => setAddressUnit(e.target.value)}
-                autoComplete="shipping address-line2"
-                maxLength={40}
-                placeholder="e.g. Apt 4, Unit 12"
+                type="email"
+                value={customerEmail}
+                onChange={(e) => {
+                  setCustomerEmail(e.target.value);
+                  clearFieldError("customerEmail");
+                }}
+                autoComplete="email"
+                placeholder="you@example.com"
+                required
               />
             </FormField>
           </>
+        )}
+        {fulfillmentType === "delivery" ? (
+          !addressEditing && address.trim() ? (
+            <div className="rounded-xl border border-border bg-surface-elevated px-4">
+              <CheckoutSummaryRow
+                label="Delivery address"
+                value={address.trim()}
+                secondaryValue={
+                  addressUnit.trim() ? addressUnit.trim() : null
+                }
+                verified={addressVerified}
+                onEdit={() => setAddressEditing(true)}
+                className="border-b-0"
+              />
+              {fieldErrors.dropoffAddress || geocodeError ? (
+                <p className="pb-3 text-xs text-destructive" role="alert">
+                  {fieldErrors.dropoffAddress ?? geocodeError}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <FormField
+                id="checkout-address"
+                label="Delivery address"
+                error={fieldErrors.dropoffAddress ?? geocodeError}
+              >
+                <AddressAutocomplete
+                  value={address}
+                  onChange={(next) => {
+                    setAddress(next);
+                    clearFieldError("dropoffAddress");
+                  }}
+                  autoComplete="shipping street-address"
+                  placeholder="Start typing your address"
+                  verified={addressVerified && fulfillmentType === "delivery"}
+                  isVerifying={isGeocoding}
+                />
+              </FormField>
+              <FormField id="checkout-unit" label="Apt/Unit number (optional)">
+                <Input
+                  type="text"
+                  value={addressUnit}
+                  onChange={(e) => setAddressUnit(e.target.value)}
+                  autoComplete="shipping address-line2"
+                  maxLength={40}
+                  placeholder="e.g. Apt 4, Unit 12"
+                />
+              </FormField>
+            </>
+          )
         ) : null}
         <FormField id="checkout-notes" label="Notes (optional)">
           <textarea
