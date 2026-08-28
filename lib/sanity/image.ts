@@ -23,3 +23,25 @@ export function sanityImageUrl(
     return null;
   }
 }
+
+/**
+ * Social crawlers (WhatsApp especially) prefer JPEG under ~300KB.
+ * Crop to a 1.91:1 OG frame so previews don't fall back to the site icon.
+ */
+export function sanityOgImageUrl(
+  source: SanityImageSource | null | undefined,
+): string | null {
+  if (!source) return null;
+  try {
+    return builder
+      .image(source)
+      .width(1200)
+      .height(630)
+      .fit("crop")
+      .format("jpg")
+      .quality(80)
+      .url();
+  } catch {
+    return null;
+  }
+}

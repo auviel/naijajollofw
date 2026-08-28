@@ -7,6 +7,7 @@ import type { MenuItemDetail } from "@/lib/domain/menu/types";
 import { modifierSelectionErrors } from "@/lib/domain/menu/form-validation";
 import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 import { formatCadFromCents } from "@/lib/utils/currency";
+import { ShareActions } from "@/components/features/share-actions";
 import { Button } from "@/components/ui/button";
 import { FormBanner } from "@/components/ui/form-banner";
 import { Check, X } from "@/components/ui/icons";
@@ -460,6 +461,13 @@ function ItemCustomizePanelView({
                 {item.description}
               </p>
             ) : null}
+            <ShareActions
+              title={item.name}
+              url={`/item/${item.slug}`}
+              label="Share this dish"
+              align="start"
+              className="mt-5"
+            />
             {!item.available ? (
               <p className="mt-4 rounded-lg bg-surface px-3 py-2 text-sm text-text-secondary">
                 This item is sold out.

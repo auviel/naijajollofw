@@ -403,6 +403,8 @@ model MenuItem {
   categoryId  String
   category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   name        String
+  /// Public storefront path segment (`/item/{slug}`). Unique per store.
+  slug        String
   description String?
   priceCents  Int
   /// Primary cover image (denormalized from first MenuItemImage).
@@ -418,6 +420,7 @@ model MenuItem {
   sourcedAsModifiers  MenuModifier[]      @relation("ModifierSourceItem")
   cartItems           CartItem[]
 
+  @@unique([storeId, slug])
   @@index([categoryId, sortOrder])
   @@index([storeId, available])
 }

@@ -29,6 +29,7 @@ export type MenuPickerItem = {
 
 export type MenuItemListItem = {
   id: string;
+  slug: string;
   categoryId: string;
   categoryName: string;
   name: string;
@@ -49,6 +50,7 @@ export type MenuItemImageView = {
 
 export type MenuItemDetail = {
   id: string;
+  slug: string;
   storeId: string;
   categoryId: string;
   categoryName: string;

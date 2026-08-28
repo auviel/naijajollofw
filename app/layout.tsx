@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { SanityLive } from "@/lib/sanity/live";
+import { buildShareMetadata } from "@/lib/seo/share-metadata";
+import { siteMetadataBase } from "@/lib/seo/share-metadata";
 import "./globals.css";
 
 const inter = Inter({
@@ -10,13 +12,22 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const defaultDescription =
+  "Order smoky jollof, rich stews, and party trays from Naija Jollof Waterloo. Pickup or delivery.";
+
+const share = buildShareMetadata({
+  title: "Naija Jollof Waterloo",
+  description: defaultDescription,
+  path: "/",
+});
+
 export const metadata: Metadata = {
+  metadataBase: siteMetadataBase(),
   title: {
     default: "Naija Jollof Waterloo",
     template: "%s · Naija Jollof Waterloo",
   },
-  description:
-    "Order smoky jollof, rich stews, and party trays from Naija Jollof Waterloo. Pickup or delivery.",
+  description: defaultDescription,
   applicationName: "Naija Jollof Waterloo",
   appleWebApp: {
     capable: true,
@@ -30,6 +41,8 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/brand/apple-touch-icon.png", sizes: "180x180" }],
   },
+  openGraph: share.openGraph,
+  twitter: share.twitter,
 };
 
 /**

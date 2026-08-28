@@ -155,6 +155,7 @@ export function mapMenuItemToListItem(
 ): MenuItemListItem {
   return {
     id: item.id,
+    slug: item.slug,
     categoryId: item.categoryId,
     categoryName: item.category.name,
     name: item.name,
@@ -172,6 +173,7 @@ export function mapMenuItemToListItem(
 export function mapMenuItemToDetail(item: ItemWithRelations): MenuItemDetail {
   return {
     id: item.id,
+    slug: item.slug,
     storeId: item.storeId,
     categoryId: item.categoryId,
     categoryName: item.category.name,
@@ -308,6 +310,36 @@ export const menuRepository = {
     });
   },
 
+  async findPublicItemBySlug(slug: string, storeId: string) {
+    return prisma.menuItem.findFirst({
+      where: {
+        slug,
+        storeId,
+        OR: [
+          { category: { active: true } },
+          { categoryLinks: { some: { category: { active: true } } } },
+        ],
+      },
+      include: itemDetailInclude,
+    });
+  },
+
+  async isSlugTaken(
+    storeId: string,
+    slug: string,
+    excludeItemId?: string,
+  ): Promise<boolean> {
+    const existing = await prisma.menuItem.findFirst({
+      where: {
+        storeId,
+        slug,
+        ...(excludeItemId ? { NOT: { id: excludeItemId } } : {}),
+      },
+      select: { id: true },
+    });
+    return Boolean(existing);
+  },
+
   async listCategoriesForStore(storeId: string) {
     return prisma.menuCategory.findMany({
       where: { storeId },
@@ -392,6 +424,7 @@ export const menuRepository = {
     categoryId: string;
     additionalCategoryIds?: string[];
     name: string;
+    slug: string;
     description: string | null;
     priceCents: number;
     imageUrl: string | null;
@@ -405,6 +438,7 @@ export const menuRepository = {
           storeId: input.storeId,
           categoryId: input.categoryId,
           name: input.name,
+          slug: input.slug,
           description: input.description,
           priceCents: input.priceCents,
           imageUrl: input.imageUrl,
@@ -435,6 +469,7 @@ export const menuRepository = {
       categoryId?: string;
       additionalCategoryIds?: string[];
       name?: string;
+      slug?: string;
       description?: string | null;
       priceCents?: number;
       imageUrl?: string | null;
@@ -454,6 +489,7 @@ export const menuRepository = {
         data: {
           categoryId: data.categoryId,
           name: data.name,
+          slug: data.slug,
           description: data.description,
           priceCents: data.priceCents,
           imageUrl: data.imageUrl,

@@ -3,6 +3,7 @@ import {
   mapMenuItemToDetail,
   menuRepository,
 } from "@/lib/db/repositories/menu.repository";
+import { allocateUniqueMenuSlug } from "@/lib/domain/menu/slug";
 import { updateMenuItemSchema } from "@/lib/domain/menu/validation";
 import { isR2Configured } from "@/lib/integrations/r2/config";
 import { deleteR2Object } from "@/lib/integrations/r2/client";
@@ -14,7 +15,9 @@ import {
 import { AppError } from "@/lib/utils/errors";
 import { logger } from "@/lib/utils/logger";
 
-function normalizeImageUrl(value: string | null | undefined): string | null | undefined {
+function normalizeImageUrl(
+  value: string | null | undefined,
+): string | null | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -93,10 +96,18 @@ export async function updateMenuItem(id: string, input: unknown) {
     }
   }
 
+  let slug: string | undefined;
+  if (parsed.name !== undefined && parsed.name !== existing.name) {
+    slug = await allocateUniqueMenuSlug(parsed.name, (candidate) =>
+      menuRepository.isSlugTaken(user.storeId, candidate, id),
+    );
+  }
+
   const item = await menuRepository.updateItem(id, user.storeId, {
     categoryId: parsed.categoryId,
     additionalCategoryIds,
     name: parsed.name,
+    slug,
     description:
       parsed.description === undefined
         ? undefined

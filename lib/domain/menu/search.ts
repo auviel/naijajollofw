@@ -6,7 +6,7 @@ import type {
 
 export type MenuSearchItem = Pick<
   MenuItemListItem,
-  "id" | "name" | "description" | "priceCents" | "imageUrl" | "available"
+  "id" | "slug" | "name" | "description" | "priceCents" | "imageUrl" | "available"
 >;
 
 export type MenuSearchIndex = {
@@ -40,6 +40,7 @@ export function buildSearchIndex(catalog: MenuCatalog): MenuSearchIndex {
       seen.add(item.id);
       items.push({
         id: item.id,
+        slug: item.slug,
         name: item.name,
         description: item.description,
         priceCents: item.priceCents,

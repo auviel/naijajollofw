@@ -34,7 +34,7 @@ const loadPublicStorefront = unstable_cache(
       prepMinutes: storeRow.prepMinutes,
     };
   },
-  ["public-storefront"],
+  ["public-storefront-v2"],
   { revalidate: 300, tags: [STOREFRONT_CACHE_TAG] },
 );
 
@@ -47,20 +47,48 @@ export const getPublicStorefront = cache(async function getPublicStorefront(): P
   return data;
 });
 
-export async function getPublicMenuItem(id: string): Promise<{
+export type PublicMenuItemResult = {
   store: StoreProfile;
   item: MenuItemDetail;
-}> {
+  /** True when the request used a legacy cuid URL that should redirect to the slug. */
+  shouldRedirectToSlug: boolean;
+};
+
+/**
+ * Resolve a public menu item by slug, or by legacy id (cuid).
+ * Callers should redirect when `shouldRedirectToSlug` is true.
+ */
+export async function getPublicMenuItem(
+  slugOrId: string,
+): Promise<PublicMenuItemResult> {
+  const key = slugOrId?.trim();
+  if (!key || key === "undefined" || key === "null") {
+    throw new AppError("NOT_FOUND", "Item not found", 404);
+  }
+
   const storeId = await resolvePublicStoreId();
   const store = await storeRepository.getProfileById(storeId);
   if (!store) {
     throw new AppError("NOT_FOUND", "Restaurant is not set up yet.", 404);
   }
 
-  const item = await menuRepository.findPublicItemById(id, storeId);
-  if (!item) {
-    throw new AppError("NOT_FOUND", "Item not found", 404);
+  const bySlug = await menuRepository.findPublicItemBySlug(key, storeId);
+  if (bySlug) {
+    return {
+      store,
+      item: mapMenuItemToDetail(bySlug),
+      shouldRedirectToSlug: false,
+    };
   }
 
-  return { store, item: mapMenuItemToDetail(item) };
+  const byId = await menuRepository.findPublicItemById(key, storeId);
+  if (byId) {
+    return {
+      store,
+      item: mapMenuItemToDetail(byId),
+      shouldRedirectToSlug: byId.slug !== key,
+    };
+  }
+
+  throw new AppError("NOT_FOUND", "Item not found", 404);
 }

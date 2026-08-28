@@ -3,6 +3,7 @@ import {
   mapMenuItemToDetail,
   menuRepository,
 } from "@/lib/db/repositories/menu.repository";
+import { allocateUniqueMenuSlug } from "@/lib/domain/menu/slug";
 import { createMenuItemSchema } from "@/lib/domain/menu/validation";
 import { revalidateStorefrontCache } from "@/lib/cache/storefront";
 import {
@@ -58,11 +59,16 @@ export async function createMenuItem(input: unknown) {
     groups: modifierGroups,
   });
 
+  const slug = await allocateUniqueMenuSlug(parsed.name, (candidate) =>
+    menuRepository.isSlugTaken(user.storeId, candidate),
+  );
+
   const item = await menuRepository.createItem({
     storeId: user.storeId,
     categoryId: parsed.categoryId,
     additionalCategoryIds,
     name: parsed.name,
+    slug,
     description: parsed.description?.trim() ? parsed.description.trim() : null,
     priceCents: parsed.priceCents,
     imageUrl: normalizeImageUrl(parsed.imageUrl),

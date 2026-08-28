@@ -1,3 +1,4 @@
+import { allocateUniqueMenuSlug } from "../lib/domain/menu/slug";
 import { PrismaClient } from "@prisma/client";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
 import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
@@ -357,11 +358,19 @@ async function main() {
     if (!categoryId) {
       continue;
     }
+    const slug = await allocateUniqueMenuSlug(item.name, async (candidate) => {
+      const hit = await prisma.menuItem.findFirst({
+        where: { storeId: store.id, slug: candidate },
+        select: { id: true },
+      });
+      return Boolean(hit);
+    });
     const row = await prisma.menuItem.create({
       data: {
         storeId: store.id,
         categoryId,
         name: item.name,
+        slug,
         description: item.description,
         priceCents: item.priceCents,
         imageUrl: HERO,

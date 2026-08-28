@@ -228,7 +228,7 @@ function FeaturedItemCard({
 
   return (
     <Link
-      href={`/item/${item.id}`}
+      href={`/item/${item.slug}`}
       onClick={(event) => {
         if (isDesktopViewport()) {
           event.preventDefault();
@@ -239,7 +239,7 @@ function FeaturedItemCard({
       }}
       onMouseEnter={() => {
         if (isDesktopViewport()) {
-          router.prefetch(`/item/${item.id}`);
+          router.prefetch(`/item/${item.slug}`);
         }
       }}
       className="w-[9.5rem] shrink-0 no-underline sm:w-[11rem]"
@@ -316,7 +316,7 @@ function MenuItemCard({
 
   return (
     <Link
-      href={`/item/${item.id}`}
+      href={`/item/${item.slug}`}
       onClick={(event) => {
         if (isDesktopViewport()) {
           event.preventDefault();
@@ -327,7 +327,7 @@ function MenuItemCard({
       }}
       onMouseEnter={() => {
         if (isDesktopViewport()) {
-          router.prefetch(`/item/${item.id}`);
+          router.prefetch(`/item/${item.slug}`);
         }
       }}
       className={cn(

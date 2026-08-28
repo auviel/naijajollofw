@@ -9,8 +9,8 @@ type RouteContext = {
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const data = await getPublicMenuItem(id);
-    return NextResponse.json({ data });
+    const { store, item } = await getPublicMenuItem(id);
+    return NextResponse.json({ data: { store, item } });
   } catch (error) {
     return handleApiError(error);
   }

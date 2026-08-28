@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BlogIndexHero } from "@/components/features/blog/blog-index-hero";
+import { BlogOrderCta } from "@/components/features/blog/blog-order-cta";
 import { BlogPagination } from "@/components/features/blog/blog-pagination";
 import { BlogPostCardStacked } from "@/components/features/blog/blog-post-card-stacked";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityFetch } from "@/lib/sanity/live";
 import { POSTS_PAGE_QUERY } from "@/lib/sanity/queries";
 import type { BlogPostListItem } from "@/lib/sanity/types";
+import { buildShareMetadata } from "@/lib/seo/share-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildShareMetadata({
   title: "Blog",
   description:
     "Recipes, kitchen stories, and Waterloo updates from Naija Jollof.",
-};
+  path: "/blog",
+});
 
 const PAGE_SIZE = 9;
 
@@ -95,6 +98,7 @@ export default async function BlogIndexPage({
       )}
 
       <BlogPagination page={page} totalPages={totalPages} />
+      <BlogOrderCta />
     </section>
   );
 }

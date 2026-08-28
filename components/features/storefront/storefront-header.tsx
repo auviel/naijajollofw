@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { StorefrontHeaderBar } from "@/components/features/storefront/storefront-header-bar";
+import { StorefrontHeaderSwitch } from "@/components/features/storefront/storefront-header-switch";
 import { StorefrontMobileNav } from "@/components/features/storefront/storefront-mobile-nav";
 import { getCart } from "@/lib/services/cart/cart-actions";
 import { buildSearchIndex } from "@/lib/domain/menu/search";
@@ -48,14 +49,20 @@ export async function StorefrontHeader() {
         <header className="h-[var(--storefront-header-offset)] shrink-0" />
       }
     >
-      <StorefrontHeaderBar
-        storeName={data.storeName}
-        cartItemCount={data.cartItemCount}
-        searchIndex={data.searchIndex}
-      />
-      <StorefrontMobileNav
-        cartItemCount={data.cartItemCount}
-        cartSubtotalCents={data.cartSubtotalCents}
+      <StorefrontHeaderSwitch
+        storefront={
+          <>
+            <StorefrontHeaderBar
+              storeName={data.storeName}
+              cartItemCount={data.cartItemCount}
+              searchIndex={data.searchIndex}
+            />
+            <StorefrontMobileNav
+              cartItemCount={data.cartItemCount}
+              cartSubtotalCents={data.cartSubtotalCents}
+            />
+          </>
+        }
       />
     </Suspense>
   );

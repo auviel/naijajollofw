@@ -174,7 +174,7 @@ export function StorefrontHeaderBar({
       return;
     }
     saveMenuScroll();
-    router.push(`/item/${item.id}`);
+    router.push(`/item/${item.slug}`);
   }
 
   return (

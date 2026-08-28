@@ -17,6 +17,7 @@ const catalog: MenuCatalog = {
       items: [
         {
           id: "1",
+          slug: "jollof-rice-plantain-and-chicken",
           categoryId: "rice",
           categoryName: "Rice & Combos",
           name: "Jollof Rice, Plantain and Chicken",
@@ -30,6 +31,7 @@ const catalog: MenuCatalog = {
         },
         {
           id: "2",
+          slug: "jollof-rice-and-turkey",
           categoryId: "rice",
           categoryName: "Rice & Combos",
           name: "Jollof Rice and Turkey",
@@ -51,6 +53,7 @@ const catalog: MenuCatalog = {
       items: [
         {
           id: "3",
+          slug: "fried-plantain",
           categoryId: "sides",
           categoryName: "Sides",
           name: "Fried Plantain",

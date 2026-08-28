@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StoreBrandLogo } from "@/components/features/storefront/store-brand-logo";
+import { StorefrontFooterFrame } from "@/components/features/storefront/storefront-footer-frame";
 import {
   Call,
   Instagram,
@@ -69,7 +70,7 @@ export async function StorefrontFooter() {
   ];
 
   return (
-    <footer className="mt-auto border-t border-border bg-surface pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+    <StorefrontFooterFrame>
       <div className="mx-auto w-full max-w-7xl px-4 pt-14 pb-10 sm:px-6 lg:px-8 lg:pt-16">
         <div className="flex flex-col gap-12 lg:flex-row lg:justify-between lg:gap-20">
           <div className="shrink-0 lg:w-64">
@@ -182,7 +183,7 @@ export async function StorefrontFooter() {
           </p>
         </div>
       </div>
-    </footer>
+    </StorefrontFooterFrame>
   );
 }
 

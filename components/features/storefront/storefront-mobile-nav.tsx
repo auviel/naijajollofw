@@ -16,6 +16,7 @@ type StorefrontMobileNavProps = {
 };
 
 const HIDDEN_PREFIXES = [
+  "/blog",
   "/cart",
   "/checkout",
   "/item",

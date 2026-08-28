@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { BlogArticleHeader } from "@/components/features/blog/blog-article-header";
+import { BlogOrderCta } from "@/components/features/blog/blog-order-cta";
 import { BlogPortableText } from "@/components/features/blog/blog-portable-text";
 import { BlogRelated } from "@/components/features/blog/blog-related";
 import { BlogShare } from "@/components/features/blog/blog-share";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { sanityImageUrl } from "@/lib/sanity/image";
+import { sanityImageUrl, sanityOgImageUrl } from "@/lib/sanity/image";
 import { sanityFetch } from "@/lib/sanity/live";
 import {
   POST_BY_SLUG_QUERY,
@@ -18,6 +19,7 @@ import {
   plainTextFromPortableText,
 } from "@/lib/sanity/seo";
 import type { BlogPostDetail, BlogPostListItem } from "@/lib/sanity/types";
+import { buildShareMetadata } from "@/lib/seo/share-metadata";
 
 type BlogArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -45,20 +47,17 @@ export async function generateMetadata({
     defaultMetaDescription(
       plainTextFromPortableText(post.body) || post.excerpt || "",
     );
-  const og =
-    sanityImageUrl(post.seo?.ogImage ?? post.mainImage, 1200) ?? undefined;
+  const ogImage = sanityOgImageUrl(post.seo?.ogImage ?? post.mainImage);
 
-  return {
+  return buildShareMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      publishedTime: post.publishedAt,
-      images: og ? [{ url: og }] : undefined,
-    },
-  };
+    imageUrl: ogImage,
+    imageAlt: post.mainImage?.alt || post.title,
+    type: "article",
+    publishedTime: post.publishedAt,
+    path: `/blog/${slug}`,
+  });
 }
 
 export default async function BlogArticlePage({
@@ -108,7 +107,8 @@ export default async function BlogArticlePage({
         <BlogPortableText value={post.body ?? []} />
       </div>
 
-      <BlogShare />
+      <BlogShare title={post.title} />
+      <BlogOrderCta />
       <BlogRelated posts={related} />
     </article>
   );

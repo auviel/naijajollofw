@@ -18,6 +18,7 @@ import {
 type ItemPayload = {
   item: {
     id: string;
+    slug: string;
     name: string;
     description: string | null;
     priceCents: number;
@@ -40,7 +41,7 @@ type ItemPayload = {
 };
 
 export default function ItemScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const { refresh } = useCart();
   const [data, setData] = useState<ItemPayload | null>(null);
@@ -49,11 +50,11 @@ export default function ItemScreen() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    apiFetch<ItemPayload>(`/api/storefront/menu/${id}`)
+    if (!slug) return;
+    apiFetch<ItemPayload>(`/api/storefront/menu/${slug}`)
       .then(setData)
       .catch(() => undefined);
-  }, [id]);
+  }, [slug]);
 
   const extraCents = useMemo(() => {
     if (!data) return 0;

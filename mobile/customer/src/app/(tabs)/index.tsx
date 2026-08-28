@@ -29,6 +29,7 @@ type MenuPayload = {
       name: string;
       items: Array<{
         id: string;
+        slug: string;
         name: string;
         description: string | null;
         priceCents: number;
@@ -110,7 +111,7 @@ export default function MenuScreen() {
           <View key={category.id} style={styles.category}>
             <Text style={Type.headline}>{category.name}</Text>
             {category.items.map((item) => (
-              <Card key={item.id} onPress={() => router.push(`/item/${item.id}`)} style={styles.item}>
+              <Card key={item.id} onPress={() => router.push(`/item/${item.slug}`)} style={styles.item}>
                 {item.imageUrl ? (
                   <Image source={{ uri: item.imageUrl }} style={styles.image} />
                 ) : (

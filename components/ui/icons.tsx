@@ -16,13 +16,16 @@ import {
   HandshakeIcon,
   DrinkIcon,
   EyeIcon,
+  Facebook01Icon,
   Folder01Icon,
   Home01Icon,
   Image01Icon,
   IceCubesIcon,
   InstagramIcon,
   LeftToRightListDashIcon,
+  Link01Icon,
   LinkSquare01Icon,
+  NewTwitterIcon,
   Location01Icon,
   Logout01Icon,
   MoreHorizontalIcon,
@@ -120,6 +123,9 @@ export const UtensilsCrossed = createIcon(SpoonAndForkIcon, "UtensilsCrossed");
 export const X = createIcon(Cancel01Icon, "X");
 export const WhatsApp = createIcon(WhatsappIcon, "WhatsApp");
 export const Instagram = createIcon(InstagramIcon, "Instagram");
+export const Facebook = createIcon(Facebook01Icon, "Facebook");
+export const Link = createIcon(Link01Icon, "Link");
+export const XTwitter = createIcon(NewTwitterIcon, "XTwitter");
 
 /** Menu category icons (stroke) */
 export const Star = createIcon(StarIcon, "Star");

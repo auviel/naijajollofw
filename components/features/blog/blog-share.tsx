@@ -1,30 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { ShareActions } from "@/components/features/share-actions";
 
-export function BlogShare() {
-  const [copied, setCopied] = useState(false);
+type BlogShareProps = {
+  title: string;
+};
 
-  async function onCopy() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
-
+export function BlogShare({ title }: BlogShareProps) {
   return (
-    <div className="mx-auto mt-12 max-w-2xl text-center">
-      <p className="text-sm text-text-secondary">Share this article</p>
-      <button
-        type="button"
-        onClick={onCopy}
-        className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface"
-      >
-        {copied ? "Copied" : "Copy link"}
-      </button>
-    </div>
+    <ShareActions
+      title={title}
+      label="Share this article"
+      align="center"
+      className="mx-auto mt-12 max-w-2xl"
+    />
   );
 }
