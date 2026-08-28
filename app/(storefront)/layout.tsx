@@ -2,6 +2,7 @@ import { StorefrontFooter } from "@/components/features/storefront/storefront-fo
 import { StorefrontFooterGate } from "@/components/features/storefront/storefront-footer-gate";
 import { StorefrontHeader } from "@/components/features/storefront/storefront-header";
 import { StorefrontMain } from "@/components/features/storefront/storefront-main";
+import { StorefrontAiChat } from "@/components/features/ai/storefront-ai-chat";
 import { StorefrontProviders } from "@/components/providers/storefront-providers";
 import { Outfit } from "next/font/google";
 import { Suspense } from "react";
@@ -30,6 +31,7 @@ export default function StorefrontLayout({
             <StorefrontFooter />
           </StorefrontFooterGate>
         </Suspense>
+        <StorefrontAiChat />
       </div>
     </StorefrontProviders>
   );
