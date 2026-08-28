@@ -54,7 +54,8 @@ function RootLayout() {
         <PushDeepLink />
         <Stack screenOptions={headerScreenOptions}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="item/[id]" options={{ title: "Item" }} />
+          <Stack.Screen name="account" options={{ title: "Account" }} />
+          <Stack.Screen name="item/[slug]" options={{ title: "Item" }} />
           <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
           <Stack.Screen name="orders/[id]" options={{ title: "Track order" }} />
           <Stack.Screen name="login" options={{ title: "Sign in" }} />

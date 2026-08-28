@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UIMessage } from "ai";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
-import { Button } from "@/components/ui/button";
+import { AmakaAvatar } from "@/components/features/ai/amaka-avatar";
+import { Send } from "@/components/ui/icons";
 import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 import { formatCadFromCents } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
@@ -210,37 +211,58 @@ function renderPart(part: UIMessage["parts"][number], key: string) {
 export function AiChatMessages({ messages }: { messages: UIMessage[] }) {
   if (messages.length === 0) {
     return (
-      <p className="text-sm text-ink-muted">
-        What are you craving today? Ask about the menu, hours, or add something
-        simple to your cart.
-      </p>
+      <div className="flex flex-col items-center gap-3 px-2 py-8 text-center">
+        <AmakaAvatar size="lg" />
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-ink">Ask Amaka</p>
+          <p className="text-sm text-ink-muted">
+            What are you craving today? Ask about the menu, hours, or add
+            something simple to your cart.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={cn(
-            "rounded-lg px-3 py-2",
-            message.role === "user"
-              ? "ml-6 bg-accent/10 text-ink"
-              : "mr-2 bg-surface-elevated text-ink",
-          )}
-        >
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
-            {message.role === "user" ? "You" : "Ask Naija"}
-          </p>
-          <div className="space-y-1">
-            {message.parts.map((part, index) =>
-              renderPart(part, `${message.id}-${index}`),
-            )}
+      {messages.map((message) =>
+        message.role === "user" ? (
+          <div key={message.id} className="flex justify-end">
+            <div className="w-fit max-w-[85%] rounded-2xl rounded-br-md bg-accent/10 px-3 py-2">
+              <div className="space-y-1">
+                {message.parts.map((part, index) =>
+                  renderPart(part, `${message.id}-${index}`),
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        ) : (
+          <div key={message.id} className="flex items-end gap-2">
+            <AmakaAvatar size="sm" className="shrink-0" />
+            <div className="w-fit max-w-[85%] rounded-2xl rounded-bl-md bg-surface-elevated px-3 py-2">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                Amaka
+              </p>
+              <div className="space-y-1">
+                {message.parts.map((part, index) =>
+                  renderPart(part, `${message.id}-${index}`),
+                )}
+              </div>
+            </div>
+          </div>
+        ),
+      )}
     </div>
   );
+}
+
+const COMPOSER_MAX_HEIGHT = 120;
+
+function resizeComposerTextarea(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) return;
+  textarea.style.height = "0px";
+  textarea.style.height = `${Math.min(textarea.scrollHeight, COMPOSER_MAX_HEIGHT)}px`;
 }
 
 export function AiChatComposer({
@@ -251,28 +273,63 @@ export function AiChatComposer({
   onSend: (text: string) => void;
 }) {
   const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const canSend = Boolean(input.trim()) && !disabled;
+
+  useEffect(() => {
+    resizeComposerTextarea(textareaRef.current);
+  }, [input]);
 
   return (
     <form
-      className="flex gap-2 border-t border-border p-3"
+      className="p-3"
       onSubmit={(event) => {
         event.preventDefault();
         const text = input.trim();
         if (!text || disabled) return;
         onSend(text);
         setInput("");
+        requestAnimationFrame(() => resizeComposerTextarea(textareaRef.current));
       }}
     >
-      <input
-        value={input}
-        onChange={(event) => setInput(event.target.value)}
-        placeholder="Ask about food or hours…"
-        disabled={disabled}
-        className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-      />
-      <Button type="submit" disabled={disabled || !input.trim()}>
-        Send
-      </Button>
+      <div
+        className={cn(
+          "flex items-end gap-2 rounded-2xl border border-border bg-surface py-1.5 pl-3 pr-1.5",
+          "focus-within:border-accent",
+        )}
+      >
+        <textarea
+          ref={textareaRef}
+          value={input}
+          rows={1}
+          onChange={(event) => {
+            setInput(event.target.value);
+            resizeComposerTextarea(event.target);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="Ask about food or hours…"
+          disabled={disabled}
+          className="min-h-9 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-sm leading-5 text-ink outline-none placeholder:text-ink-muted disabled:opacity-60"
+          style={{ maxHeight: COMPOSER_MAX_HEIGHT }}
+        />
+        <button
+          type="submit"
+          disabled={!canSend}
+          aria-label="Send"
+          className={cn(
+            "inline-flex size-9 shrink-0 items-center justify-center rounded-2xl",
+            "bg-accent text-white transition hover:brightness-105",
+            "disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <Send className="size-4" aria-hidden />
+        </button>
+      </div>
     </form>
   );
 }

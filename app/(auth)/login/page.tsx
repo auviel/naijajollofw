@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/features/auth/login-form";
+import { privatePageMetadata } from "@/lib/seo/noindex";
 import { Suspense } from "react";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = privatePageMetadata({
   title: "Staff sign in",
   description: "Sign in to manage kitchen orders and deliveries.",
-};
+});
 
 export default function LoginPage() {
   return (

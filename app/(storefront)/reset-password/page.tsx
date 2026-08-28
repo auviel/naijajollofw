@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DinerResetPasswordForm } from "@/components/features/storefront/diner-reset-password-form";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Reset password",
   description: "Choose a new password for your Naija Jollof Waterloo account.",
-};
+});
 
 export default function ResetPasswordPage() {
   return (

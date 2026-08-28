@@ -8,10 +8,12 @@ import {
 import { syncDinerOrderHistory } from "@/lib/services/diner/sync-order-history";
 import { formatCadFromCents } from "@/lib/utils/currency";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Orders",
   description: "Your order history.",
-};
+});
 
 export default async function AccountOrdersPage() {
   const user = await requireDiner();

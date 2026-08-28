@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { DinerSignupForm } from "@/components/features/storefront/diner-signup-form";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile/config";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Create account",
   description: "Create an account to track orders at Naija Jollof Waterloo.",
-};
+});
 
 export default function SignupPage() {
   return (

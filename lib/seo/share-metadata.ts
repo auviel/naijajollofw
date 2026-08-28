@@ -40,6 +40,11 @@ export function buildShareMetadata(input: {
     title: input.title,
     description: input.description,
     alternates: url ? { canonical: url } : undefined,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true },
+    },
     openGraph: {
       title: input.title,
       description: input.description,

@@ -9,10 +9,12 @@ import {
 import { canManageSquareCards } from "@/lib/integrations/payments/square/cards";
 import { getDinerPaymentState } from "@/lib/services/diner/payment-methods";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Payment",
   description: "Manage saved payment methods.",
-};
+});
 
 export default async function AccountPaymentPage() {
   const [user, state] = await Promise.all([

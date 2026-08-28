@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireDiner } from "@/lib/auth/session";
 import { formatPhoneForDisplay } from "@/lib/domain/customer/format";
+import { privatePageMetadata } from "@/lib/seo/noindex";
 import { listDinerAddresses } from "@/lib/services/diner/addresses";
 import { syncDinerOrderHistory } from "@/lib/services/diner/sync-order-history";
 import {
@@ -11,10 +12,10 @@ import {
 import { canManageSquareCards } from "@/lib/integrations/payments/square/cards";
 import { formatCadFromCents } from "@/lib/utils/currency";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = privatePageMetadata({
   title: "Account",
   description: "Your Naija Jollof Waterloo account overview.",
-};
+});
 
 export default async function AccountOverviewPage() {
   const user = await requireDiner();

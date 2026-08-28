@@ -571,7 +571,7 @@ const { messages, sendMessage, status } = useChat({
 UI requirements:
 
 - Collapsed: fixed bottom-end button (high z-index)
-- Expanded: panel `min(420px, calc(100vw - 2rem))`, title **Ask Naija**, close control, welcome “What are you craving today?”
+- Expanded: panel `min(420px, calc(100vw - 2rem))`, title **Ask Amaka**, close control, welcome “What are you craving today?”
 - Input + send; disable while streaming
 - Do not auto-navigate on `openProduct` — require user click
 

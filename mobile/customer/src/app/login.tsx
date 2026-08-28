@@ -53,7 +53,7 @@ export default function LoginScreen() {
         return;
       }
       await signIn(email.trim(), password, turnstileToken ?? undefined);
-      router.replace("/(tabs)/account");
+      router.replace("/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
       setTurnstileToken(null);

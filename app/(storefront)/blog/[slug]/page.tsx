@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { BlogArticleHeader } from "@/components/features/blog/blog-article-header";
 import { BlogOrderCta } from "@/components/features/blog/blog-order-cta";
 import { BlogPortableText } from "@/components/features/blog/blog-portable-text";
@@ -19,6 +20,7 @@ import {
   plainTextFromPortableText,
 } from "@/lib/sanity/seo";
 import type { BlogPostDetail, BlogPostListItem } from "@/lib/sanity/types";
+import { buildBlogPostingJsonLd } from "@/lib/seo/json-ld";
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
 
 type BlogArticlePageProps = {
@@ -85,9 +87,26 @@ export default async function BlogArticlePage({
 
   const related = (relatedData as BlogPostListItem[] | null) ?? [];
   const cover = sanityImageUrl(post.mainImage, 1400);
+  const title = post.seo?.metaTitle?.trim() || defaultMetaTitle(post.title);
+  const description =
+    post.seo?.metaDescription?.trim() ||
+    defaultMetaDescription(
+      plainTextFromPortableText(post.body) || post.excerpt || "",
+    );
+  const ogImage = sanityOgImageUrl(post.seo?.ogImage ?? post.mainImage);
 
   return (
-    <article className="py-2 sm:py-4">
+    <>
+      <JsonLdScript
+        data={buildBlogPostingJsonLd({
+          title,
+          description,
+          slug,
+          publishedAt: post.publishedAt,
+          imageUrl: ogImage,
+        })}
+      />
+      <article className="py-2 sm:py-4">
       <BlogArticleHeader title={post.title} publishedAt={post.publishedAt} />
 
       {cover ? (
@@ -111,5 +130,6 @@ export default async function BlogArticlePage({
       <BlogOrderCta />
       <BlogRelated posts={related} />
     </article>
+    </>
   );
 }

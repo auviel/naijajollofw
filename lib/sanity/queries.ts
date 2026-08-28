@@ -35,3 +35,10 @@ export const RELATED_POSTS_QUERY = defineQuery(`
 export const POST_SLUGS_QUERY = defineQuery(`
   *[_type == "post" && defined(slug.current) && publishedAt <= now()].slug.current
 `);
+
+export const POST_SITEMAP_QUERY = defineQuery(`
+  *[_type == "post" && defined(slug.current) && publishedAt <= now()] {
+    "slug": slug.current,
+    publishedAt
+  }
+`);

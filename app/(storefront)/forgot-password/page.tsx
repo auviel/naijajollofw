@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { DinerForgotPasswordForm } from "@/components/features/storefront/diner-forgot-password-form";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Forgot password",
   description: "Reset your Naija Jollof Waterloo account password.",
-};
+});
 
 export default function ForgotPasswordPage() {
   return (

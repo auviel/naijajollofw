@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -7,6 +8,12 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { MotionPageShell } from "@/components/motion/motion-page-shell";
 import { DashboardProviders } from "@/components/providers/dashboard-providers";
 import { getSessionUser } from "@/lib/auth/session";
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Dashboard",
+  description: "Staff dashboard for Naija Jollof Waterloo.",
+});
 
 export default async function DashboardLayout({
   children,

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DinerSigninForm } from "@/components/features/storefront/diner-signin-form";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Sign in",
   description: "Sign in to your Naija Jollof Waterloo account.",
-};
+});
 
 export default function SigninPage() {
   return (

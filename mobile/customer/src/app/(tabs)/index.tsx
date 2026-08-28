@@ -1,3 +1,4 @@
+import { DinerTabHeader } from "@/components/diner-tab-header";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatCadFromCents, type StoreOpenStatus } from "@naijajollof/api-types";
@@ -74,6 +75,7 @@ export default function MenuScreen() {
 
   return (
     <Screen>
+      {Platform.OS === "ios" ? <DinerTabHeader title="Menu" /> : null}
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={

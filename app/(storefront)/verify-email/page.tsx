@@ -3,10 +3,12 @@ import Link from "next/link";
 import { verifyDinerEmailToken } from "@/lib/services/diner/email-verification";
 import { isAppError } from "@/lib/utils/errors";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Verify email",
   description: "Confirm your Naija Jollof Waterloo account email.",
-};
+});
 
 type VerifyEmailPageProps = {
   searchParams: Promise<{ token?: string }>;

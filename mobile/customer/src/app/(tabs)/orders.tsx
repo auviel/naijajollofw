@@ -1,3 +1,4 @@
+import { DinerTabHeader } from "@/components/diner-tab-header";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { loadRecentOrders, type RecentOrder } from "@/lib/recent-orders";
@@ -54,6 +55,7 @@ export default function OrdersScreen() {
 
   return (
     <Screen>
+      {Platform.OS === "ios" ? <DinerTabHeader title="Orders" /> : null}
       <ScrollView contentContainerStyle={styles.content}>
         {!user ? (
           <Card style={{ gap: 10 }}>

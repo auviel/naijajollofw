@@ -1,5 +1,6 @@
 import { Colors, Radii, Shadows } from "@naijajollof/ui";
 import { useCart } from "@/lib/cart";
+import { DinerHeaderProfile } from "@/components/diner-header-profile";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { Tabs } from "expo-router";
@@ -31,9 +32,9 @@ export default function TabsLayout() {
           <Icon sf={{ default: "list.clipboard", selected: "list.clipboard.fill" }} />
           <Label>Orders</Label>
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="account">
-          <Icon sf={{ default: "person", selected: "person.fill" }} />
-          <Label>Account</Label>
+        <NativeTabs.Trigger name="chat">
+          <Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
+          <Label>Ask Amaka</Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -46,6 +47,7 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.text,
         headerTitleStyle: { fontWeight: "800" },
+        headerRight: () => <DinerHeaderProfile />,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textSecondary,
         tabBarLabelStyle: { fontWeight: "700", fontSize: 12 },
@@ -93,11 +95,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="account"
+        name="chat"
         options={{
-          title: "Account",
+          title: "Ask Amaka",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" color={color} size={size} />
+            <Ionicons name="chatbubbles" color={color} size={size} />
           ),
         }}
       />

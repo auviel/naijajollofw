@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { AccountAddressesClient } from "@/components/features/account/account-addresses-client";
 import { listDinerAddresses } from "@/lib/services/diner/addresses";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Address",
   description: "Manage saved delivery addresses.",
-};
+});
 
 export default async function AccountAddressPage() {
   const addresses = await listDinerAddresses();

@@ -2,7 +2,7 @@ import { useAuth } from "@/lib/auth";
 import { registerDinerPushDevice } from "@/lib/push";
 import { Button, Card, Colors, Screen, Type } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
-import { Alert, Platform, StyleSheet, Text } from "react-native";
+import { Alert, StyleSheet, Text } from "react-native";
 
 export default function AccountScreen() {
   const { user, signOut } = useAuth();
@@ -56,7 +56,9 @@ export default function AccountScreen() {
           label="Enable order notifications"
           onPress={() => {
             void registerDinerPushDevice()
-              .then(() => Alert.alert("Notifications", "Order updates enabled on this device."))
+              .then(() =>
+                Alert.alert("Notifications", "Order updates enabled on this device."),
+              )
               .catch((err: unknown) =>
                 Alert.alert(
                   "Notifications",
@@ -75,7 +77,6 @@ const styles = StyleSheet.create({
   card: {
     margin: 20,
     gap: 12,
-    marginBottom: Platform.OS === "android" ? 120 : 20,
   },
   warn: { color: Colors.accent, fontWeight: "700" },
 });

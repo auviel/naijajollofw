@@ -1,8 +1,8 @@
 # AI Storefront Assistant Design
 
 **Date:** 2026-08-28  
-**Status:** Phase 1 implemented  
-**Surfaces:** Web storefront (phase 1); mobile diner app (phase 2+)  
+**Status:** Phase 1 + Phase 2 implemented  
+**Surfaces:** Web storefront (phase 1); mobile diner app Ask Amaka tab (phase 2)  
 **Approach:** Tool-calling agent (shared brain for search + chat)
 
 ## Goal
@@ -26,10 +26,10 @@ Build order for delivery: **web first** → shared API → **mobile chat tab** �
 |-------|--------|
 | Architecture | **Tool-calling agent** — one brain; facts from tools only |
 | Surfaces (phase 1) | Header search + **floating chat** (desktop + mobile web) |
-| Mobile app UX (later) | Chat on **bottom nav**; **profile moved to header** (match desktop) |
+| Mobile app UX (phase 2) | Chat on **bottom nav**; **profile moved to header** (match desktop) |
 | Auth | **Anyone** for search/Q&A; **sign-in nudge** for account actions |
 | Phase 1 actions | Answers + search + **add to cart** / **open item** — **no checkout/pay** |
-| Voice | **Warm host** — short, clear Nigerian hospitality; no corporate fluff |
+| Voice | **Amaka** (“Ask Amaka”) — warm Nigerian hospitality host; short and clear |
 | Knowledge (phase 1) | **Live menu + store ops** (hours, open/closed, pickup vs delivery basics) |
 | CMS / blog in agent | **Out of scope** for phase 1 |
 | Embeddings DB | **Out of scope** for phase 1 — smarter ranking over live catalog |
@@ -268,7 +268,7 @@ Spot-check: identical “are you open?” within TTL should hit merchant cache (
 ## Roadmap (same architecture)
 
 1. **Phase 1 (this spec):** web search + Q&A + add/open item  
-2. **Phase 2:** mobile diner — bottom-nav chat, profile in header, same API  
+2. **Phase 2 (implemented):** mobile diner — bottom-nav chat, profile in header, same API  
 3. **Phase 3:** conversational ordering tools (fulfillment, address, saved card, place order) with confirmations  
 4. **Phase 4:** order companion — status Q&A + in-chat status alerts while the chat is open  
 

@@ -3,10 +3,12 @@ import { AccountSecurityClient } from "@/components/features/account/account-sec
 import { requireDiner } from "@/lib/auth/session";
 import { userRepository } from "@/lib/db/repositories/user.repository";
 
-export const metadata: Metadata = {
+import { privatePageMetadata } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = privatePageMetadata({
   title: "Security",
   description: "Password and email settings.",
-};
+});
 
 export default async function AccountSecurityPage() {
   const sessionUser = await requireDiner();

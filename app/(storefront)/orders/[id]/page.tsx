@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { OrderStatusClient } from "@/components/features/storefront/order-status-client";
+import { privatePageMetadata } from "@/lib/seo/noindex";
 import { getPublicOrder } from "@/lib/services/order/get-public-order";
 import { isAppError } from "@/lib/utils/errors";
 
@@ -6,6 +8,11 @@ type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ token?: string }>;
 };
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Order status",
+  description: "Track your Naija Jollof Waterloo order.",
+});
 
 export default async function OrderStatusPage({ params, searchParams }: PageProps) {
   const { id } = await params;

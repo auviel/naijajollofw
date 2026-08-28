@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { ViewOrderBar } from "@/components/features/storefront/view-order-bar";
 import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
-import { Home, Search, ShoppingBag, User } from "@/components/ui/icons";
+import { Home, Search, ShoppingBag, ChatBubble } from "@/components/ui/icons";
 import { easeOut, motionDuration } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils/cn";
 
@@ -18,6 +17,7 @@ type StorefrontMobileNavProps = {
 const HIDDEN_PREFIXES = [
   "/blog",
   "/cart",
+  "/chat",
   "/checkout",
   "/item",
   "/signin",
@@ -39,7 +39,6 @@ export function StorefrontMobileNav({
 }: StorefrontMobileNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session, status } = useSession();
   const { openMobileSearch, openCart, cartOpen, mobileSearchOpen } =
     useStorefrontUi();
   const reduce = useReducedMotion();
@@ -53,22 +52,10 @@ export function StorefrontMobileNav({
     return null;
   }
 
-  const isLoggedIn = status === "authenticated" && Boolean(session?.user);
-  const role = session?.user?.role;
-  const accountHref = isLoggedIn
-    ? role === "STORE_MANAGER"
-      ? "/dashboard"
-      : "/account"
-    : "/signup";
-
-  const menuActive = pathname === "/" && !cartOpen;
-  const cartActive = cartOpen || pathname === "/cart" || pathname.startsWith("/cart/");
-  const accountActive =
-    !cartOpen &&
-    (pathname === "/account" ||
-      pathname.startsWith("/account/") ||
-      pathname === "/signin" ||
-      pathname === "/signup");
+  const menuActive = pathname === "/" && !cartOpen && !mobileSearchOpen;
+  const cartActive =
+    cartOpen || pathname === "/cart" || pathname.startsWith("/cart/");
+  const chatActive = pathname === "/chat" || pathname.startsWith("/chat/");
 
   function handleSearch() {
     openMobileSearch();
@@ -145,10 +132,10 @@ export function StorefrontMobileNav({
               Cart
             </button>
             <NavLink
-              href={accountHref}
-              label="Account"
-              active={accountActive}
-              icon={<User className="h-5 w-5" aria-hidden />}
+              href="/chat"
+              label="Amaka"
+              active={chatActive}
+              icon={<ChatBubble className="h-5 w-5" aria-hidden />}
             />
           </motion.div>
         )}

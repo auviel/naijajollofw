@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { CheckoutClient } from "@/components/features/storefront/checkout-client";
 import { getOptionalSessionUser } from "@/lib/auth/session";
+import { privatePageMetadata } from "@/lib/seo/noindex";
 import { phoneE164ToFormValue } from "@/lib/domain/customer/format";
 import { clampTipCents } from "@/lib/domain/order/tip";
 import { computeOrderTotals } from "@/lib/domain/order/totals";
@@ -19,6 +21,11 @@ import {
   getPublicStoreOpenStatus,
 } from "@/lib/services/store/store-hours";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
+
+export const metadata: Metadata = privatePageMetadata({
+  title: "Checkout",
+  description: "Complete your Naija Jollof Waterloo order.",
+});
 
 type PageProps = {
   searchParams: Promise<{

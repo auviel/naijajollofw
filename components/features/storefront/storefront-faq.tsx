@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowDown } from "@/components/ui/icons";
+import {
+  buildStorefrontFaqEntries,
+  type StorefrontFaqEntry,
+} from "@/lib/seo/storefront-faq";
+import { absoluteUrl } from "@/lib/seo/site";
 import type { StoreProfile } from "@/lib/domain/store/types";
-
-type FaqItem = {
-  question: string;
-  answer: ReactNode;
-};
 
 type StorefrontFaqProps = {
   store: StoreProfile;
@@ -14,73 +14,25 @@ type StorefrontFaqProps = {
   todayLabel?: string;
 };
 
-function formatPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length === 11 && digits.startsWith("1")) {
-    const local = digits.slice(1);
-    return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+function renderFaqAnswer(entry: StorefrontFaqEntry): ReactNode {
+  const hoursUrl = absoluteUrl("/hours");
+  if (entry.answer.includes(hoursUrl)) {
+    const [before, after] = entry.answer.split(hoursUrl);
+    return (
+      <>
+        {before}
+        <Link
+          href="/hours"
+          className="font-medium text-foreground underline-offset-2 hover:underline"
+        >
+          Hours &amp; ordering
+        </Link>
+        {after}
+      </>
+    );
   }
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-  return phone;
-}
 
-function buildFaqItems({
-  store,
-  prepMinutes,
-  todayLabel,
-}: StorefrontFaqProps): FaqItem[] {
-  const phoneLabel = formatPhone(store.phone);
-  const hoursLine = todayLabel
-    ? `Today’s hours are ${todayLabel}.`
-    : "Check the status at the top of the page for today’s hours.";
-
-  return [
-    {
-      question: "Do you offer pickup and delivery?",
-      answer: `Yes. At checkout you can choose pickup at ${store.name} in ${store.city}, or delivery to your address.`,
-    },
-    {
-      question: "What are your hours?",
-      answer: (
-        <>
-          {hoursLine} You can still browse the menu and add items when we’re
-          closed — pick a pickup or delivery time at checkout. See{" "}
-          <Link
-            href="/hours"
-            className="font-medium text-foreground underline-offset-2 hover:underline"
-          >
-            Hours &amp; ordering
-          </Link>{" "}
-          for the full week.
-        </>
-      ),
-    },
-    {
-      question: "How long until my order is ready?",
-      answer: `Most orders are ready in about ${prepMinutes} minutes once accepted. Delivery adds travel time after the kitchen finishes preparing your food.`,
-    },
-    {
-      question: "Can I schedule an order for later?",
-      answer:
-        "Yes. When the restaurant is closed, you’ll choose a time at checkout. When we’re open, you can order ASAP or pick a later slot.",
-    },
-    {
-      question: "How do I pay?",
-      answer:
-        "Pay online at checkout with a card. You’ll get an order confirmation and can track status from the link we provide after payment.",
-    },
-    {
-      question: "What about special or pre-order only items?",
-      answer:
-        "Items marked for special or pre-order may need advance notice. Choose those from the menu, then we’ll confirm timing when we accept your order — or call us if you need a large catering tray.",
-    },
-    {
-      question: "How can I contact the restaurant?",
-      answer: `Call ${store.name} at ${phoneLabel}. For order issues after checkout, use the phone number on your confirmation or call the restaurant directly.`,
-    },
-  ];
+  return entry.answer;
 }
 
 export function StorefrontFaq({
@@ -88,7 +40,7 @@ export function StorefrontFaq({
   prepMinutes,
   todayLabel,
 }: StorefrontFaqProps) {
-  const items = buildFaqItems({ store, prepMinutes, todayLabel });
+  const items = buildStorefrontFaqEntries({ store, prepMinutes, todayLabel });
 
   return (
     <section
@@ -118,7 +70,7 @@ export function StorefrontFaq({
                 />
               </summary>
               <div className="pb-5 pr-8 text-sm leading-relaxed text-text-secondary sm:text-[15px]">
-                {item.answer}
+                {renderFaqAnswer(item)}
               </div>
             </details>
           ))}

@@ -56,7 +56,7 @@ export default function RegisterScreen() {
         }),
       });
       await signIn(email.trim(), password);
-      router.replace("/(tabs)/account");
+      router.replace("/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create account");
       setTurnstileToken(null);

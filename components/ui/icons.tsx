@@ -5,6 +5,7 @@ import {
   ArrowRight01Icon,
   ArrowUp01Icon,
   Calendar01Icon,
+  BubbleChatIcon,
   CallIcon,
   Cancel01Icon,
   CheckmarkCircle01Icon,
@@ -36,6 +37,7 @@ import {
   Scooter01Icon,
   Search01Icon,
   SearchRemoveIcon,
+  SentIcon,
   ShoppingBagCheckIcon,
   ShoppingCart01Icon,
   SpoonAndForkIcon,
@@ -89,6 +91,7 @@ export const ArrowLeft = createIcon(ArrowLeft01Icon, "ArrowLeft");
 export const ArrowUp = createIcon(ArrowUp01Icon, "ArrowUp");
 export const Calendar = createIcon(Calendar01Icon, "Calendar");
 export const Call = createIcon(CallIcon, "Call");
+export const ChatBubble = createIcon(BubbleChatIcon, "ChatBubble");
 export const Check = createIcon(Tick02Icon, "Check");
 export const CheckCircle = createIcon(CheckmarkCircle01Icon, "CheckCircle");
 export const CookingPot = createIcon(CookingPotIcon, "CookingPot");
@@ -113,6 +116,7 @@ export const Package = createIcon(Package01Icon, "Package");
 export const Scooter = createIcon(Scooter01Icon, "Scooter");
 export const Search = createIcon(Search01Icon, "Search");
 export const SearchX = createIcon(SearchRemoveIcon, "SearchX");
+export const Send = createIcon(SentIcon, "Send");
 export const ShoppingBag = createIcon(ShoppingCart01Icon, "ShoppingBag");
 export const ShoppingBagCheck = createIcon(ShoppingBagCheckIcon, "ShoppingBagCheck");
 export const Store = createIcon(Store01Icon, "Store");

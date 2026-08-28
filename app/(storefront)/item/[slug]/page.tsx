@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ItemDetailClient } from "@/components/features/storefront/item-detail-client";
+import {
+  buildBreadcrumbJsonLd,
+  buildProductJsonLd,
+} from "@/lib/seo/json-ld";
 import { buildShareMetadata } from "@/lib/seo/share-metadata";
 import { getPublicStoreOpenStatus } from "@/lib/services/store/store-hours";
 import { getPublicMenuItem } from "@/lib/services/storefront/get-public-menu";
@@ -44,6 +49,7 @@ export default async function ItemDetailPage({ params }: PageProps) {
   const { slug } = await params;
 
   let item;
+  let store;
   let openStatus;
   let shouldRedirectToSlug = false;
   try {
@@ -52,6 +58,7 @@ export default async function ItemDetailPage({ params }: PageProps) {
       getPublicStoreOpenStatus(),
     ]);
     item = resolved.item;
+    store = resolved.store;
     shouldRedirectToSlug = resolved.shouldRedirectToSlug;
     openStatus = status;
   } catch (error) {
@@ -66,11 +73,22 @@ export default async function ItemDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <ItemDetailClient
-        item={item}
-        scheduleLabel={openStatus.isOpen ? null : openStatus.nextOpenLabel}
+    <>
+      <JsonLdScript
+        data={[
+          buildProductJsonLd({ store, item }),
+          buildBreadcrumbJsonLd([
+            { name: "Menu", path: "/" },
+            { name: item.name, path: `/item/${item.slug}` },
+          ]),
+        ]}
       />
-    </div>
+      <div className="mx-auto w-full max-w-3xl">
+        <ItemDetailClient
+          item={item}
+          scheduleLabel={openStatus.isOpen ? null : openStatus.nextOpenLabel}
+        />
+      </div>
+    </>
   );
 }

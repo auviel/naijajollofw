@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { StorefrontHeaderBar } from "@/components/features/storefront/storefront-header-bar";
+import { StorefrontHeaderBarGate } from "@/components/features/storefront/storefront-header-bar-gate";
 import { StorefrontHeaderSwitch } from "@/components/features/storefront/storefront-header-switch";
 import { StorefrontMobileNav } from "@/components/features/storefront/storefront-mobile-nav";
 import { getCart } from "@/lib/services/cart/cart-actions";
@@ -52,11 +53,13 @@ export async function StorefrontHeader() {
       <StorefrontHeaderSwitch
         storefront={
           <>
-            <StorefrontHeaderBar
-              storeName={data.storeName}
-              cartItemCount={data.cartItemCount}
-              searchIndex={data.searchIndex}
-            />
+            <StorefrontHeaderBarGate>
+              <StorefrontHeaderBar
+                storeName={data.storeName}
+                cartItemCount={data.cartItemCount}
+                searchIndex={data.searchIndex}
+              />
+            </StorefrontHeaderBarGate>
             <StorefrontMobileNav
               cartItemCount={data.cartItemCount}
               cartSubtotalCents={data.cartSubtotalCents}

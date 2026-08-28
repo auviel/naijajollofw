@@ -1,3 +1,4 @@
+import { DinerTabHeader } from "@/components/diner-tab-header";
 import { apiFetch } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { formatCadFromCents } from "@naijajollof/api-types";
@@ -51,6 +52,7 @@ export default function CartScreen() {
 
   return (
     <Screen>
+      {Platform.OS === "ios" ? <DinerTabHeader title="Cart" /> : null}
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={

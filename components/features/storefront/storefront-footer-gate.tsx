@@ -19,6 +19,8 @@ function showStorefrontFooter(
   if (
     pathname === "/cart" ||
     pathname === "/checkout" ||
+    pathname === "/chat" ||
+    pathname.startsWith("/chat/") ||
     pathname === "/signin" ||
     pathname === "/signup" ||
     pathname === "/forgot-password" ||

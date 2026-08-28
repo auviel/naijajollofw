@@ -254,6 +254,22 @@ export function StorefrontHeaderBar({
               <StoreBrandLogo alt={storeName} variant="header" priority />
             </Link>
 
+            <div className="ml-auto flex shrink-0 items-center sm:hidden">
+              {status === "loading" ? (
+                <span className="h-10 w-10 rounded-full bg-surface" aria-hidden />
+              ) : isLoggedIn ? (
+                accountControl
+              ) : (
+                <Link
+                  href="/signin"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-surface"
+                  aria-label="Sign in"
+                >
+                  <User className="h-5 w-5" aria-hidden />
+                </Link>
+              )}
+            </div>
+
             <div className="relative hidden min-w-0 flex-1 justify-center px-2 sm:flex lg:px-6">
               <label className="relative w-full max-w-2xl lg:max-w-3xl">
                 <span className="sr-only">Search menu</span>
