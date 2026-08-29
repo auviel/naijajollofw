@@ -7,6 +7,7 @@ import { CartLineThumbnail } from "@/components/features/storefront/cart-line-th
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
 import { ShoppingBag, X } from "@/components/ui/icons";
+import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { useToast } from "@/components/ui/toast";
 import type { CartView } from "@/lib/domain/cart/types";
 import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
@@ -36,6 +37,7 @@ export function CartPanel({
 }: CartPanelProps) {
   const router = useRouter();
   const { error: toastError } = useToast();
+  const { bumpCartRevision } = useStorefrontUi();
   const [pendingLineId, setPendingLineId] = useState<string | null>(null);
   const isDrawer = variant === "drawer";
 
@@ -59,6 +61,7 @@ export function CartPanel({
       };
       rememberCartSessionId(body.sessionId);
       onCartChange(body.data);
+      bumpCartRevision();
       router.refresh();
     } catch {
       toastError("Unable to update cart.");
@@ -81,6 +84,7 @@ export function CartPanel({
       };
       rememberCartSessionId(body.sessionId);
       onCartChange(body.data);
+      bumpCartRevision();
       router.refresh();
     } catch {
       toastError("Unable to remove item.");

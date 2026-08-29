@@ -134,10 +134,20 @@ export function StorefrontMobileNav() {
                 "relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
                 cartActive ? "text-foreground" : "text-text-tertiary",
               )}
+              aria-label={
+                cartItemCount > 0
+                  ? `Cart, ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}`
+                  : "Cart"
+              }
               aria-current={cartActive ? "page" : undefined}
             >
               <span className="relative inline-flex">
                 <ShoppingBag className="h-5 w-5" aria-hidden />
+                {cartItemCount > 0 ? (
+                  <span className="absolute -top-1.5 -right-2 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-success px-0.5 text-[10px] font-semibold leading-none text-white">
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                  </span>
+                ) : null}
               </span>
               Cart
             </button>

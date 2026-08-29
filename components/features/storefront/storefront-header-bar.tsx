@@ -254,7 +254,8 @@ export function StorefrontHeaderBar({
               <StoreBrandLogo alt={storeName} variant="header" priority />
             </Link>
 
-            <div className="ml-auto flex shrink-0 items-center sm:hidden">
+            <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:hidden">
+              <CartLink count={cartItemCount} />
               {status === "loading" ? (
                 <span className="h-10 w-10 rounded-full bg-surface" aria-hidden />
               ) : isLoggedIn ? (

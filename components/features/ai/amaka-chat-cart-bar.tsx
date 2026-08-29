@@ -22,14 +22,16 @@ export function useCartSummary(refreshKey = 0) {
       const response = await fetch("/api/cart");
       if (!response.ok) return;
       const body = (await response.json()) as {
-        itemCount?: number;
-        subtotalCents?: number;
+        data?: {
+          itemCount?: number;
+          subtotalCents?: number;
+        };
         sessionId?: string | null;
       };
       rememberCartSessionId(body.sessionId);
       setSummary({
-        itemCount: body.itemCount ?? 0,
-        subtotalCents: body.subtotalCents ?? 0,
+        itemCount: body.data?.itemCount ?? 0,
+        subtotalCents: body.data?.subtotalCents ?? 0,
       });
     } catch {
       // Keep last known count.
