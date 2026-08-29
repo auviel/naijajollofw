@@ -100,6 +100,8 @@ export function sentryBeforeSend(
     /Switched to client rendering because the server rendering errored/i.test(
       message,
     ) ||
+    /Failed to find Server Action/i.test(message) ||
+    /An error occurred in the Server Components render/i.test(message) ||
     /TypeError: Load failed/i.test(message) ||
     /^Load failed$/i.test(message) ||
     /Can't find variable: X/i.test(message) ||

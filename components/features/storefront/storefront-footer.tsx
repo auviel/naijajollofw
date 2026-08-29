@@ -8,6 +8,7 @@ import {
   WhatsApp,
 } from "@/components/ui/icons";
 import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/integrations/google/places/config";
+import { isTransientDbError } from "@/lib/db/is-transient-db-error";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import type { StoreProfile } from "@/lib/domain/store/types";
 import { resolvePublicStoreId } from "@/lib/services/storefront/resolve-public-store";
@@ -53,7 +54,13 @@ export async function StorefrontFooter() {
     const storeId = await resolvePublicStoreId();
     store = await storeRepository.getProfileById(storeId);
   } catch (error) {
-    if (!isAppError(error) || error.code !== "NOT_FOUND") {
+    // Footer is chrome — degrade to static fallbacks on missing store or DB blips.
+    if (
+      (isAppError(error) && error.code === "NOT_FOUND") ||
+      isTransientDbError(error)
+    ) {
+      store = null;
+    } else {
       throw error;
     }
   }

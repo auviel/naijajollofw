@@ -5,6 +5,7 @@ import { StorefrontHeaderSwitch } from "@/components/features/storefront/storefr
 import { StorefrontMobileNav } from "@/components/features/storefront/storefront-mobile-nav";
 import { buildHeaderSearchIndex } from "@/lib/domain/menu/search";
 import type { MenuSearchIndex } from "@/lib/domain/menu/search";
+import { isTransientDbError } from "@/lib/db/is-transient-db-error";
 import { getPublicStorefront } from "@/lib/services/storefront/get-public-menu";
 import { isAppError } from "@/lib/utils/errors";
 
@@ -21,13 +22,16 @@ async function loadHeaderData(): Promise<HeaderData> {
       searchIndex: buildHeaderSearchIndex(catalog),
     };
   } catch (error) {
-    if (!isAppError(error) || error.code !== "NOT_FOUND") {
-      throw error;
+    if (
+      (isAppError(error) && error.code === "NOT_FOUND") ||
+      isTransientDbError(error)
+    ) {
+      return {
+        storeName: "Naija Jollof",
+        searchIndex: { items: [] },
+      };
     }
-    return {
-      storeName: "Naija Jollof",
-      searchIndex: { items: [] },
-    };
+    throw error;
   }
 }
 

@@ -55,6 +55,30 @@ describe("sentryBeforeSend", () => {
     ).toBeNull();
   });
 
+  it("drops failed Server Action and opaque RSC client wrappers", () => {
+    expect(
+      sentryBeforeSend(
+        event(
+          "Failed to find Server Action. This request might be from an older or newer deployment.",
+        ),
+        hint(
+          new Error(
+            "Failed to find Server Action. This request might be from an older or newer deployment.",
+          ),
+        ),
+      ),
+    ).toBeNull();
+
+    expect(
+      sentryBeforeSend(
+        event(
+          "An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.",
+        ),
+        hint(undefined),
+      ),
+    ).toBeNull();
+  });
+
   it("keeps unexpected errors", () => {
     const err = new Error("Square payment failed");
     const incoming = event("Square payment failed");

@@ -24,9 +24,13 @@ function hyperdriveConnectionString(): string | undefined {
 }
 
 function createPrisma(connectionString: string, perRequest: boolean): PrismaClient {
+  // Neon (and Hyperdrive) already pool at the edge. Keep the client pool tiny so
+  // serverless instances don't exhaust slots or wait 10s on a stuck pool of 5.
   const adapter = new PrismaPg({
     connectionString,
-    max: perRequest ? 1 : 5,
+    max: 1,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 20_000,
     ...(perRequest ? { maxUses: 1 } : {}),
   });
   return new PrismaClient({
