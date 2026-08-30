@@ -24,12 +24,20 @@ function hyperdriveConnectionString(): string | undefined {
 }
 
 /**
- * Railway's public TCP proxy presents a cert chain that Node's `pg` rejects when
- * `sslmode=require` is treated as verify-full (pg-connection-string ≥ recent).
- * Hyperdrive / local Docker do not need this. Build-time prerender uses DATABASE_URL
- * directly, so Railway hosts must relax verification.
+ * Railway's public TCP proxy presents a self-signed cert (CN=localhost). Recent
+ * `pg` treats `sslmode=require` as verify-full, which fails that cert.
+ *
+ * Important: do NOT pass `ssl: { rejectUnauthorized: false }` alongside
+ * `connectionString`. `pg` ConnectionParameters does
+ * `Object.assign({}, config, parse(connectionString))`, so `sslmode=require`
+ * overwrites the explicit ssl option with `{}` and verification stays on.
+ * Put `uselibpqcompat=true` in the URL so parse() itself sets
+ * `rejectUnauthorized: false` (libpq-compatible require).
+ *
+ * Production Workers use Hyperdrive (not this path). This only applies to
+ * local / CF Builds `DATABASE_URL` against `*.rlwy.net` / `*.railway.app`.
  */
-function needsRelaxedTls(connectionString: string): boolean {
+function isRailwayPublicHost(connectionString: string): boolean {
   try {
     const host = new URL(connectionString.replace(/^postgres(ql)?:/i, "http:")).hostname;
     return host.endsWith(".rlwy.net") || host.endsWith(".railway.app");
@@ -38,18 +46,32 @@ function needsRelaxedTls(connectionString: string): boolean {
   }
 }
 
+function normalizePgConnectionString(connectionString: string): string {
+  if (!isRailwayPublicHost(connectionString)) {
+    return connectionString;
+  }
+  const match = connectionString.match(/^(postgres(?:ql)?:\/\/[^?]*)(\?.*)?$/i);
+  if (!match) {
+    return connectionString;
+  }
+  const [, base, query = ""] = match;
+  const params = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
+  // Force libpq-compatible require even if the secret already has sslmode=require
+  // (which alone is treated as verify-full by modern pg-connection-string).
+  params.set("uselibpqcompat", "true");
+  params.set("sslmode", "require");
+  return `${base}?${params.toString()}`;
+}
+
 function createPrisma(connectionString: string, perRequest: boolean): PrismaClient {
   // Hyperdrive (and managed Postgres) already pool at the edge. Keep the client
   // pool tiny so serverless instances don't exhaust slots or wait on a stuck pool.
   const adapter = new PrismaPg({
-    connectionString,
+    connectionString: normalizePgConnectionString(connectionString),
     max: 1,
     connectionTimeoutMillis: 10_000,
     idleTimeoutMillis: 20_000,
     ...(perRequest ? { maxUses: 1 } : {}),
-    ...(needsRelaxedTls(connectionString)
-      ? { ssl: { rejectUnauthorized: false } }
-      : {}),
   });
   return new PrismaClient({
     adapter,
