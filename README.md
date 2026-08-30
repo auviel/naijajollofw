@@ -217,7 +217,9 @@ Paste the Hyperdrive id and D1 database id into `wrangler.jsonc`. To retarget la
 
 `npx wrangler hyperdrive update <id> --connection-string="$RAILWAY_PUBLIC_URL"`
 
-2. Copy `.dev.vars.example` to `.dev.vars` for Wrangler preview. Put app secrets in Wrangler secrets (not `wrangler.jsonc` vars), same names as `.env.example` (`AUTH_SECRET`, Square, Uber, R2, Resend, …). `DATABASE_URL` is still required for `prisma migrate` and local Docker.
+Hyperdrive query caching is **on** for eligible `SELECT`s (~60s max age, 30s stale-while-revalidate). Writes are never cached. Menu/admin edits can look briefly stale at the SQL layer until TTL expires (Next.js `revalidateTag` still applies on top).
+
+2. Copy `.dev.vars.example` to `.dev.vars` for Wrangler preview. Put app secrets in Wrangler secrets (not `wrangler.jsonc` vars), same names as `.env.example` (`AUTH_SECRET`, Square, Uber, R2, Resend, …). `DATABASE_URL` is still required for `prisma migrate` and local Docker — Workers Builds also needs a valid `DATABASE_URL` (Railway public URL) for Next.js prerender.
 
 3. Migrate, then deploy:
 
@@ -227,6 +229,18 @@ npm run deploy              # OpenNext build + wrangler deploy
 ```
 
 Local Node: `npm run dev` (Docker Postgres via `DATABASE_URL`). Optional Hyperdrive in Next.dev: `OPENNEXT_DEV=1 npm run dev`. Workers-runtime preview: `npm run preview`.
+
+### Cloudflare performance checklist
+
+Worker name in `wrangler.jsonc` is `naijajollofw` (must match the Cloudflare Worker). Observability stays at **10%** log/trace sampling with invocation logs off.
+
+After deploy, watch wall time (not just CPU) — most latency is DB/network wait:
+
+1. [Workers → naijajollofw → Metrics](https://dash.cloudflare.com/) — **Wall time** and **CPU time** (p95)
+2. Focus on `/` (storefront) and checkout/payment paths after a quiet day on Railway
+3. Healthy pattern: CPU ≪ wall (e.g. ~30ms CPU / ~300ms wall). Investigate if p95 wall climbs without traffic spikes, or errors rise
+
+If read-after-write freshness ever matters more than latency (e.g. kitchen board), add a second Hyperdrive with `--caching-disabled` and route those queries through it.
 
 | Variable | Notes |
 |----------|-------|

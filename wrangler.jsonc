@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "naijajollofw-web",
+  "name": "naijajollofw",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -16,8 +16,8 @@
     "APP_ENV": "production",
   },
   "observability": {
-    // Keep observability on, but sample aggressively — 100% logs burns quota
-    // and noise (esp. /monitoring Sentry tunnel) without helping a small site.
+    // Keep sampling low — 100% logs burns quota (esp. /monitoring tunnel noise).
+    // Leave at 0.1 unless debugging a production incident.
     "enabled": true,
     "logs": {
       "invocation_logs": false,
@@ -31,12 +31,13 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "naijajollofw-web",
+      "service": "naijajollofw",
     },
   ],
   // App data is on Railway Postgres. Hyperdrive origin = Railway TCP proxy
-  // (DATABASE_PUBLIC_URL / caboose.proxy.rlwy.net). Hyperdrive is the pooler.
-  // Update with: npx wrangler hyperdrive update <id> --connection-string="$RAILWAY_PUBLIC_URL"
+  // (DATABASE_PUBLIC_URL / caboose.proxy.rlwy.net). Hyperdrive pools + caches
+  // eligible SELECTs (max_age ~60s, SWR 30s). Mutations are never cached.
+  // Update: npx wrangler hyperdrive update <id> --connection-string="$RAILWAY_PUBLIC_URL"
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
