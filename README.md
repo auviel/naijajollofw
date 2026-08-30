@@ -219,7 +219,7 @@ Paste the Hyperdrive id and D1 database id into `wrangler.jsonc`. To retarget la
 
 Hyperdrive query caching is **on** for eligible `SELECT`s (~60s max age, 30s stale-while-revalidate). Writes are never cached. Menu/admin edits can look briefly stale at the SQL layer until TTL expires (Next.js `revalidateTag` still applies on top).
 
-2. Copy `.dev.vars.example` to `.dev.vars` for Wrangler preview. Put app secrets in Wrangler secrets (not `wrangler.jsonc` vars), same names as `.env.example` (`AUTH_SECRET`, Square, Uber, R2, Resend, …). `DATABASE_URL` is still required for `prisma migrate` and local Docker — Workers Builds also needs a valid `DATABASE_URL` (Railway public URL) for Next.js prerender.
+2. Copy `.dev.vars.example` to `.dev.vars` for Wrangler preview. Put app secrets in Wrangler secrets (not `wrangler.jsonc` vars), same names as `.env.example` (`AUTH_SECRET`, Square, Uber, R2, Resend, …). `DATABASE_URL` is still required for `prisma migrate` and local Docker — Workers Builds also needs a valid `DATABASE_URL` (Railway public TCP URL with `sslmode=require`) for Next.js prerender. Runtime Workers use Hyperdrive; build-time Node `pg` relaxes cert verification for `*.rlwy.net` in `lib/db/client.ts`.
 
 3. Migrate, then deploy:
 
@@ -244,7 +244,7 @@ If read-after-write freshness ever matters more than latency (e.g. kitchen board
 
 | Variable | Notes |
 |----------|-------|
-| `DATABASE_URL` | Railway public URL or Docker. Used by migrate and by `next dev` when Hyperdrive is off |
+| `DATABASE_URL` | Railway public URL (`sslmode=require`) or Docker. Migrate, local `next dev`, and CF Builds prerender |
 | `CLOUDFLARE_ENV` | `production` / `preview` — Sentry environment (set in wrangler `vars`) |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
 | `NEXT_PUBLIC_APP_URL` | Production origin, e.g. `https://new.naijajollofw.ca` |

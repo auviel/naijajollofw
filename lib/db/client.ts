@@ -23,6 +23,21 @@ function hyperdriveConnectionString(): string | undefined {
   }
 }
 
+/**
+ * Railway's public TCP proxy presents a cert chain that Node's `pg` rejects when
+ * `sslmode=require` is treated as verify-full (pg-connection-string ≥ recent).
+ * Hyperdrive / local Docker do not need this. Build-time prerender uses DATABASE_URL
+ * directly, so Railway hosts must relax verification.
+ */
+function needsRelaxedTls(connectionString: string): boolean {
+  try {
+    const host = new URL(connectionString.replace(/^postgres(ql)?:/i, "http:")).hostname;
+    return host.endsWith(".rlwy.net") || host.endsWith(".railway.app");
+  } catch {
+    return /\.rlwy\.net|\.railway\.app/i.test(connectionString);
+  }
+}
+
 function createPrisma(connectionString: string, perRequest: boolean): PrismaClient {
   // Hyperdrive (and managed Postgres) already pool at the edge. Keep the client
   // pool tiny so serverless instances don't exhaust slots or wait on a stuck pool.
@@ -32,6 +47,9 @@ function createPrisma(connectionString: string, perRequest: boolean): PrismaClie
     connectionTimeoutMillis: 10_000,
     idleTimeoutMillis: 20_000,
     ...(perRequest ? { maxUses: 1 } : {}),
+    ...(needsRelaxedTls(connectionString)
+      ? { ssl: { rejectUnauthorized: false } }
+      : {}),
   });
   return new PrismaClient({
     adapter,
