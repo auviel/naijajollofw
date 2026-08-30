@@ -104,13 +104,14 @@ export const cartRepository = {
   },
 
   async getOrCreate(storeId: string, sessionId: string) {
-    const existing = await this.findByStoreAndSession(storeId, sessionId);
-    if (existing) {
-      return existing;
-    }
-
-    return prisma.cart.create({
-      data: { storeId, sessionId },
+    // Upsert avoids a race when two requests create the same session cart
+    // (unique on storeId + sessionId) — find-then-create can throw P2002.
+    return prisma.cart.upsert({
+      where: {
+        storeId_sessionId: { storeId, sessionId },
+      },
+      create: { storeId, sessionId },
+      update: {},
       include: cartInclude,
     });
   },
