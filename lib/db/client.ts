@@ -24,8 +24,8 @@ function hyperdriveConnectionString(): string | undefined {
 }
 
 function createPrisma(connectionString: string, perRequest: boolean): PrismaClient {
-  // Neon (and Hyperdrive) already pool at the edge. Keep the client pool tiny so
-  // serverless instances don't exhaust slots or wait 10s on a stuck pool of 5.
+  // Hyperdrive (and managed Postgres) already pool at the edge. Keep the client
+  // pool tiny so serverless instances don't exhaust slots or wait on a stuck pool.
   const adapter = new PrismaPg({
     connectionString,
     max: 1,
@@ -59,7 +59,7 @@ function getClient(): PrismaClient {
   const databaseUrl = hyperdrive ?? process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error(
-      "DATABASE_URL is not set (and Hyperdrive is unavailable). Local/migrate uses Neon or Docker Postgres; Workers use the HYPERDRIVE binding.",
+      "DATABASE_URL is not set (and Hyperdrive is unavailable). Local/migrate uses Railway or Docker Postgres; Workers use the HYPERDRIVE binding.",
     );
   }
 

@@ -34,9 +34,9 @@
       "service": "naijajollofw-web",
     },
   ],
-  // App data stays on Neon. Hyperdrive origin must be the Neon *direct*
-  // (unpooled) URL — Hyperdrive is the pooler. Create with:
-  // npx wrangler hyperdrive create naijajollofw-neon --connection-string="$NEON_DIRECT_URL"
+  // App data is on Railway Postgres. Hyperdrive origin = Railway TCP proxy
+  // (DATABASE_PUBLIC_URL / caboose.proxy.rlwy.net). Hyperdrive is the pooler.
+  // Update with: npx wrangler hyperdrive update <id> --connection-string="$RAILWAY_PUBLIC_URL"
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
