@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 
 const KEY_SOUND = "kitchen.pref.sound";
 const KEY_HAPTIC = "kitchen.pref.haptic";
+const INSIST_INTERVAL_MS = 2_000;
 
 const bumpSource = require("../../../assets/sounds/bump.wav");
 
@@ -14,6 +15,8 @@ type BumpPlayer = {
 
 let bumpPlayer: BumpPlayer | null = null;
 let soundReady: Promise<BumpPlayer | null> | null = null;
+let insistTimer: ReturnType<typeof setInterval> | null = null;
+let insistPulseBusy = false;
 
 async function prefs() {
   const [s, h] = await Promise.all([kvGet(KEY_SOUND), kvGet(KEY_HAPTIC)]);
@@ -49,6 +52,33 @@ async function ensureBumpPlayer(): Promise<BumpPlayer | null> {
   return soundReady;
 }
 
+async function playBumpClick() {
+  try {
+    const player = await ensureBumpPlayer();
+    if (!player) return;
+    await player.seekTo(0);
+    player.play();
+  } catch {
+    // Sound is best-effort.
+  }
+}
+
+async function insistPulse() {
+  if (insistPulseBusy) return;
+  insistPulseBusy = true;
+  try {
+    const { sound, haptic } = await prefs();
+    if (haptic) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    if (sound) {
+      await playBumpClick();
+    }
+  } finally {
+    insistPulseBusy = false;
+  }
+}
+
 /** Confirm bump without looking — haptic + short click (respects prefs). */
 export async function insistBumpConfirm() {
   const { sound, haptic } = await prefs();
@@ -56,14 +86,7 @@ export async function insistBumpConfirm() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }
   if (sound) {
-    try {
-      const player = await ensureBumpPlayer();
-      if (!player) return;
-      await player.seekTo(0);
-      player.play();
-    } catch {
-      // Sound is best-effort; bump still succeeds.
-    }
+    await playBumpClick();
   }
 }
 
@@ -79,4 +102,19 @@ export async function insistSuccess() {
   if (haptic) {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
+}
+
+/** Loop short chime + light haptic while insist overlay is up. */
+export function startInsistAlertLoop() {
+  if (insistTimer) return;
+  void insistPulse();
+  insistTimer = setInterval(() => {
+    void insistPulse();
+  }, INSIST_INTERVAL_MS);
+}
+
+export function stopInsistAlertLoop() {
+  if (!insistTimer) return;
+  clearInterval(insistTimer);
+  insistTimer = null;
 }

@@ -305,6 +305,12 @@ Staff: `admin@naijajollofw.ca` / `123456`
 
 ### Permissions (with insist / push)
 
-- [ ] Post-login notification priming bottom sheet (once)  
-- [ ] Allow → system prompt; Maybe later → skip without blocking Board  
-- [ ] Account → Preferences can re-request or open system Settings if denied  
+- [x] Post-login notification priming bottom sheet (once)  
+- [x] Allow → system prompt; Maybe later → skip without blocking Board  
+- [x] Account → Preferences can re-request or open system Settings if denied  
+
+### Insist overlay
+
+- [x] Full-screen one-at-a-time for due-now New tickets  
+- [x] Accept local ack; Start bumps to preparing  
+- [x] ~2s chime + haptic; pauses while priming sheet visible 

@@ -45,7 +45,7 @@ export function InsistOverlay({
     },
     top: { gap: 8 },
     kicker: { ...KType.kicker, color: c.accent },
-    ticket: { ...KType.pageTitle, color: c.text },
+    ticket: { ...KType.page, color: c.text },
     wait: { ...KType.wait, color: c.accent },
     customer: { ...KType.bodyStrong, color: c.text, marginTop: 16 },
     meta: { ...KType.meta, color: c.textSecondary, marginTop: 4 },
