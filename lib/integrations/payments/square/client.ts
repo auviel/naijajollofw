@@ -9,6 +9,7 @@ import {
   getSquareEnvironment,
   getSquareLocationId,
 } from "@/lib/integrations/payments/square/config";
+import { isAcceptedSquarePaymentStatus } from "@/lib/integrations/payments/square/payment-guards";
 import {
   extractSquareErrorCode,
   isSquareBuyerDeclineCode,
@@ -117,16 +118,68 @@ export async function createSquarePayment(
     }
 
     const status = payment.status ?? "UNKNOWN";
-    if (status === "FAILED" || status === "CANCELED") {
-      throw new AppError("PROVIDER_ERROR", "Card payment was declined.", 402, {
-        squareStatus: status,
-      });
+    if (!isAcceptedSquarePaymentStatus(status)) {
+      throw new AppError(
+        "PROVIDER_ERROR",
+        status === "FAILED" || status === "CANCELED"
+          ? "Card payment was declined."
+          : "Payment did not complete. Please try again.",
+        status === "FAILED" || status === "CANCELED" ? 402 : 502,
+        { squareStatus: status },
+      );
     }
 
     return {
       paymentId: payment.id,
       status,
       receiptUrl: payment.receiptUrl ?? null,
+    };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw mapSquareError(error);
+  }
+}
+
+export type RefundSquarePaymentInput = {
+  paymentId: string;
+  amountCents: number;
+  currency?: string;
+  idempotencyKey: string;
+  reason?: string;
+};
+
+export type SquareRefundResult = {
+  refundId: string;
+  status: string;
+};
+
+/** Best-effort full/partial refund after a charge that could not be fulfilled. */
+export async function refundSquarePayment(
+  input: RefundSquarePaymentInput,
+): Promise<SquareRefundResult> {
+  const currency = (input.currency ?? "CAD").toUpperCase();
+
+  try {
+    const response = await getClient().refunds.refundPayment({
+      paymentId: input.paymentId,
+      idempotencyKey: input.idempotencyKey || randomUUID(),
+      amountMoney: {
+        amount: BigInt(input.amountCents),
+        currency: currency as "CAD",
+      },
+      reason: input.reason ?? "Order could not be saved after payment",
+    });
+
+    const refund = response.refund;
+    if (!refund?.id) {
+      throw new AppError("PROVIDER_ERROR", "Square did not return a refund.", 502);
+    }
+
+    return {
+      refundId: refund.id,
+      status: refund.status ?? "UNKNOWN",
     };
   } catch (error) {
     if (error instanceof AppError) {

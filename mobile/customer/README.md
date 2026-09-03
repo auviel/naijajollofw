@@ -1,6 +1,6 @@
-# Naija Jollof diner app
+# Naija Jollof
 
-Expo SDK 54 customer app. Shared checks and EAS steps: [../README.md](../README.md).
+Public guest app (Expo SDK 57). Home-screen name: **Naija Jollof**. Shared checks and EAS steps: [../README.md](../README.md).
 
 ```bash
 cp .env.example .env   # if present — set EXPO_PUBLIC_API_URL

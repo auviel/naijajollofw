@@ -2,7 +2,7 @@ import { Colors, Radii, Shadows } from "@naijajollof/ui";
 import { useCart } from "@/lib/cart";
 import { DinerHeaderProfile } from "@/components/diner-header-profile";
 import { Ionicons } from "@expo/vector-icons";
-import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { Tabs } from "expo-router";
 import { DynamicColorIOS, Platform } from "react-native";
 
@@ -20,21 +20,37 @@ export default function TabsLayout() {
         }}
       >
         <NativeTabs.Trigger name="index">
-          <Icon sf={{ default: "fork.knife", selected: "fork.knife" }} />
-          <Label>Menu</Label>
+          <NativeTabs.Trigger.Icon
+            sf={{ default: "fork.knife", selected: "fork.knife" }}
+          />
+          <NativeTabs.Trigger.Label>Menu</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="cart">
-          <Icon sf={{ default: "bag", selected: "bag.fill" }} />
-          <Label>Cart</Label>
-          {badge ? <Badge>{badge}</Badge> : null}
+          <NativeTabs.Trigger.Icon
+            sf={{ default: "bag", selected: "bag.fill" }}
+          />
+          <NativeTabs.Trigger.Label>Cart</NativeTabs.Trigger.Label>
+          {badge ? (
+            <NativeTabs.Trigger.Badge>{badge}</NativeTabs.Trigger.Badge>
+          ) : null}
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="orders">
-          <Icon sf={{ default: "list.clipboard", selected: "list.clipboard.fill" }} />
-          <Label>Orders</Label>
+          <NativeTabs.Trigger.Icon
+            sf={{
+              default: "list.clipboard",
+              selected: "list.clipboard.fill",
+            }}
+          />
+          <NativeTabs.Trigger.Label>Orders</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="chat">
-          <Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
-          <Label>Ask Amaka</Label>
+          <NativeTabs.Trigger.Icon
+            sf={{
+              default: "bubble.left.and.bubble.right",
+              selected: "bubble.left.and.bubble.right.fill",
+            }}
+          />
+          <NativeTabs.Trigger.Label>Ask Amaka</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );

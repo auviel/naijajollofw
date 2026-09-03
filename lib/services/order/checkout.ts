@@ -17,7 +17,7 @@ import {
 import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
 import { sendEmailInBackground } from "@/lib/integrations/email/send";
 import { buildOrderConfirmationEmail } from "@/lib/integrations/email/templates";
-import { createSquarePayment } from "@/lib/integrations/payments/square/client";
+import { createSquarePayment, refundSquarePayment } from "@/lib/integrations/payments/square/client";
 import {
   isCheckoutSimulatePayments,
 } from "@/lib/integrations/payments/square/config";
@@ -36,6 +36,7 @@ import {
   notifyStaffOrder,
   summarizeOrderLineItems,
 } from "@/lib/services/order/notify-staff-order";
+import { isPrismaUniqueViolation } from "@/lib/db/is-unique-violation";
 import { AppError } from "@/lib/utils/errors";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
 import { logger } from "@/lib/utils/logger";
@@ -241,9 +242,7 @@ export async function checkoutWithSquare(
         orderId: existingView.id,
       });
     }
-    if (existingView.status === "pending_acceptance") {
-      notifyStaffNewOrder(existingView, storeId, hours.timezone);
-    }
+    // Idempotent retry: confirmation email is keyed; do not re-push kitchen.
     return { order: existingView };
   }
 
@@ -308,18 +307,62 @@ export async function checkoutWithSquare(
 
     return { order: orderView };
   } catch (error) {
+    if (isPrismaUniqueViolation(error)) {
+      const raced = await orderRepository.findBySquarePaymentId(paymentId);
+      if (raced) {
+        await cartRepository.clearCart(cart.id);
+        const racedView = mapOrderToPublicView(raced);
+        if (receiptEmail) {
+          sendOrderConfirmationEmail(racedView, receiptEmail, hours.timezone);
+        }
+        logger.info("checkout.order_create_race_recovered", {
+          paymentId,
+          orderId: racedView.id,
+        });
+        return { order: racedView };
+      }
+    }
+
     logger.error("checkout.order_create_failed", {
       paymentId,
       simulated: simulate,
       error: error instanceof Error ? error.message : String(error),
     });
+
+    let refunded = false;
+    if (!simulate) {
+      try {
+        await refundSquarePayment({
+          paymentId,
+          amountCents: totals.totalCents,
+          currency: totals.currency,
+          idempotencyKey: `checkout-refund/${paymentId}`,
+          reason: "Order could not be saved after payment",
+        });
+        refunded = true;
+        logger.info("checkout.payment_refunded_after_persist_failure", {
+          paymentId,
+        });
+      } catch (refundError) {
+        logger.error("checkout.payment_refund_failed", {
+          paymentId,
+          error:
+            refundError instanceof Error
+              ? refundError.message
+              : String(refundError),
+        });
+      }
+    }
+
     throw new AppError(
       "INTERNAL_ERROR",
       simulate
         ? "Could not save your order. Please try again."
-        : "Payment succeeded but we could not save your order. Contact the restaurant with your payment receipt.",
+        : refunded
+          ? "We couldn't save your order, so the payment was refunded. Please try again."
+          : "Payment succeeded but we could not save your order. Contact the restaurant with your payment receipt.",
       500,
-      { paymentId },
+      { paymentId, refunded },
     );
   }
 }

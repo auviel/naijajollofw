@@ -13,12 +13,13 @@ const config = getSentryExpoConfig(projectRoot, {
 
 config.watchFolders = [...(config.watchFolders ?? []), apiTypes, ui];
 config.resolver.nodeModulesPaths = [appNodeModules];
-config.resolver.disableHierarchicalLookup = true;
+config.resolver.disableHierarchicalLookup = false;
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules ?? {}),
   "@naijajollof/api-types": apiTypes,
   "@naijajollof/ui": ui,
   react: path.resolve(appNodeModules, "react"),
+  "react-dom": path.resolve(appNodeModules, "react-dom"),
   "react-native": path.resolve(appNodeModules, "react-native"),
   "expo-blur": path.resolve(appNodeModules, "expo-blur"),
   "expo-glass-effect": path.resolve(appNodeModules, "expo-glass-effect"),

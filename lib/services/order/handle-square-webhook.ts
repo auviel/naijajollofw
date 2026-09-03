@@ -1,4 +1,5 @@
 import { orderRepository } from "@/lib/db/repositories/order.repository";
+import { canCancelOrderViaSquarePayment } from "@/lib/integrations/payments/square/payment-guards";
 import {
   parseSquareWebhookEvent,
   verifySquareWebhookSignature,
@@ -29,6 +30,19 @@ export async function handleSquareWebhook(
 
   if (status === "FAILED" || status === "CANCELED") {
     const previous = await orderRepository.findBySquarePaymentId(paymentId);
+    if (!previous) {
+      return;
+    }
+    if (!canCancelOrderViaSquarePayment(previous.status)) {
+      logger.warn("square.webhook.cancel_skipped_terminal_or_active", {
+        paymentId,
+        orderId: previous.id,
+        orderStatus: previous.status,
+        squareStatus: status,
+      });
+      return;
+    }
+
     const updated = await orderRepository.updateStatusBySquarePaymentId(
       paymentId,
       "cancelled",
@@ -37,7 +51,7 @@ export async function handleSquareWebhook(
     if (
       updated &&
       updated.status === "cancelled" &&
-      previous?.status !== "cancelled"
+      previous.status !== "cancelled"
     ) {
       void notifyOrderStatus({
         userId: updated.userId,

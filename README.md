@@ -76,12 +76,13 @@ npm run db:migrate
 npm run db:seed
 ```
 
-Seed creates the Waterloo store + menu only — **no staff login**. Create a store manager separately (dashboard signup flow or insert a `User` with a bcrypt `passwordHash`).
+Seed creates the Waterloo store + menu and a local store manager.
 
 | Field | Value |
 |-------|-------|
 | Store | Naija Jollof Waterloo — 280 Lester St #102, Waterloo, ON |
 | Store id | `seed-store-waterloo` |
+| Staff login | `admin@naijajollofw.ca` / `123456` |
 | DoorDash store id | `DOORDASH_EXTERNAL_STORE_ID` in `.env` (e.g. `default`) |
 
 After seeding, register the store with DoorDash:

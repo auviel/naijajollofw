@@ -148,7 +148,7 @@ export async function requireDiner(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) {
     if (await shouldRedirectUnauthenticated()) {
-      redirect("/api/auth/clear-session?callbackUrl=/login");
+      redirect("/api/auth/clear-session?callbackUrl=/signin");
     }
     throw new AppError("UNAUTHORIZED", "Authentication required", 401);
   }

@@ -1,9 +1,16 @@
 import { allocateUniqueMenuSlug } from "../lib/domain/menu/slug";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
 import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
 
 const prisma = new PrismaClient();
+
+const SEED_STAFF = {
+  email: "admin@naijajollofw.ca",
+  password: "123456",
+  name: "Store Manager",
+} as const;
 
 const SEED_STORE_BASE = {
   name: "Naija Jollof Waterloo",
@@ -409,11 +416,42 @@ async function main() {
     });
   }
 
+  const passwordHash = await bcrypt.hash(SEED_STAFF.password, 12);
+  const existingStaff =
+    (await prisma.user.findUnique({ where: { email: SEED_STAFF.email } })) ??
+    (await prisma.user.findUnique({
+      where: { email: "hello@naijajollofw.ca" },
+    }));
+
+  if (existingStaff) {
+    await prisma.user.update({
+      where: { id: existingStaff.id },
+      data: {
+        email: SEED_STAFF.email,
+        passwordHash,
+        name: SEED_STAFF.name,
+        role: "STORE_MANAGER",
+        storeId: store.id,
+        sessionVersion: { increment: 1 },
+      },
+    });
+  } else {
+    await prisma.user.create({
+      data: {
+        email: SEED_STAFF.email,
+        passwordHash,
+        name: SEED_STAFF.name,
+        role: "STORE_MANAGER",
+        storeId: store.id,
+      },
+    });
+  }
+
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);
   console.log(`  DoorDash external_store_id: ${getDoorDashExternalStoreIdFromEnv() ?? store.id}`);
   console.log(`  Coords: ${store.latitude}, ${store.longitude}`);
-  console.log("  No staff user seeded — create one separately.");
+  console.log(`  Staff: ${SEED_STAFF.email} / ${SEED_STAFF.password}`);
   console.log(
     `  Menu: ${categoryDefs.length} categories · ${items.length} items`,
   );

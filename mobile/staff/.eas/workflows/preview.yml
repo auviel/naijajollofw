@@ -1,0 +1,19 @@
+# Manual only — run with:
+#   cd mobile/staff && npx eas-cli workflow:run .eas/workflows/preview.yml
+# Not triggered on git push (saves Expo free-plan build minutes).
+
+name: Naija Jollof Kitchen preview
+
+jobs:
+  build_ios:
+    name: Build Naija Jollof Kitchen iOS
+    type: build
+    params:
+      platform: ios
+      profile: preview
+  build_android:
+    name: Build Naija Jollof Kitchen Android
+    type: build
+    params:
+      platform: android
+      profile: preview

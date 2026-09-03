@@ -3,6 +3,7 @@ import {
   mapOrderToStaffDetail,
   orderRepository,
 } from "@/lib/db/repositories/order.repository";
+import { canFulfillManualDelivery } from "@/lib/domain/order/fulfill-preconditions";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { fulfillManualSchema } from "@/lib/domain/order/validation-staff";
 import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";
@@ -20,26 +21,21 @@ export async function fulfillOrderManual(
     throw new AppError("NOT_FOUND", "Order not found.", 404);
   }
 
-  if (existing.fulfillmentType !== "delivery") {
+  if (
+    !canFulfillManualDelivery({
+      status: existing.status,
+      fulfillmentType: existing.fulfillmentType,
+      fulfillmentMethod: existing.fulfillmentMethod,
+      deliveryId: existing.deliveryId,
+    })
+  ) {
     throw new AppError(
       "VALIDATION_ERROR",
-      "Manual delivery is only for delivery orders.",
-      400,
-    );
-  }
-
-  if (existing.status !== "ready") {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Order must be ready before dispatching delivery.",
-      400,
-    );
-  }
-
-  if (existing.fulfillmentMethod !== "unassigned") {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "This order is already assigned a fulfillment method.",
+      existing.fulfillmentType !== "delivery"
+        ? "Manual delivery is only for delivery orders."
+        : existing.status !== "ready"
+          ? "Order must be ready before dispatching delivery."
+          : "This order is already assigned a fulfillment method.",
       400,
     );
   }
@@ -52,7 +48,11 @@ export async function fulfillOrderManual(
   });
 
   if (!updated) {
-    throw new AppError("NOT_FOUND", "Order not found.", 404);
+    throw new AppError(
+      "CONFLICT",
+      "This order was already assigned a fulfillment method. Refresh and try again.",
+      409,
+    );
   }
 
   void notifyOrderStatus({

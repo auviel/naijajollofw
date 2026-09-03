@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Naija Jollof Kitchen",
-    "slug": "naijajollof-staff",
+    "slug": "naija-jollof-kitchen",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,11 +11,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "ca.naijajollofw.staff",
       "infoPlist": {
+        "CFBundleDisplayName": "Naija Jollof Kitchen",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "ca.naijajollofw.staff",
+      "label": "Naija Jollof Kitchen",
       "adaptiveIcon": {
         "backgroundColor": "#CC5400",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -59,9 +61,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "replace-after-eas-init"
-      }
+        "projectId": "9164d572-0217-46a8-950a-975a0b247548"
+      },
+      "router": {}
     },
-    "owner": "naijajollofw"
+    "owner": "auviel"
   }
 }

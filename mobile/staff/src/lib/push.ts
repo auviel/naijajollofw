@@ -40,12 +40,20 @@ export async function registerStaffPushDevice(): Promise<void> {
     });
   }
 
+  const rawProjectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants.easConfig?.projectId;
   const projectId =
-    Constants.easConfig?.projectId ??
-    Constants.expoConfig?.extra?.eas?.projectId;
-  const token = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
+    typeof rawProjectId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      rawProjectId,
+    )
+      ? rawProjectId
+      : undefined;
+  if (!projectId) {
+    return;
+  }
+  const token = await Notifications.getExpoPushTokenAsync({ projectId });
 
   await apiFetch("/api/mobile/devices", {
     method: "POST",

@@ -12,16 +12,20 @@ const config = getSentryExpoConfig(projectRoot, {
 });
 
 config.watchFolders = [...(config.watchFolders ?? []), apiTypes, ui];
+// Prefer this app's node_modules so we don't pick up the Next.js workspace React.
 config.resolver.nodeModulesPaths = [appNodeModules];
-config.resolver.disableHierarchicalLookup = true;
+// Allow nested deps under packages in this app (e.g. expo/node_modules/*).
+config.resolver.disableHierarchicalLookup = false;
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules ?? {}),
   "@naijajollof/api-types": apiTypes,
   "@naijajollof/ui": ui,
   react: path.resolve(appNodeModules, "react"),
+  "react-dom": path.resolve(appNodeModules, "react-dom"),
   "react-native": path.resolve(appNodeModules, "react-native"),
   "expo-blur": path.resolve(appNodeModules, "expo-blur"),
   "expo-glass-effect": path.resolve(appNodeModules, "expo-glass-effect"),
+  "expo-modules-core": path.resolve(appNodeModules, "expo-modules-core"),
 };
 config.resolver.unstable_enableSymlinks = true;
 

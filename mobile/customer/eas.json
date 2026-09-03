@@ -4,16 +4,21 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": { "simulator": false }
+      "ios": { "simulator": false, "image": "latest" },
+      "android": { "image": "latest" }
     },
     "preview": {
       "distribution": "internal",
+      "ios": { "image": "latest" },
+      "android": { "image": "latest" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://new.naijajollofw.ca"
       }
     },
     "production": {
       "distribution": "store",
+      "ios": { "image": "latest" },
+      "android": { "image": "latest" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://new.naijajollofw.ca"
       }

@@ -54,4 +54,4 @@ jobs:
         env:
           EAS_PLATFORM: ${{ inputs.platform }}
           EAS_PROFILE: ${{ inputs.profile }}
-        run: eas build --non-interactive --platform "$EAS_PLATFORM" --profile "$EAS_PROFILE"
+        run: eas build --non-interactive --platform "$EAS_PLATFORM" --profile "$EAS_PROFILE" --no-wait

@@ -1,6 +1,6 @@
-# Naija Jollof kitchen app
+# Naija Jollof Kitchen
 
-Expo SDK 54 staff app. **Do not list publicly** on the App Store or Play Store.
+Staff kitchen app (Expo SDK 57). Home-screen name: **Naija Jollof Kitchen**. **Do not list publicly** on the App Store or Play Store.
 
 Shared checks and EAS steps: [../README.md](../README.md).
 

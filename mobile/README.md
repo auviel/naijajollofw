@@ -1,11 +1,11 @@
 # Mobile apps
 
-Two Expo SDK 54 apps talk to the Next.js API:
+Two Expo SDK 57 apps talk to the Next.js API:
 
 | App | Folder | Audience | Store listing |
 |-----|--------|----------|----------------|
-| Diner | [`customer/`](./customer) | Guests | Public App Store / Play |
-| Kitchen | [`staff/`](./staff) | Staff only | **Not public** — TestFlight / closed Play track |
+| **Naija Jollof** | [`customer/`](./customer) | Guests | Public App Store / Play |
+| **Naija Jollof Kitchen** | [`staff/`](./staff) | Staff only | **Not public** — TestFlight / closed Play track |
 
 Point `EXPO_PUBLIC_API_URL` at the Next.js origin (LAN IP + port for Expo Go).
 
@@ -38,7 +38,7 @@ npm run typecheck:mobile
 
 ## One-time EAS setup
 
-1. Expo account (org `naijajollofw` already in `app.json`).
+1. Expo account (org `auviel` already in `app.json`).
 2. Install CLI: `npm i -g eas-cli`
 3. In each app folder:
 
@@ -47,10 +47,8 @@ cd mobile/customer   # then again in mobile/staff
 npx eas init         # writes the real projectId into app.json
 ```
 
-4. GitHub secret `EXPO_TOKEN` (expo.dev → Access tokens) for [EAS preview](../.github/workflows/eas-preview.yml).
+4. GitHub: both apps are linked to [`auviel/naijajollofw`](https://github.com/auviel/naijajollofw) with base dirs `/mobile/customer` and `/mobile/staff`. Builds are **manual only** (no push triggers) to avoid burning Expo free-plan minutes — use Actions → **EAS preview**, or `eas workflow:run .eas/workflows/preview.yml` in each app folder. Needs repo secret `EXPO_TOKEN` for the GitHub Action.
 5. Apple / Google credentials via `eas credentials` when you first build iOS/Android.
-
-Do **not** leave `extra.eas.projectId` as `replace-after-eas-init`.
 
 ## Build profiles
 

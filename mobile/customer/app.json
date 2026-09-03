@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Naija Jollof",
-    "slug": "naijajollof-diner",
+    "slug": "naija-jollof-customer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,11 +11,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "ca.naijajollofw.diner",
       "infoPlist": {
+        "CFBundleDisplayName": "Naija Jollof",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "ca.naijajollofw.diner",
+      "label": "Naija Jollof",
       "adaptiveIcon": {
         "backgroundColor": "#CC5400",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -60,9 +62,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "replace-after-eas-init"
-      }
+        "projectId": "3f9aa04f-fece-419d-bc26-f16cc71705fd"
+      },
+      "router": {}
     },
-    "owner": "naijajollofw"
+    "owner": "auviel"
   }
 }

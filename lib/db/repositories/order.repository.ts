@@ -518,15 +518,15 @@ export const orderRepository = {
     note?: string | null;
   }) {
     return prisma.$transaction(async (tx) => {
-      const existing = await tx.order.findFirst({
-        where: { id: input.orderId, storeId: input.storeId },
-      });
-      if (!existing) {
-        return null;
-      }
-
-      await tx.order.update({
-        where: { id: existing.id },
+      const result = await tx.order.updateMany({
+        where: {
+          id: input.orderId,
+          storeId: input.storeId,
+          status: "ready",
+          fulfillmentType: "delivery",
+          fulfillmentMethod: "unassigned",
+          deliveryId: null,
+        },
         data: {
           fulfillmentMethod: "manual",
           manualDeliveryNote: input.note?.trim() || null,
@@ -534,9 +534,13 @@ export const orderRepository = {
         },
       });
 
+      if (result.count === 0) {
+        return null;
+      }
+
       await tx.orderEvent.create({
         data: {
-          orderId: existing.id,
+          orderId: input.orderId,
           status: "out_for_delivery",
           actor: input.actor,
           note: input.note?.trim()
@@ -546,7 +550,7 @@ export const orderRepository = {
       });
 
       return tx.order.findFirstOrThrow({
-        where: { id: existing.id },
+        where: { id: input.orderId },
         include: orderInclude,
       });
     });
@@ -559,15 +563,15 @@ export const orderRepository = {
     actor: string;
   }) {
     return prisma.$transaction(async (tx) => {
-      const existing = await tx.order.findFirst({
-        where: { id: input.orderId, storeId: input.storeId },
-      });
-      if (!existing) {
-        return null;
-      }
-
-      await tx.order.update({
-        where: { id: existing.id },
+      const result = await tx.order.updateMany({
+        where: {
+          id: input.orderId,
+          storeId: input.storeId,
+          status: "ready",
+          fulfillmentType: "delivery",
+          fulfillmentMethod: "unassigned",
+          deliveryId: null,
+        },
         data: {
           fulfillmentMethod: "delivergo",
           deliveryId: input.deliveryId,
@@ -575,9 +579,21 @@ export const orderRepository = {
         },
       });
 
+      if (result.count === 0) {
+        const existing = await tx.order.findFirst({
+          where: { id: input.orderId, storeId: input.storeId },
+          include: orderInclude,
+        });
+        // Idempotent retry of the same delivery link.
+        if (existing?.deliveryId === input.deliveryId) {
+          return existing;
+        }
+        return null;
+      }
+
       await tx.orderEvent.create({
         data: {
-          orderId: existing.id,
+          orderId: input.orderId,
           status: "out_for_delivery",
           actor: input.actor,
           note: "Dispatched via Courier",
@@ -585,7 +601,7 @@ export const orderRepository = {
       });
 
       return tx.order.findFirstOrThrow({
-        where: { id: existing.id },
+        where: { id: input.orderId },
         include: orderInclude,
       });
     });
@@ -714,6 +730,14 @@ export const orderRepository = {
       return null;
     }
     if (existing.status === status) {
+      return existing;
+    }
+    // Defense in depth: Square failure webhooks must not cancel kitchen/courier tickets.
+    if (
+      status === "cancelled" &&
+      existing.status !== "pending_payment" &&
+      existing.status !== "pending_acceptance"
+    ) {
       return existing;
     }
 

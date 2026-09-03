@@ -130,33 +130,41 @@ export const cartRepository = {
     modifiers: CartModifierSelection[];
   }) {
     const signature = modifiersSignature(input.modifiers);
-    const existingLines = await prisma.cartItem.findMany({
-      where: { cartId: input.cartId, menuItemId: input.menuItemId },
-    });
 
-    const match = existingLines.find(
-      (line) => modifiersSignature(parseModifiers(line.modifiers)) === signature,
-    );
+    await prisma.$transaction(async (tx) => {
+      // Serialize merges for the same cart so concurrent AI/UI adds don't
+      // create duplicate lines for identical item+modifier selections.
+      await tx.$executeRaw`SELECT id FROM "Cart" WHERE id = ${input.cartId} FOR UPDATE`;
 
-    if (match) {
-      await prisma.cartItem.update({
-        where: { id: match.id },
-        data: { quantity: match.quantity + input.quantity },
+      const existingLines = await tx.cartItem.findMany({
+        where: { cartId: input.cartId, menuItemId: input.menuItemId },
       });
-    } else {
-      await prisma.cartItem.create({
-        data: {
-          cartId: input.cartId,
-          menuItemId: input.menuItemId,
-          quantity: input.quantity,
-          modifiers: input.modifiers as Prisma.InputJsonValue,
-        },
-      });
-    }
 
-    await prisma.cart.update({
-      where: { id: input.cartId },
-      data: { updatedAt: new Date() },
+      const match = existingLines.find(
+        (line) =>
+          modifiersSignature(parseModifiers(line.modifiers)) === signature,
+      );
+
+      if (match) {
+        await tx.cartItem.update({
+          where: { id: match.id },
+          data: { quantity: match.quantity + input.quantity },
+        });
+      } else {
+        await tx.cartItem.create({
+          data: {
+            cartId: input.cartId,
+            menuItemId: input.menuItemId,
+            quantity: input.quantity,
+            modifiers: input.modifiers as Prisma.InputJsonValue,
+          },
+        });
+      }
+
+      await tx.cart.update({
+        where: { id: input.cartId },
+        data: { updatedAt: new Date() },
+      });
     });
   },
 
