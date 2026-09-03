@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
+import { orderIdParamSchema } from "@/lib/domain/order/ids";
 import { getPublicOrder } from "@/lib/services/order/get-public-order";
 import { getStaffOrder } from "@/lib/services/order/get-staff-order";
 import { AppError, handleApiError } from "@/lib/utils/errors";
 
 const paramsSchema = z.object({
-  id: z.string().cuid(),
+  id: orderIdParamSchema,
 });
 
 type RouteContext = {

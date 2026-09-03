@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: Colors.accent },
   secondary: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.secondarySoft,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: Colors.border,
   },
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   ghost: { backgroundColor: "transparent" },
   disabled: { opacity: 0.45 },
   pressed: { transform: [{ scale: 0.98 }] },
-  label: { fontSize: 16, fontWeight: "800" },
+  label: { fontSize: 15, fontWeight: "600", letterSpacing: -0.1 },
   labelLight: { color: Colors.inverse },
-  labelDark: { color: Colors.text },
+  labelDark: { color: Colors.secondary },
 });

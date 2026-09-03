@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStoreManager } from "@/lib/auth/session";
+import { orderIdParamSchema } from "@/lib/domain/order/ids";
 import { fulfillManualSchema } from "@/lib/domain/order/validation-staff";
 import { fulfillOrderManual } from "@/lib/services/order/fulfill-manual";
 import { parseJsonBody } from "@/lib/utils/api-request";
 import { handleApiError } from "@/lib/utils/errors";
 
 const paramsSchema = z.object({
-  id: z.string().cuid(),
+  id: orderIdParamSchema,
 });
 
 type RouteContext = {

@@ -1,11 +1,13 @@
 export { Button } from "./button";
 export { Card } from "./card";
 export { Field } from "./field";
-export { GlassSurface } from "./glass-surface";
+export { GlassSurface, GlassCluster, canUseLiquidGlass } from "./glass-surface";
 export { Screen } from "./screen";
 export {
   CartScreenSkeleton,
   ItemScreenSkeleton,
+  KitchenBoardSkeleton,
+  KitchenTicketSkeleton,
   MenuScreenSkeleton,
   OrdersScreenSkeleton,
   Skeleton,

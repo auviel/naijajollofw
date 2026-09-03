@@ -1,10 +1,416 @@
 import { allocateUniqueMenuSlug } from "../lib/domain/menu/slug";
-import { PrismaClient } from "@prisma/client";
+import {
+  type FulfillmentType,
+  type OrderStatus,
+  Prisma,
+  PrismaClient,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
 import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
 
 const prisma = new PrismaClient();
+
+function torontoCalendarDate(): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === "year")?.value ?? "2026";
+  const m = parts.find((p) => p.type === "month")?.value ?? "01";
+  const d = parts.find((p) => p.type === "day")?.value ?? "01";
+  return new Date(`${y}-${m}-${d}T00:00:00.000Z`);
+}
+
+function minutesAgo(mins: number): Date {
+  return new Date(Date.now() - mins * 60_000);
+}
+
+function hoursFromNow(hours: number): Date {
+  return new Date(Date.now() + hours * 3_600_000);
+}
+
+function eventsForStatus(status: OrderStatus): OrderStatus[] {
+  switch (status) {
+    case "pending_acceptance":
+      return ["pending_acceptance"];
+    case "accepted":
+      return ["pending_acceptance", "accepted"];
+    case "preparing":
+      return ["pending_acceptance", "preparing"];
+    case "ready":
+      return ["pending_acceptance", "preparing", "ready"];
+    case "ready_for_pickup":
+      return ["pending_acceptance", "preparing", "ready_for_pickup"];
+    case "out_for_delivery":
+      return ["pending_acceptance", "preparing", "ready", "out_for_delivery"];
+    case "completed":
+      return ["pending_acceptance", "preparing", "ready_for_pickup", "completed"];
+    default:
+      return ["pending_acceptance"];
+  }
+}
+
+async function seedKitchenBoardOrders(storeId: string) {
+  await prisma.orderEvent.deleteMany({
+    where: { order: { storeId, id: { startsWith: "seed-kitchen-" } } },
+  });
+  await prisma.orderLineItem.deleteMany({
+    where: { order: { storeId, id: { startsWith: "seed-kitchen-" } } },
+  });
+  await prisma.order.deleteMany({
+    where: { storeId, id: { startsWith: "seed-kitchen-" } },
+  });
+
+  const dayTicketDate = torontoCalendarDate();
+
+  type Line = {
+    name: string;
+    quantity: number;
+    unitPriceCents: number;
+    modifiers?: Array<{ name: string }>;
+  };
+
+  type Spec = {
+    id: string;
+    status: OrderStatus;
+    fulfillmentType: FulfillmentType;
+    customerName: string;
+    customerPhone: string;
+    displayNumber: string;
+    dayTicket: number;
+    notes?: string | null;
+    scheduledFor?: Date | null;
+    placedAt: Date;
+    dropoffAddress?: string | null;
+    lines: Line[];
+  };
+
+  const specs: Spec[] = [
+    {
+      id: "seed-kitchen-01",
+      status: "pending_acceptance",
+      fulfillmentType: "pickup",
+      customerName: "Ada Okonkwo",
+      customerPhone: "+15195550101",
+      displayNumber: "NJ-K01",
+      dayTicket: 1,
+      notes: "Extra spicy · no onion",
+      placedAt: minutesAgo(2),
+      lines: [
+        {
+          name: "Jollof Rice, Plantain and Chicken",
+          quantity: 2,
+          unitPriceCents: 2399,
+          modifiers: [{ name: "Jollof rice" }, { name: "4 pcs chicken" }],
+        },
+        { name: "Chapman", quantity: 1, unitPriceCents: 499 },
+      ],
+    },
+    {
+      id: "seed-kitchen-02",
+      status: "pending_acceptance",
+      fulfillmentType: "delivery",
+      customerName: "Marcus Chen",
+      customerPhone: "+15195550102",
+      displayNumber: "NJ-K02",
+      dayTicket: 2,
+      placedAt: minutesAgo(5),
+      dropoffAddress: "200 University Ave W, Waterloo ON",
+      lines: [
+        {
+          name: "Eferiro Soup",
+          quantity: 1,
+          unitPriceCents: 1699,
+          modifiers: [{ name: "With fufu" }],
+        },
+      ],
+    },
+    {
+      id: "seed-kitchen-03",
+      status: "pending_acceptance",
+      fulfillmentType: "pickup",
+      customerName: "Priya Nair",
+      customerPhone: "+15195550103",
+      displayNumber: "NJ-K03",
+      dayTicket: 3,
+      placedAt: minutesAgo(8),
+      lines: [
+        { name: "Fried Rice & Chicken", quantity: 1, unitPriceCents: 1999 },
+        { name: "Plantain", quantity: 2, unitPriceCents: 699 },
+      ],
+    },
+    {
+      id: "seed-kitchen-04",
+      status: "pending_acceptance",
+      fulfillmentType: "delivery",
+      customerName: "Jordan Blake",
+      customerPhone: "+15195550104",
+      displayNumber: "NJ-K04",
+      dayTicket: 4,
+      notes: "Gate code 4421",
+      placedAt: minutesAgo(1),
+      dropoffAddress: "75 King St S, Waterloo ON",
+      lines: [
+        {
+          name: "Half Tray Party Rice",
+          quantity: 1,
+          unitPriceCents: 6499,
+          modifiers: [{ name: "Jollof" }, { name: "20 pcs chicken" }],
+        },
+      ],
+    },
+    {
+      id: "seed-kitchen-05",
+      status: "pending_acceptance",
+      fulfillmentType: "pickup",
+      customerName: "Later Pickup — Sam",
+      customerPhone: "+15195550105",
+      displayNumber: "NJ-K05",
+      dayTicket: 5,
+      scheduledFor: hoursFromNow(3),
+      placedAt: minutesAgo(20),
+      lines: [
+        { name: "Okra Soup", quantity: 2, unitPriceCents: 1699 },
+        { name: "Pounded Yam", quantity: 2, unitPriceCents: 899 },
+      ],
+    },
+    {
+      id: "seed-kitchen-06",
+      status: "pending_acceptance",
+      fulfillmentType: "delivery",
+      customerName: "Later Delivery — Tess",
+      customerPhone: "+15195550106",
+      displayNumber: "NJ-K06",
+      dayTicket: 6,
+      scheduledFor: hoursFromNow(5),
+      placedAt: minutesAgo(40),
+      dropoffAddress: "31 Caroline St N, Waterloo ON",
+      lines: [
+        { name: "Full Tray Party Rice - Family Pack", quantity: 1, unitPriceCents: 13499 },
+      ],
+    },
+    {
+      id: "seed-kitchen-07",
+      status: "preparing",
+      fulfillmentType: "pickup",
+      customerName: "Noah Patel",
+      customerPhone: "+15195550107",
+      displayNumber: "NJ-K07",
+      dayTicket: 7,
+      placedAt: minutesAgo(18),
+      lines: [
+        {
+          name: "Jollof Rice and Turkey",
+          quantity: 1,
+          unitPriceCents: 2099,
+        },
+        { name: "Moi Moi", quantity: 1, unitPriceCents: 599 },
+      ],
+    },
+    {
+      id: "seed-kitchen-08",
+      status: "preparing",
+      fulfillmentType: "delivery",
+      customerName: "Elena Rossi",
+      customerPhone: "+15195550108",
+      displayNumber: "NJ-K08",
+      dayTicket: 8,
+      notes: "Leave at door",
+      placedAt: minutesAgo(25),
+      dropoffAddress: "155 King St N, Waterloo ON",
+      lines: [
+        { name: "Ayamashe Stew with White Rice", quantity: 2, unitPriceCents: 2399 },
+      ],
+    },
+    {
+      id: "seed-kitchen-09",
+      status: "preparing",
+      fulfillmentType: "pickup",
+      customerName: "Chris Adeyemi",
+      customerPhone: "+15195550109",
+      displayNumber: "NJ-K09",
+      dayTicket: 9,
+      placedAt: minutesAgo(12),
+      lines: [
+        { name: "Jollof Rice and Assorted Beef", quantity: 1, unitPriceCents: 2399 },
+        { name: "Chapman", quantity: 2, unitPriceCents: 499 },
+        { name: "Plantain", quantity: 1, unitPriceCents: 699 },
+      ],
+    },
+    {
+      id: "seed-kitchen-10",
+      status: "accepted",
+      fulfillmentType: "pickup",
+      customerName: "Accepted Hold — Kim",
+      customerPhone: "+15195550110",
+      displayNumber: "NJ-K10",
+      dayTicket: 10,
+      placedAt: minutesAgo(6),
+      lines: [{ name: "Eferiro Soup", quantity: 1, unitPriceCents: 1699 }],
+    },
+    {
+      id: "seed-kitchen-11",
+      status: "ready_for_pickup",
+      fulfillmentType: "pickup",
+      customerName: "Fatima Hassan",
+      customerPhone: "+15195550111",
+      displayNumber: "NJ-K11",
+      dayTicket: 11,
+      placedAt: minutesAgo(35),
+      lines: [
+        {
+          name: "Jollof Rice, Plantain and Chicken",
+          quantity: 1,
+          unitPriceCents: 2399,
+        },
+      ],
+    },
+    {
+      id: "seed-kitchen-12",
+      status: "ready_for_pickup",
+      fulfillmentType: "pickup",
+      customerName: "Will Torres",
+      customerPhone: "+15195550112",
+      displayNumber: "NJ-K12",
+      dayTicket: 12,
+      placedAt: minutesAgo(42),
+      lines: [
+        { name: "Fried Rice & Chicken", quantity: 3, unitPriceCents: 1999 },
+      ],
+    },
+    {
+      id: "seed-kitchen-13",
+      status: "ready",
+      fulfillmentType: "delivery",
+      customerName: "Needs Courier — Maya",
+      customerPhone: "+15195550113",
+      displayNumber: "NJ-K13",
+      dayTicket: 13,
+      placedAt: minutesAgo(30),
+      dropoffAddress: "90 Westmount Rd N, Waterloo ON",
+      lines: [
+        { name: "Okra Soup", quantity: 1, unitPriceCents: 1699 },
+        { name: "White Rice", quantity: 1, unitPriceCents: 799 },
+      ],
+    },
+    {
+      id: "seed-kitchen-14",
+      status: "ready",
+      fulfillmentType: "delivery",
+      customerName: "Needs Courier — Dev",
+      customerPhone: "+15195550114",
+      displayNumber: "NJ-K14",
+      dayTicket: 14,
+      notes: "Apartment 4B",
+      placedAt: minutesAgo(28),
+      dropoffAddress: "330 Phillip St, Waterloo ON",
+      lines: [
+        { name: "Half Tray Party Rice", quantity: 1, unitPriceCents: 6499 },
+      ],
+    },
+    {
+      id: "seed-kitchen-15",
+      status: "out_for_delivery",
+      fulfillmentType: "delivery",
+      customerName: "On the Road — Lex",
+      customerPhone: "+15195550115",
+      displayNumber: "NJ-K15",
+      dayTicket: 15,
+      placedAt: minutesAgo(50),
+      dropoffAddress: "10 Regina St N, Waterloo ON",
+      lines: [
+        { name: "Jollof Rice and Turkey", quantity: 2, unitPriceCents: 2099 },
+      ],
+    },
+    {
+      id: "seed-kitchen-16",
+      status: "pending_acceptance",
+      fulfillmentType: "pickup",
+      customerName: "Big Party — Amaka",
+      customerPhone: "+15195550116",
+      displayNumber: "NJ-K16",
+      dayTicket: 16,
+      notes: "Call when ready — large order",
+      placedAt: minutesAgo(3),
+      lines: [
+        {
+          name: "Full Tray Party Rice - Family Pack",
+          quantity: 1,
+          unitPriceCents: 13499,
+        },
+        { name: "2.6L Chicken Stew", quantity: 1, unitPriceCents: 10999 },
+        { name: "Plantain", quantity: 4, unitPriceCents: 699 },
+        { name: "Chapman", quantity: 6, unitPriceCents: 499 },
+      ],
+    },
+  ];
+
+  for (const spec of specs) {
+    const subtotalCents = spec.lines.reduce(
+      (sum, line) => sum + line.unitPriceCents * line.quantity,
+      0,
+    );
+    const taxCents = Math.round(subtotalCents * 0.13);
+    const tipCents = spec.fulfillmentType === "delivery" ? 400 : 0;
+    const totalCents = subtotalCents + taxCents + tipCents;
+    const statusPath = eventsForStatus(spec.status);
+
+    await prisma.order.create({
+      data: {
+        id: spec.id,
+        storeId,
+        source: "storefront",
+        status: spec.status,
+        fulfillmentType: spec.fulfillmentType,
+        fulfillmentMethod:
+          spec.status === "out_for_delivery" ? "manual" : "unassigned",
+        customerName: spec.customerName,
+        customerPhone: spec.customerPhone,
+        customerEmail: `${spec.id}@seed.naijajollofw.ca`,
+        dropoffAddress: spec.dropoffAddress ?? null,
+        notes: spec.notes ?? null,
+        scheduledFor: spec.scheduledFor ?? null,
+        subtotalCents,
+        tipCents,
+        taxCents,
+        totalCents,
+        currency: "CAD",
+        squarePaymentId: `seed-pay-${spec.id}`,
+        displayNumber: spec.displayNumber,
+        dayTicket: spec.dayTicket,
+        dayTicketDate,
+        placedAt: spec.placedAt,
+        manualDeliveryNote:
+          spec.status === "out_for_delivery" ? "Seeded manual run" : null,
+        lineItems: {
+          create: spec.lines.map((line) => ({
+            name: line.name,
+            unitPriceCents: line.unitPriceCents,
+            quantity: line.quantity,
+            modifiers: (line.modifiers ?? []) as Prisma.InputJsonValue,
+            lineTotalCents: line.unitPriceCents * line.quantity,
+          })),
+        },
+        events: {
+          create: statusPath.map((status, index) => ({
+            status,
+            actor: index === 0 ? "system" : "seed",
+            note:
+              index === 0
+                ? "Payment received (seed)"
+                : `Seed advanced to ${status}`,
+            createdAt: minutesAgo(Math.max(0, 60 - index * 5)),
+          })),
+        },
+      },
+    });
+  }
+
+  console.log(`  Kitchen board: ${specs.length} seeded tickets (seed-kitchen-*)`);
+}
 
 const SEED_STAFF = {
   email: "admin@naijajollofw.ca",
@@ -446,6 +852,8 @@ async function main() {
       },
     });
   }
+
+  await seedKitchenBoardOrders(store.id);
 
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);

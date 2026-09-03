@@ -1,7 +1,13 @@
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { Colors, headerScreenOptions } from "@naijajollof/ui";
 import { isRunningInExpoGo } from "expo";
-import { Stack, useRouter, useSegments } from "expo-router";
+import {
+  DefaultTheme,
+  ThemeProvider,
+  Stack,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Sentry from "@sentry/react-native";
 import { useEffect, type ReactNode } from "react";
@@ -15,6 +21,19 @@ Sentry.init({
   enableNativeFramesTracking: !isRunningInExpoGo(),
   environment: __DEV__ ? "development" : "production",
 });
+
+const kitchenTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.accent,
+    background: Colors.background,
+    card: Colors.surface,
+    text: Colors.text,
+    border: Colors.border,
+    notification: Colors.accent,
+  },
+};
 
 function Gate({ children }: { children: ReactNode }) {
   const { loading, user } = useAuth();
@@ -51,17 +70,27 @@ function Gate({ children }: { children: ReactNode }) {
 
 function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <Gate>
-        <Stack screenOptions={headerScreenOptions}>
-          <Stack.Screen name="index" options={{ title: "Kitchen" }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="orders/[id]" options={{ title: "Ticket" }} />
-          <Stack.Screen name="account" options={{ title: "Account" }} />
-        </Stack>
-      </Gate>
-    </AuthProvider>
+    <ThemeProvider value={kitchenTheme}>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <Gate>
+          <Stack screenOptions={headerScreenOptions}>
+            <Stack.Screen
+              name="(tabs)"
+              options={{ headerShown: false, title: "Board" }}
+            />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="orders/[id]"
+              options={{
+                title: "Ticket",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+          </Stack>
+        </Gate>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

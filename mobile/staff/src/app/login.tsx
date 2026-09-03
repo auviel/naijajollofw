@@ -1,5 +1,7 @@
+import { SafeScreen } from "@/components/kitchen/safe-screen";
+import { KType } from "@/lib/kitchen/typography";
 import { useAuth } from "@/lib/auth";
-import { Button, Colors, Field, GlassSurface, Screen, Type } from "@naijajollof/ui";
+import { Button, Colors, Field, GlassSurface } from "@naijajollof/ui";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 
@@ -23,15 +25,15 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen>
+    <SafeScreen>
       <KeyboardAvoidingView
         style={styles.wrap}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <GlassSurface style={styles.card} interactive>
-          <Text style={Type.kicker}>Staff</Text>
-          <Text style={Type.display}>Kitchen</Text>
-          <Text style={Type.meta}>Sign in to run the board from your phone.</Text>
+          <Text style={KType.kicker}>Staff</Text>
+          <Text style={KType.page}>Kitchen</Text>
+          <Text style={KType.meta}>Sign in to run the board from your phone.</Text>
           <Field
             autoCapitalize="none"
             autoCorrect={false}
@@ -54,12 +56,12 @@ export default function LoginScreen() {
           />
         </GlassSurface>
       </KeyboardAvoidingView>
-    </Screen>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: "center", padding: 24 },
   card: { padding: 24, gap: 12 },
-  error: { color: Colors.danger, fontWeight: "600" },
+  error: { ...KType.metaStrong, color: Colors.danger },
 });

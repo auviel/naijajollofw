@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStoreManager } from "@/lib/auth/session";
+import { orderIdParamSchema } from "@/lib/domain/order/ids";
 import { fulfillDelivergoSchema } from "@/lib/domain/order/validation-staff";
 import { fulfillOrderDelivergo } from "@/lib/services/order/fulfill-delivergo";
 import { parseJsonBody } from "@/lib/utils/api-request";
@@ -8,7 +9,7 @@ import { AppError, handleApiError } from "@/lib/utils/errors";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 const paramsSchema = z.object({
-  id: z.string().cuid(),
+  id: orderIdParamSchema,
 });
 
 type RouteContext = {

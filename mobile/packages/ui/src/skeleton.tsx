@@ -1,5 +1,7 @@
-import { Colors, Radii, Space } from "./theme";
+import { Colors, Radii, Shadows, Space } from "./theme";
+import { useEffect, useRef } from "react";
 import {
+  Animated,
   type DimensionValue,
   type StyleProp,
   StyleSheet,
@@ -14,19 +16,40 @@ type SkeletonProps = {
   radius?: number;
 };
 
-/** Pulsing placeholder block for mobile loading states. */
+/** Soft pulse placeholder — content-shaped loading, not a spinner. */
 export function Skeleton({
   style,
   height = 16,
   width = "100%",
   radius = Radii.sm,
 }: SkeletonProps) {
+  const opacity = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.45,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+
   return (
-    <View
+    <Animated.View
       accessibilityRole="none"
       style={[
         styles.base,
-        { height, width, borderRadius: radius },
+        { height, width, borderRadius: radius, opacity },
         style,
       ]}
     />
@@ -115,21 +138,78 @@ export function ItemScreenSkeleton() {
   );
 }
 
+/** Kitchen board — mirrors column tabs + ticket cards. */
+export function KitchenBoardSkeleton() {
+  return (
+    <View style={styles.boardPad} accessibilityLabel="Loading kitchen board">
+      <Skeleton height={28} width="55%" />
+      <Skeleton height={14} width={64} style={{ marginTop: Space.xs }} />
+      <View style={styles.segment}>
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} height={42} style={{ flex: 1 }} radius={Radii.sm} />
+        ))}
+      </View>
+      {Array.from({ length: 3 }, (_, i) => (
+        <View key={i} style={styles.ticketCard}>
+          <View style={styles.ticketTop}>
+            <Skeleton height={18} width="30%" />
+            <Skeleton height={14} width={56} />
+          </View>
+          <Skeleton height={15} width="45%" style={{ marginTop: Space.sm }} />
+          <Skeleton height={13} width="80%" style={{ marginTop: Space.xs }} />
+          <Skeleton
+            height={44}
+            radius={Radii.button}
+            style={{ marginTop: Space.md }}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Kitchen ticket detail. */
+export function KitchenTicketSkeleton() {
+  return (
+    <View style={styles.screenPad} accessibilityLabel="Loading ticket">
+      <Skeleton height={24} width="40%" />
+      <Skeleton height={14} width="50%" style={{ marginTop: Space.sm }} />
+      <Skeleton height={15} width="70%" style={{ marginTop: Space.md }} />
+      {Array.from({ length: 3 }, (_, i) => (
+        <View key={i} style={styles.orderCard}>
+          <Skeleton height={15} width="65%" />
+          <Skeleton height={12} width="40%" style={{ marginTop: Space.xs }} />
+        </View>
+      ))}
+      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.md }} />
+      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.sm }} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: Colors.border,
-    opacity: 0.85,
+    backgroundColor: Colors.backgroundWash,
   },
   screenPad: {
     flex: 1,
     padding: Space.md,
     gap: Space.sm,
   },
+  boardPad: {
+    paddingTop: Space.xs,
+    gap: Space.md,
+  },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Space.xs,
     marginBottom: Space.md,
+  },
+  segment: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: Space.md,
   },
   menuRow: {
     flexDirection: "row",
@@ -143,7 +223,22 @@ const styles = StyleSheet.create({
   orderCard: {
     backgroundColor: Colors.surfaceElevated,
     borderRadius: Radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
     padding: Space.md,
-    marginBottom: Space.sm,
+    marginTop: Space.sm,
+  },
+  ticketCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
+    padding: Space.md,
+    ...Shadows.card,
+  },
+  ticketTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 });

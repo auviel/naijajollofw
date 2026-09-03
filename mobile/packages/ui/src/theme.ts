@@ -1,20 +1,32 @@
 import { Platform, type TextStyle, type ViewStyle } from "react-native";
 
+/**
+ * Three-tone system:
+ * 1) Neutrals — background / surfaces / text (readable, not branded)
+ * 2) Primary (accent) — buttons, selected, alerts only
+ * 3) Secondary — quieter actions / chrome
+ */
 export const Colors = {
-  background: "#F3EDE6",
-  backgroundWash: "#F8E4D4",
-  surface: "#FFFBFA",
+  background: "#E8E8EC",
+  backgroundWash: "#DCDCE2",
+  surface: "#FFFFFF",
   surfaceElevated: "#FFFFFF",
-  text: "#1C140F",
-  textSecondary: "#6B574C",
-  border: "rgba(28,20,15,0.08)",
+  text: "#18181B",
+  textSecondary: "#71717A",
+  /** Visible on white cards over light gray canvas */
+  border: "rgba(24,24,27,0.12)",
+  /** Brand primary — CTAs, active tint, wait chips */
   accent: "#CC5400",
-  accentSoft: "#FFF1E8",
+  /** Soft fill for selected / pressed primary (neutral track, not peach) */
+  accentSoft: "#F4F4F5",
   accentHover: "#AD4700",
-  success: "#04542E",
-  successSoft: "#E8F6EE",
-  danger: "#C62828",
-  dangerSoft: "#FDECEA",
+  /** Secondary actions / emphasis without brand orange */
+  secondary: "#3F3F46",
+  secondarySoft: "#F4F4F5",
+  success: "#15803D",
+  successSoft: "#F0FDF4",
+  danger: "#DC2626",
+  dangerSoft: "#FEF2F2",
   inverse: "#FFFFFF",
 };
 
@@ -79,22 +91,22 @@ export const Type = {
 export const Shadows = {
   card: Platform.select<ViewStyle>({
     ios: {
-      shadowColor: "#3D2314",
-      shadowOpacity: 0.08,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
+      shadowColor: "#18181B",
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
     },
     android: {
-      elevation: 2,
+      elevation: 3,
     },
     default: {},
   }) ?? {},
   float: Platform.select<ViewStyle>({
     ios: {
-      shadowColor: "#3D2314",
+      shadowColor: "#18181B",
       shadowOpacity: 0.14,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 10 },
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
     },
     android: {
       elevation: 8,
@@ -113,8 +125,11 @@ export const headerScreenOptions = {
     Platform.OS === "ios" ? ("systemChromeMaterialLight" as const) : undefined,
   headerShadowVisible: false,
   headerTintColor: Colors.text,
+  /** iOS: chevron only — no “Back” / route-group labels like “(tabs)”. */
+  headerBackButtonDisplayMode: "minimal" as const,
   headerTitleStyle: {
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
+    fontSize: 17,
     color: Colors.text,
   },
   headerStyle: {

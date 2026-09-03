@@ -1,10 +1,10 @@
 import { apiFetch } from "@/lib/api";
+import { KType } from "@/lib/kitchen/typography";
 import { formatCadFromCents, type StaffOrderDetail } from "@naijajollof/api-types";
-import { Button, Card, Colors, Screen, Type } from "@naijajollof/ui";
+import { Button, Card, Colors, KitchenTicketSkeleton, Screen } from "@naijajollof/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -68,11 +68,11 @@ export default function TicketScreen() {
 
   if (!order) {
     return (
-      <Screen style={styles.center}>
+      <Screen>
         {error ? (
-          <Text style={styles.error}>{error}</Text>
+          <Text style={[styles.error, { margin: 20 }]}>{error}</Text>
         ) : (
-          <ActivityIndicator color={Colors.accent} />
+          <KitchenTicketSkeleton />
         )}
       </Screen>
     );
@@ -81,44 +81,52 @@ export default function TicketScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={Type.display}>
+        <Text style={KType.title}>
           {order.displayNumber ?? (order.dayTicket ? `#${order.dayTicket}` : order.id)}
         </Text>
-        <Text style={Type.meta}>
+        <Text style={KType.meta}>
           {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} ·{" "}
           {order.status.replaceAll("_", " ")}
         </Text>
-        <Text style={styles.customer}>
+        <Text style={KType.bodyStrong}>
           {order.customerName} · {order.customerPhone}
         </Text>
-        {order.dropoffAddress ? <Text style={Type.meta}>{order.dropoffAddress}</Text> : null}
+        {order.dropoffAddress ? (
+          <Text style={KType.meta}>{order.dropoffAddress}</Text>
+        ) : null}
         {order.notes ? (
           <Card>
-            <Text style={Type.caption}>NOTES</Text>
-            <Text style={Type.body}>{order.notes}</Text>
+            <Text style={KType.kicker}>Notes</Text>
+            <Text style={KType.body}>{order.notes}</Text>
           </Card>
         ) : null}
         {order.scheduledFor ? (
-          <Text style={Type.meta}>
+          <Text style={KType.meta}>
             Scheduled {new Date(order.scheduledFor).toLocaleString("en-CA")}
           </Text>
         ) : null}
 
-        <View style={{ gap: 10 }}>
+        <View style={styles.lines}>
           {order.lineItems.map((line) => (
             <Card key={line.id}>
-              <Text style={styles.lineName}>
+              <Text style={KType.bodyStrong}>
                 {line.quantity > 1 ? `${line.quantity}× ` : ""}
                 {line.name}
               </Text>
               {line.modifiers.length > 0 ? (
-                <Text style={Type.meta}>{line.modifiers.map((m) => m.name).join(", ")}</Text>
+                <Text style={KType.meta}>
+                  {line.modifiers.map((m) => m.name).join(", ")}
+                </Text>
               ) : null}
-              <Text style={styles.lineTotal}>{formatCadFromCents(line.lineTotalCents)}</Text>
+              <Text style={styles.lineTotal}>
+                {formatCadFromCents(line.lineTotalCents)}
+              </Text>
             </Card>
           ))}
         </View>
-        <Text style={Type.headline}>Total {formatCadFromCents(order.totalCents)}</Text>
+        <Text style={KType.section}>
+          Total {formatCadFromCents(order.totalCents)}
+        </Text>
 
         <View style={styles.actions}>
           {order.allowedActions.map((action) => (
@@ -160,11 +168,9 @@ export default function TicketScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { alignItems: "center", justifyContent: "center" },
   content: { padding: 20, gap: 10, paddingBottom: 48 },
-  customer: { fontSize: 16, fontWeight: "700", color: Colors.text },
-  lineName: { fontWeight: "700", color: Colors.text },
-  lineTotal: { marginTop: 6, fontWeight: "700" },
+  lines: { gap: 10 },
+  lineTotal: { ...KType.numeric, marginTop: 6 },
   actions: { gap: 10, marginTop: 8 },
-  error: { color: Colors.danger },
+  error: { ...KType.metaStrong, color: Colors.danger },
 });

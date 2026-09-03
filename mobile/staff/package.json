@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@naijajollof/api-types": "file:../packages/api-types",
     "@naijajollof/ui": "file:../packages/ui",
     "@sentry/react-native": "~7.11.0",
