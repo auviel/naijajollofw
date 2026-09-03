@@ -120,9 +120,12 @@ export const Touch = {
 };
 
 export const headerScreenOptions = {
-  headerTransparent: Platform.OS === "ios",
-  headerBlurEffect:
-    Platform.OS === "ios" ? ("systemChromeMaterialLight" as const) : undefined,
+  /**
+   * Opaque headers on every platform so scroll content never sits under the
+   * nav bar (Dynamic Island, notch, Android status/cutout). Blur/transparent
+   * headers require per-screen inset hacks that break across sizes.
+   */
+  headerTransparent: false,
   headerShadowVisible: false,
   headerTintColor: Colors.text,
   /** iOS: chevron only — no “Back” / route-group labels like “(tabs)”. */
@@ -133,8 +136,7 @@ export const headerScreenOptions = {
     color: Colors.text,
   },
   headerStyle: {
-    backgroundColor:
-      Platform.OS === "ios" ? "transparent" : Colors.surface,
+    backgroundColor: Colors.surface,
   },
   contentStyle: { backgroundColor: Colors.background },
 };

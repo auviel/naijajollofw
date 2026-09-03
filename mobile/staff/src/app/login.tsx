@@ -31,9 +31,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <GlassSurface style={styles.card} interactive>
-          <Text style={KType.kicker}>Staff</Text>
-          <Text style={KType.page}>Kitchen</Text>
-          <Text style={KType.meta}>Sign in to run the board from your phone.</Text>
+          <Text style={KType.page}>Naija Jollof Kitchen</Text>
           <Field
             autoCapitalize="none"
             autoCorrect={false}
@@ -41,12 +39,16 @@ export default function LoginScreen() {
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
+            textContentType="username"
+            autoComplete="email"
           />
           <Field
             secureTextEntry
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
+            textContentType="password"
+            autoComplete="password"
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button

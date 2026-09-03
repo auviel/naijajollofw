@@ -83,7 +83,7 @@ function RootLayout() {
             <Stack.Screen
               name="orders/[id]"
               options={{
-                title: "Ticket",
+                title: "Order",
                 headerBackButtonDisplayMode: "minimal",
               }}
             />
