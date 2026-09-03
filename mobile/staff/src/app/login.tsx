@@ -1,10 +1,11 @@
 import { PasswordField } from "@/components/kitchen/password-field";
 import { useAuth } from "@/lib/auth";
+import { emailLooksValid } from "@/lib/kitchen/linking";
 import { KType } from "@/lib/kitchen/typography";
 import { Button, Colors, Field, GlassSurface, Radii } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ImageBackground,
   KeyboardAvoidingView,
@@ -27,7 +28,13 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const canSubmit = useMemo(
+    () => emailLooksValid(email) && password.length > 0 && !busy,
+    [email, password, busy],
+  );
+
   async function onSubmit() {
+    if (!canSubmit) return;
     setBusy(true);
     setError(null);
     try {
@@ -90,7 +97,7 @@ export default function LoginScreen() {
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button
-            disabled={busy || !email || !password}
+            disabled={!canSubmit}
             label={busy ? "Signing in…" : "Sign in"}
             onPress={() => void onSubmit()}
           />

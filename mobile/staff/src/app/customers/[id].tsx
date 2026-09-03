@@ -1,4 +1,5 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
+import { MapsLink, TelLink } from "@/components/kitchen/contact-links";
 import { apiFetch } from "@/lib/api";
 import { KType } from "@/lib/kitchen/typography";
 import {
@@ -212,10 +213,11 @@ export default function CustomerDetailScreen() {
             <Text style={KType.meta}>None on file</Text>
           ) : (
             customer.phones.map((phone) => (
-              <Text key={phone.id} style={KType.body}>
-                {formatPhone(phone.phoneE164)}
-                {phone.isPrimary ? " · primary" : ""}
-              </Text>
+              <TelLink
+                key={phone.id}
+                phone={phone.phoneE164}
+                label={`${formatPhone(phone.phoneE164)}${phone.isPrimary ? " · primary" : ""}`}
+              />
             ))
           )}
 
@@ -225,10 +227,12 @@ export default function CustomerDetailScreen() {
             <Text style={KType.meta}>None on file</Text>
           ) : (
             customer.addresses.map((address) => (
-              <Text key={address.id} style={KType.body}>
-                {address.formatted}
-                {address.isPrimary ? " · primary" : ""}
-              </Text>
+              <View key={address.id} style={{ gap: 2 }}>
+                <MapsLink address={address.formatted} />
+                {address.isPrimary ? (
+                  <Text style={KType.meta}>Primary</Text>
+                ) : null}
+              </View>
             ))
           )}
         </Card>

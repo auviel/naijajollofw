@@ -114,7 +114,15 @@ export default function CustomersTab() {
         {initialLoading ? (
           <KitchenCustomersSkeleton />
         ) : items?.length === 0 ? (
-          <Text style={styles.empty}>No customers found.</Text>
+          <View style={styles.emptyBlock}>
+            <Text style={styles.empty}>No customers found.</Text>
+            <Pressable
+              onPress={() => router.push("/customers/new")}
+              hitSlop={8}
+            >
+              <Text style={styles.emptyCta}>Add one</Text>
+            </Pressable>
+          </View>
         ) : (
           <View style={styles.list}>
             {items?.map((customer) => (
@@ -158,5 +166,7 @@ const styles = StyleSheet.create({
   list: { gap: 10 },
   row: { gap: 4 },
   error: { ...KType.metaStrong, color: Colors.danger },
-  empty: { ...KType.meta, textAlign: "center", marginTop: 32 },
+  emptyBlock: { alignItems: "center", gap: 8, marginTop: 32 },
+  empty: { ...KType.meta, textAlign: "center" },
+  emptyCta: { ...KType.metaStrong, color: Colors.accent },
 });

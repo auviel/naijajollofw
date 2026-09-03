@@ -1,5 +1,9 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { KType } from "@/lib/kitchen/typography";
+import {
+  type AppearancePref,
+  useKitchenTheme,
+} from "@/lib/kitchen/theme";
 import { kvGet, kvSet } from "@/lib/kv";
 import { registerStaffPushDevice } from "@/lib/push";
 import { Button, Card, Colors, Screen } from "@naijajollof/ui";
@@ -16,25 +20,19 @@ import * as Notifications from "expo-notifications";
 
 const KEY_SOUND = "kitchen.pref.sound";
 const KEY_HAPTIC = "kitchen.pref.haptic";
-const KEY_APPEARANCE = "kitchen.pref.appearance";
 
 export default function AccountPreferencesScreen() {
+  const { appearance, setAppearance } = useKitchenTheme();
   const [sound, setSound] = useState(true);
   const [haptic, setHaptic] = useState(true);
-  const [appearance, setAppearance] = useState<"system" | "light">("system");
   const [pushStatus, setPushStatus] = useState<string>("unknown");
   const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     void (async () => {
-      const [s, h, a] = await Promise.all([
-        kvGet(KEY_SOUND),
-        kvGet(KEY_HAPTIC),
-        kvGet(KEY_APPEARANCE),
-      ]);
+      const [s, h] = await Promise.all([kvGet(KEY_SOUND), kvGet(KEY_HAPTIC)]);
       if (s != null) setSound(s === "1");
       if (h != null) setHaptic(h === "1");
-      if (a === "light" || a === "system") setAppearance(a);
       const perm = await Notifications.getPermissionsAsync();
       setPushStatus(perm.status);
     })();
@@ -50,11 +48,6 @@ export default function AccountPreferencesScreen() {
     void kvSet(KEY_HAPTIC, value ? "1" : "0");
   }, []);
 
-  const setAppearancePref = useCallback((value: "system" | "light") => {
-    setAppearance(value);
-    void kvSet(KEY_APPEARANCE, value);
-  }, []);
-
   async function enablePush() {
     setPushBusy(true);
     try {
@@ -65,6 +58,12 @@ export default function AccountPreferencesScreen() {
       setPushBusy(false);
     }
   }
+
+  const appearanceOptions: Array<{ id: AppearancePref; label: string }> = [
+    { id: "system", label: "System" },
+    { id: "light", label: "Light" },
+    { id: "dark", label: "Dark" },
+  ];
 
   return (
     <Screen>
@@ -110,23 +109,28 @@ export default function AccountPreferencesScreen() {
 
         <Text style={[KType.kicker, styles.sectionGap]}>Appearance</Text>
         <Card style={styles.card}>
-          {(["system", "light"] as const).map((option) => {
-            const selected = appearance === option;
+          {appearanceOptions.map((option, index) => {
+            const selected = appearance === option.id;
             return (
-              <Pressable
-                key={option}
-                onPress={() => setAppearancePref(option)}
-                style={styles.row}
-              >
-                <Text style={KType.body}>
-                  {option === "system" ? "System" : "Light"}
-                </Text>
-                <Text style={selected ? styles.check : styles.checkMuted}>
-                  {selected ? "✓" : ""}
-                </Text>
-              </Pressable>
+              <View key={option.id}>
+                {index > 0 ? <View style={styles.divider} /> : null}
+                <Pressable
+                  onPress={() => setAppearance(option.id)}
+                  style={styles.row}
+                >
+                  <Text style={KType.body}>{option.label}</Text>
+                  <Text style={selected ? styles.check : styles.checkMuted}>
+                    {selected ? "✓" : ""}
+                  </Text>
+                </Pressable>
+              </View>
             );
           })}
+          <Text
+            style={[KType.meta, { paddingHorizontal: 4, paddingBottom: 10 }]}
+          >
+            Dark updates chrome (nav, canvas). Full card theming follows.
+          </Text>
         </Card>
       </StackScroll>
     </Screen>

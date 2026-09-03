@@ -1,20 +1,63 @@
 import { Colors, Radii, Shadows } from "@naijajollof/ui";
-import { KType } from "@/lib/kitchen/typography";
+import {
+  getBoardUnseenCount,
+  subscribeBoardAttention,
+} from "@/lib/kitchen/board-attention";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { Tabs } from "expo-router";
-import { DynamicColorIOS, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Platform, View } from "react-native";
+
+function useBoardBadge() {
+  const [count, setCount] = useState(getBoardUnseenCount());
+  useEffect(() => subscribeBoardAttention(() => setCount(getBoardUnseenCount())), []);
+  return count;
+}
+
+function BoardTabIcon({
+  color,
+  size,
+  focused,
+}: {
+  color: string;
+  size: number;
+  focused?: boolean;
+}) {
+  const badge = useBoardBadge();
+  return (
+    <View>
+      <Ionicons
+        name={focused ? "grid" : "grid-outline"}
+        color={color}
+        size={size}
+      />
+      {badge > 0 ? (
+        <View
+          style={{
+            position: "absolute",
+            top: -2,
+            right: -6,
+            minWidth: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: Colors.accent,
+          }}
+        />
+      ) : null}
+    </View>
+  );
+}
 
 export default function TabsLayout() {
+  const badge = useBoardBadge();
+
   if (Platform.OS === "ios") {
     return (
       <NativeTabs
         minimizeBehavior="onScrollDown"
         tintColor={Colors.accent}
-        labelStyle={{
-          ...KType.tab,
-          color: DynamicColorIOS({ light: Colors.text, dark: "#fff" }),
-        }}
+        labelVisibilityMode="unlabeled"
       >
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Icon
@@ -23,7 +66,9 @@ export default function TabsLayout() {
               selected: "square.grid.2x2.fill",
             }}
           />
-          <NativeTabs.Trigger.Label>Board</NativeTabs.Trigger.Label>
+          {badge > 0 ? (
+            <NativeTabs.Trigger.Badge>{String(badge)}</NativeTabs.Trigger.Badge>
+          ) : null}
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="menu">
           <NativeTabs.Trigger.Icon
@@ -32,7 +77,6 @@ export default function TabsLayout() {
               selected: "list.bullet.rectangle.fill",
             }}
           />
-          <NativeTabs.Trigger.Label>Menu</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="customers">
           <NativeTabs.Trigger.Icon
@@ -41,7 +85,6 @@ export default function TabsLayout() {
               selected: "person.2.fill",
             }}
           />
-          <NativeTabs.Trigger.Label>Customers</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="account">
           <NativeTabs.Trigger.Icon
@@ -50,7 +93,6 @@ export default function TabsLayout() {
               selected: "person.crop.circle.fill",
             }}
           />
-          <NativeTabs.Trigger.Label>Account</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -62,19 +104,19 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textSecondary,
-        tabBarLabelStyle: { ...KType.tab },
+        tabBarShowLabel: false,
         tabBarStyle: {
           position: "absolute",
           left: 16,
           right: 16,
           bottom: 16,
-          height: 68,
+          height: 60,
           borderRadius: Radii.lg,
           backgroundColor: Colors.surface,
           borderTopWidth: 0,
           ...Shadows.float,
         },
-        tabBarItemStyle: { paddingVertical: 6 },
+        tabBarItemStyle: { paddingVertical: 8 },
         sceneStyle: { backgroundColor: Colors.background },
       }}
     >
@@ -82,9 +124,13 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Board",
-          tabBarLabel: "Board",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" color={color} size={size} />
+          tabBarBadge: badge > 0 ? badge : undefined,
+          tabBarIcon: ({ color, size, focused }) => (
+            <BoardTabIcon
+              color={String(color)}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -92,7 +138,6 @@ export default function TabsLayout() {
         name="menu"
         options={{
           title: "Menu",
-          tabBarLabel: "Menu",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="restaurant-outline" color={color} size={size} />
           ),
@@ -102,7 +147,6 @@ export default function TabsLayout() {
         name="customers"
         options={{
           title: "Customers",
-          tabBarLabel: "Customers",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" color={color} size={size} />
           ),
@@ -112,7 +156,6 @@ export default function TabsLayout() {
         name="account"
         options={{
           title: "Account",
-          tabBarLabel: "Account",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-circle-outline" color={color} size={size} />
           ),

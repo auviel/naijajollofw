@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { StackScroll } from "@/components/kitchen/stack-scroll";
+import { MapsLink, TelLink } from "@/components/kitchen/contact-links";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
 import { ActionIcon } from "@/lib/kitchen/action-icon";
 import { KType } from "@/lib/kitchen/typography";
@@ -203,9 +204,11 @@ export default function TicketScreen() {
         <Card style={styles.card}>
           <Text style={KType.kicker}>Guest</Text>
           <Text style={KType.bodyStrong}>{order.customerName}</Text>
-          <Text style={KType.meta}>{order.customerPhone}</Text>
+          <TelLink phone={order.customerPhone} />
           {order.dropoffAddress ? (
-            <Text style={[KType.meta, styles.blockGap]}>{order.dropoffAddress}</Text>
+            <View style={styles.blockGap}>
+              <MapsLink address={order.dropoffAddress} />
+            </View>
           ) : null}
           {order.scheduledFor ? (
             <Text style={[KType.meta, styles.blockGap]}>
