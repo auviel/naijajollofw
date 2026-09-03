@@ -1,7 +1,7 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import {
-  mapOrderToStaffDetail,
   orderRepository,
+  toStaffDetail,
 } from "@/lib/db/repositories/order.repository";
 import { canFulfillManualDelivery } from "@/lib/domain/order/fulfill-preconditions";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
@@ -69,5 +69,5 @@ export async function fulfillOrderManual(
     displayNumber: updated.displayNumber,
   });
 
-  return mapOrderToStaffDetail(updated);
+  return toStaffDetail(updated);
 }

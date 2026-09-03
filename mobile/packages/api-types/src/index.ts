@@ -36,6 +36,7 @@ export type StaffOrderListItem = {
   manualDeliveryNote: string | null;
   itemCount: number;
   itemSummary: string;
+  thumbImageUrls: string[];
   tipCents: number;
   totalCents: number;
   currency: string;
@@ -54,6 +55,7 @@ export type StaffOrderDetail = StaffOrderListItem & {
     quantity: number;
     modifiers: Array<{ name: string }>;
     lineTotalCents: number;
+    imageUrl: string | null;
   }>;
   events: Array<{
     id: string;

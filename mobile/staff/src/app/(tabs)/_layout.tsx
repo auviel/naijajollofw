@@ -34,6 +34,15 @@ export default function TabsLayout() {
           />
           <NativeTabs.Trigger.Label>Menu</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="customers">
+          <NativeTabs.Trigger.Icon
+            sf={{
+              default: "person.2",
+              selected: "person.2.fill",
+            }}
+          />
+          <NativeTabs.Trigger.Label>Customers</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="account">
           <NativeTabs.Trigger.Icon
             sf={{
@@ -86,6 +95,16 @@ export default function TabsLayout() {
           tabBarLabel: "Menu",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="restaurant-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="customers"
+        options={{
+          title: "Customers",
+          tabBarLabel: "Customers",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" color={color} size={size} />
           ),
         }}
       />

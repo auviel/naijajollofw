@@ -18,6 +18,8 @@ export type PublicOrderLineView = {
   quantity: number;
   modifiers: CartModifierSelection[];
   lineTotalCents: number;
+  /** Resolved from linked menu item when available. */
+  imageUrl: string | null;
 };
 
 export type OrderEventView = {
@@ -92,6 +94,8 @@ export type StaffOrderListItem = {
   manualDeliveryNote: string | null;
   itemCount: number;
   itemSummary: string;
+  /** Up to 3 unique line thumbnails for board cards (resolved menu images). */
+  thumbImageUrls: string[];
   tipCents: number;
   totalCents: number;
   currency: string;

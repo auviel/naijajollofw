@@ -138,12 +138,10 @@ export function ItemScreenSkeleton() {
   );
 }
 
-/** Kitchen board — mirrors column tabs + ticket cards. */
+/** Kitchen board — segment + ticket cards only (real header stays mounted). */
 export function KitchenBoardSkeleton() {
   return (
     <View style={styles.boardPad} accessibilityLabel="Loading kitchen board">
-      <Skeleton height={28} width="55%" />
-      <Skeleton height={14} width={64} style={{ marginTop: Space.xs }} />
       <View style={styles.segment}>
         {Array.from({ length: 3 }, (_, i) => (
           <Skeleton key={i} height={42} style={{ flex: 1 }} radius={Radii.sm} />
@@ -168,21 +166,47 @@ export function KitchenBoardSkeleton() {
   );
 }
 
-/** Kitchen ticket detail. */
+/** Kitchen ticket detail — order card + guest card + actions. */
 export function KitchenTicketSkeleton() {
   return (
     <View style={styles.screenPad} accessibilityLabel="Loading ticket">
-      <Skeleton height={24} width="40%" />
-      <Skeleton height={14} width="50%" style={{ marginTop: Space.sm }} />
-      <Skeleton height={15} width="70%" style={{ marginTop: Space.md }} />
-      {Array.from({ length: 3 }, (_, i) => (
+      <View style={styles.orderCard}>
+        <Skeleton height={12} width={48} />
+        <Skeleton height={16} width="70%" style={{ marginTop: Space.sm }} />
+        <Skeleton
+          height={1}
+          width="100%"
+          style={{ marginTop: Space.md, marginBottom: Space.sm }}
+        />
+        {Array.from({ length: 2 }, (_, i) => (
+          <View key={i} style={{ marginTop: i === 0 ? 0 : Space.sm }}>
+            <Skeleton height={15} width="75%" />
+            <Skeleton height={12} width="30%" style={{ marginTop: Space.xs }} />
+          </View>
+        ))}
+        <Skeleton height={18} width="40%" style={{ marginTop: Space.md }} />
+      </View>
+      <View style={styles.orderCard}>
+        <Skeleton height={12} width={40} />
+        <Skeleton height={16} width="50%" style={{ marginTop: Space.sm }} />
+        <Skeleton height={13} width="45%" style={{ marginTop: Space.xs }} />
+      </View>
+      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.md }} />
+      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.sm }} />
+    </View>
+  );
+}
+
+/** Kitchen customers list — search + rows. */
+export function KitchenCustomersSkeleton() {
+  return (
+    <View accessibilityLabel="Loading customers" style={{ gap: Space.sm }}>
+      {Array.from({ length: 6 }, (_, i) => (
         <View key={i} style={styles.orderCard}>
-          <Skeleton height={15} width="65%" />
+          <Skeleton height={16} width="55%" />
           <Skeleton height={12} width="40%" style={{ marginTop: Space.xs }} />
         </View>
       ))}
-      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.md }} />
-      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.sm }} />
     </View>
   );
 }

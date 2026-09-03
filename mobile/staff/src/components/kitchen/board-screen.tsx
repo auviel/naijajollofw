@@ -17,6 +17,7 @@ import {
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
 import { Colors, KitchenBoardSkeleton } from "@naijajollof/ui";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -29,6 +30,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
 import { KType } from "@/lib/kitchen/typography";
 
@@ -207,14 +209,25 @@ export function BoardScreen() {
         }
       >
         <View style={styles.topRow}>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, gap: 2 }}>
             <Text style={KType.page}>{store?.name ?? "Kitchen"}</Text>
-            {!initialLoading ? (
-              <Text style={KType.meta}>
-                {data?.pendingAcceptanceCount ?? 0} new
-              </Text>
-            ) : null}
+            <Pressable
+              onPress={() => router.push("/orders")}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="All orders"
+              style={styles.allOrdersBtn}
+            >
+              <Ionicons name="list-outline" size={14} color={Colors.accent} />
+              <Text style={styles.allOrders}>All orders</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={12}
+                color={Colors.accent}
+              />
+            </Pressable>
           </View>
+          <KitchenHeaderActions />
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -299,6 +312,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  allOrdersBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+  },
+  allOrders: { ...KType.metaStrong, color: Colors.accent },
   error: { ...KType.metaStrong, color: Colors.danger },
   empty: {
     ...KType.meta,

@@ -7,8 +7,8 @@ import {
 import { CustomerDetailView } from "@/components/features/customers/customer-detail-view";
 import { requireStoreManager } from "@/lib/auth/session";
 import {
-  mapOrderToStaffListItem,
   orderRepository,
+  toStaffListItems,
 } from "@/lib/db/repositories/order.repository";
 import { getCustomer } from "@/lib/services/customer/get-customer";
 
@@ -46,13 +46,14 @@ export default async function CustomerDetailPage({
     user.storeId,
     20,
   );
+  const recentOrders = await toStaffListItems(orders);
 
   return (
     <DashboardPage>
       <DashboardPageBody>
         <CustomerDetailView
           customer={customer}
-          recentOrders={orders.map(mapOrderToStaffListItem)}
+          recentOrders={recentOrders}
         />
       </DashboardPageBody>
     </DashboardPage>

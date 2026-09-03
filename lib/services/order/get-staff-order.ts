@@ -1,7 +1,7 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import {
-  mapOrderToStaffDetail,
   orderRepository,
+  toStaffDetail,
 } from "@/lib/db/repositories/order.repository";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { syncDeliveryFromProvider } from "@/lib/services/delivery/sync-from-provider";
@@ -22,5 +22,5 @@ export async function getStaffOrder(orderId: string): Promise<StaffOrderDetail> 
     }
   }
 
-  return mapOrderToStaffDetail(order);
+  return toStaffDetail(order);
 }

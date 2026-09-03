@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { StackScroll } from "@/components/kitchen/stack-scroll";
+import { ItemThumb } from "@/components/kitchen/item-thumb";
 import { ActionIcon } from "@/lib/kitchen/action-icon";
 import { KType } from "@/lib/kitchen/typography";
 import { formatCadFromCents, type StaffOrderDetail } from "@naijajollof/api-types";
@@ -174,6 +175,7 @@ export default function TicketScreen() {
                   index > 0 && styles.lineRowBorder,
                 ]}
               >
+                <ItemThumb uri={line.imageUrl} size={48} />
                 <View style={styles.lineCopy}>
                   <Text style={KType.bodyStrong}>
                     {line.quantity > 1 ? `${line.quantity}× ` : ""}

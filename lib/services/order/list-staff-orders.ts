@@ -1,7 +1,7 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import {
-  mapOrderToStaffListItem,
   orderRepository,
+  toStaffListItems,
 } from "@/lib/db/repositories/order.repository";
 import { storeRepository } from "@/lib/db/repositories/store.repository";
 import { kitchenBoardDueBy } from "@/lib/domain/order/kitchen-schedule";
@@ -61,7 +61,7 @@ export async function listStaffOrders(
   );
 
   return {
-    items: orders.map(mapOrderToStaffListItem),
+    items: await toStaffListItems(orders),
     filter,
     channel: effectiveChannel,
     search,

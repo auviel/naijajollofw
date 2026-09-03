@@ -81,9 +81,51 @@ function RootLayout() {
             />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen
+              name="orders/index"
+              options={{
+                title: "Orders",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+            <Stack.Screen
               name="orders/[id]"
               options={{
                 title: "Order",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+            <Stack.Screen
+              name="inbox"
+              options={{
+                title: "Inbox",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+            <Stack.Screen
+              name="account/you"
+              options={{
+                title: "You",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+            <Stack.Screen
+              name="account/store"
+              options={{
+                title: "Store",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+            <Stack.Screen
+              name="account/preferences"
+              options={{
+                title: "Preferences",
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            />
+            <Stack.Screen
+              name="customers/[id]"
+              options={{
+                title: "Customer",
                 headerBackButtonDisplayMode: "minimal",
               }}
             />

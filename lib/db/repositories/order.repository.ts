@@ -24,11 +24,13 @@ import {
 } from "@/lib/domain/order/guest-timeline";
 import { buildClaimGuestOrdersWhere } from "@/lib/domain/order/claim-guest-orders";
 import type {
+  PublicOrderLineView,
   PublicOrderView,
   StaffOrderDetail,
   StaffOrderListItem,
 } from "@/lib/domain/order/types";
 import { getTransitionActions } from "@/lib/domain/order/transitions";
+import { normalizePublicMediaUrl } from "@/lib/integrations/r2/public-url";
 
 type OrderWithRelations = Order & {
   lineItems: OrderLineItem[];
@@ -85,6 +87,85 @@ function summarizeLines(lineItems: OrderLineItem[]): {
   return { itemCount, itemSummary };
 }
 
+/** Resolve menu item ids → public image URLs (first gallery image or legacy imageUrl). */
+export async function loadMenuImageUrlsByItemId(
+  menuItemIds: Array<string | null | undefined>,
+): Promise<Map<string, string>> {
+  const ids = [
+    ...new Set(
+      menuItemIds.filter(
+        (id): id is string => typeof id === "string" && id.length > 0,
+      ),
+    ),
+  ];
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const rows = await prisma.menuItem.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      imageUrl: true,
+      images: {
+        orderBy: { sortOrder: "asc" },
+        take: 1,
+        select: { url: true },
+      },
+    },
+  });
+
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    const url = normalizePublicMediaUrl(row.images[0]?.url ?? row.imageUrl);
+    if (url) {
+      map.set(row.id, url);
+    }
+  }
+  return map;
+}
+
+function lineImageUrl(
+  line: OrderLineItem,
+  imageByMenuItemId: Map<string, string>,
+): string | null {
+  if (!line.menuItemId) return null;
+  return imageByMenuItemId.get(line.menuItemId) ?? null;
+}
+
+function thumbImageUrlsForLines(
+  lineItems: OrderLineItem[],
+  imageByMenuItemId: Map<string, string>,
+  limit = 3,
+): string[] {
+  const urls: string[] = [];
+  const seen = new Set<string>();
+  for (const line of lineItems) {
+    const url = lineImageUrl(line, imageByMenuItemId);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+    if (urls.length >= limit) break;
+  }
+  return urls;
+}
+
+function mapLineToPublicView(
+  line: OrderLineItem,
+  imageByMenuItemId: Map<string, string>,
+): PublicOrderLineView {
+  return {
+    id: line.id,
+    name: line.name,
+    description: line.description,
+    unitPriceCents: line.unitPriceCents,
+    quantity: line.quantity,
+    modifiers: parseModifiers(line.modifiers),
+    lineTotalCents: line.lineTotalCents,
+    imageUrl: lineImageUrl(line, imageByMenuItemId),
+  };
+}
+
 export function mapOrderToPublicView(order: OrderWithRelations): PublicOrderView {
   const storeName = order.store?.name ?? "Restaurant";
   const prepMinutes = order.store?.prepMinutes ?? 15;
@@ -132,15 +213,9 @@ export function mapOrderToPublicView(order: OrderWithRelations): PublicOrderView
     }),
     timeline,
     tracking,
-    lineItems: order.lineItems.map((line) => ({
-      id: line.id,
-      name: line.name,
-      description: line.description,
-      unitPriceCents: line.unitPriceCents,
-      quantity: line.quantity,
-      modifiers: parseModifiers(line.modifiers),
-      lineTotalCents: line.lineTotalCents,
-    })),
+    lineItems: order.lineItems.map((line) =>
+      mapLineToPublicView(line, new Map()),
+    ),
     events: order.events.map((event) => ({
       id: event.id,
       status: event.status,
@@ -152,6 +227,7 @@ export function mapOrderToPublicView(order: OrderWithRelations): PublicOrderView
 
 export function mapOrderToStaffListItem(
   order: Order & { lineItems: OrderLineItem[] },
+  imageByMenuItemId: Map<string, string> = new Map(),
 ): StaffOrderListItem {
   const { itemCount, itemSummary } = summarizeLines(order.lineItems);
   return {
@@ -174,6 +250,7 @@ export function mapOrderToStaffListItem(
     manualDeliveryNote: order.manualDeliveryNote,
     itemCount,
     itemSummary,
+    thumbImageUrls: thumbImageUrlsForLines(order.lineItems, imageByMenuItemId),
     tipCents: order.tipCents,
     totalCents: order.totalCents,
     currency: order.currency,
@@ -183,8 +260,11 @@ export function mapOrderToStaffListItem(
   };
 }
 
-export function mapOrderToStaffDetail(order: OrderWithRelations): StaffOrderDetail {
-  const base = mapOrderToStaffListItem(order);
+export function mapOrderToStaffDetail(
+  order: OrderWithRelations,
+  imageByMenuItemId: Map<string, string> = new Map(),
+): StaffOrderDetail {
+  const base = mapOrderToStaffListItem(order, imageByMenuItemId);
   const needsFulfillment =
     order.status === "ready" &&
     order.fulfillmentType === "delivery" &&
@@ -195,15 +275,9 @@ export function mapOrderToStaffDetail(order: OrderWithRelations): StaffOrderDeta
     publicToken: order.publicToken,
     subtotalCents: order.subtotalCents,
     taxCents: order.taxCents,
-    lineItems: order.lineItems.map((line) => ({
-      id: line.id,
-      name: line.name,
-      description: line.description,
-      unitPriceCents: line.unitPriceCents,
-      quantity: line.quantity,
-      modifiers: parseModifiers(line.modifiers),
-      lineTotalCents: line.lineTotalCents,
-    })),
+    lineItems: order.lineItems.map((line) =>
+      mapLineToPublicView(line, imageByMenuItemId),
+    ),
     events: order.events.map((event) => ({
       id: event.id,
       status: event.status,
@@ -226,6 +300,26 @@ export function mapOrderToStaffDetail(order: OrderWithRelations): StaffOrderDeta
       : null,
     needsFulfillment,
   };
+}
+
+export async function toStaffListItems(
+  orders: Array<Order & { lineItems: OrderLineItem[] }>,
+): Promise<StaffOrderListItem[]> {
+  const imageByMenuItemId = await loadMenuImageUrlsByItemId(
+    orders.flatMap((order) => order.lineItems.map((line) => line.menuItemId)),
+  );
+  return orders.map((order) =>
+    mapOrderToStaffListItem(order, imageByMenuItemId),
+  );
+}
+
+export async function toStaffDetail(
+  order: OrderWithRelations,
+): Promise<StaffOrderDetail> {
+  const imageByMenuItemId = await loadMenuImageUrlsByItemId(
+    order.lineItems.map((line) => line.menuItemId),
+  );
+  return mapOrderToStaffDetail(order, imageByMenuItemId);
 }
 
 const orderInclude = {

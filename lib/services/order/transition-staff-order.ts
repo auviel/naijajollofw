@@ -1,8 +1,8 @@
 import type { OrderStatus } from "@prisma/client";
 import { requireStoreManager } from "@/lib/auth/session";
 import {
-  mapOrderToStaffDetail,
   orderRepository,
+  toStaffDetail,
 } from "@/lib/db/repositories/order.repository";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
 import { canTransition } from "@/lib/domain/order/transitions";
@@ -67,7 +67,7 @@ export async function transitionStaffOrder(
     displayNumber: updated.displayNumber,
   });
 
-  return mapOrderToStaffDetail(updated);
+  return toStaffDetail(updated);
 }
 
 function defaultTransitionNote(to: OrderStatus): string {

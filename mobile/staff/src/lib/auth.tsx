@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { clearTokens, loadTokens, saveTokens } from "@/lib/storage";
-import { registerStaffPushDevice } from "@/lib/push";
+import type { StaffMePayload, StaffStoreProfile, StaffUser } from "@/lib/kitchen/staff-me";
 import React, {
   createContext,
   useCallback,
@@ -10,35 +10,35 @@ import React, {
   useState,
 } from "react";
 
-export type StaffUser = {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  storeId: string;
-  storeName: string;
-};
-
-export type StaffStore = {
-  id: string;
-  name: string;
-  phone: string;
-};
+export type { StaffStoreProfile, StaffUser };
 
 type AuthContextValue = {
   loading: boolean;
   user: StaffUser | null;
-  store: StaffStore | null;
+  store: StaffStoreProfile | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshMe: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function normalizeUser(user: StaffUser): StaffUser {
+  return {
+    ...user,
+    phoneE164: user.phoneE164 ?? null,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StaffUser | null>(null);
-  const [store, setStore] = useState<StaffStore | null>(null);
+  const [store, setStore] = useState<StaffStoreProfile | null>(null);
+
+  const applyMe = useCallback((data: StaffMePayload) => {
+    setUser(normalizeUser(data.user));
+    setStore(data.store);
+  }, []);
 
   const hydrate = useCallback(async () => {
     const { accessToken } = await loadTokens();
@@ -49,12 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const data = await apiFetch<{ user: StaffUser; store: StaffStore }>(
-        "/api/me",
-      );
-      setUser(data.user);
-      setStore(data.store);
-      void registerStaffPushDevice();
+      const data = await apiFetch<StaffMePayload>("/api/me");
+      applyMe(data);
     } catch {
       await clearTokens();
       setUser(null);
@@ -62,27 +58,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyMe]);
+
+  const refreshMe = useCallback(async () => {
+    const data = await apiFetch<StaffMePayload>("/api/me");
+    applyMe(data);
+  }, [applyMe]);
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const data = await apiFetch<{
-      accessToken: string;
-      refreshToken: string;
-      user: StaffUser;
-      store: StaffStore | null;
-    }>("/api/auth/mobile/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password, app: "staff" }),
-    });
-    await saveTokens(data.accessToken, data.refreshToken);
-    setUser(data.user);
-    setStore(data.store);
-    void registerStaffPushDevice();
-  }, []);
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      const data = await apiFetch<{
+        accessToken: string;
+        refreshToken: string;
+        user: StaffUser;
+        store: StaffStoreProfile | null;
+      }>("/api/auth/mobile/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password, app: "staff" }),
+      });
+      await saveTokens(data.accessToken, data.refreshToken);
+      setUser(normalizeUser(data.user));
+      // Login may return a slim store — refresh full profile from /api/me.
+      setStore(data.store);
+      try {
+        const me = await apiFetch<StaffMePayload>("/api/me");
+        applyMe(me);
+      } catch {
+        // keep login payload
+      }
+    },
+    [applyMe],
+  );
 
   const signOut = useCallback(async () => {
     const { refreshToken } = await loadTokens();
@@ -100,8 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ loading, user, store, signIn, signOut }),
-    [loading, user, store, signIn, signOut],
+    () => ({ loading, user, store, signIn, signOut, refreshMe }),
+    [loading, user, store, signIn, signOut, refreshMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

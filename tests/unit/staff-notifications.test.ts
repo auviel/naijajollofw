@@ -24,6 +24,7 @@ function order(
     manualDeliveryNote: null,
     itemCount: 1,
     itemSummary: "Jollof",
+    thumbImageUrls: [],
     tipCents: 0,
     totalCents: 2399,
     currency: "CAD",

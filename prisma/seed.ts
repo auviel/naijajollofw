@@ -53,7 +53,10 @@ function eventsForStatus(status: OrderStatus): OrderStatus[] {
   }
 }
 
-async function seedKitchenBoardOrders(storeId: string) {
+async function seedKitchenBoardOrders(
+  storeId: string,
+  menuItemIdByName: Map<string, string>,
+) {
   await prisma.orderEvent.deleteMany({
     where: { order: { storeId, id: { startsWith: "seed-kitchen-" } } },
   });
@@ -63,6 +66,15 @@ async function seedKitchenBoardOrders(storeId: string) {
   await prisma.order.deleteMany({
     where: { storeId, id: { startsWith: "seed-kitchen-" } },
   });
+
+  const aliases: Record<string, string> = {
+    Plantain: "Fried Plantain",
+  };
+
+  function menuItemIdForLine(name: string): string | undefined {
+    const key = aliases[name] ?? name;
+    return menuItemIdByName.get(key);
+  }
 
   const dayTicketDate = torontoCalendarDate();
 
@@ -392,6 +404,7 @@ async function seedKitchenBoardOrders(storeId: string) {
             quantity: line.quantity,
             modifiers: (line.modifiers ?? []) as Prisma.InputJsonValue,
             lineTotalCents: line.unitPriceCents * line.quantity,
+            menuItemId: menuItemIdForLine(line.name) ?? null,
           })),
         },
         events: {
@@ -766,6 +779,7 @@ async function main() {
   ];
 
   const createdItems = new Map<string, string>();
+  const menuItemIdByName = new Map<string, string>();
   for (const item of items) {
     const categoryId = categories.get(item.category);
     if (!categoryId) {
@@ -792,6 +806,9 @@ async function main() {
       },
     });
     createdItems.set(`${item.category}:${item.name}`, row.id);
+    if (!menuItemIdByName.has(item.name)) {
+      menuItemIdByName.set(item.name, row.id);
+    }
   }
 
   const halfTrayId = createdItems.get("popular:Half Tray Party Rice");
@@ -853,7 +870,7 @@ async function main() {
     });
   }
 
-  await seedKitchenBoardOrders(store.id);
+  await seedKitchenBoardOrders(store.id, menuItemIdByName);
 
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);

@@ -4,6 +4,7 @@ import {
 } from "@naijajollof/api-types";
 import { Colors, Radii, Shadows } from "@naijajollof/ui";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ItemThumb } from "@/components/kitchen/item-thumb";
 import { isStatusBump, primaryBumpFor } from "@/lib/kitchen/bump";
 import {
   formatKitchenScheduled,
@@ -27,6 +28,7 @@ export function TicketCard({
   const ticket =
     order.displayNumber ??
     (order.dayTicket ? `#${order.dayTicket}` : "Order");
+  const thumbs = order.thumbImageUrls ?? [];
 
   return (
     <View style={styles.card}>
@@ -38,20 +40,43 @@ export function TicketCard({
             <Text style={KType.numeric}>{formatCadFromCents(order.totalCents)}</Text>
           </View>
         </View>
-        <Text style={KType.bodyStrong}>{order.customerName}</Text>
-        <Text style={KType.meta} numberOfLines={2}>
-          {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
-          {order.scheduledFor
-            ? ` · ${formatKitchenScheduled(order.scheduledFor)}`
-            : ""}
-          {" · "}
-          {order.itemSummary}
-        </Text>
-        {order.notes ? (
-          <Text style={styles.notes} numberOfLines={1}>
-            {order.notes}
-          </Text>
-        ) : null}
+
+        <View style={styles.mid}>
+          {thumbs.length > 0 ? (
+            <View style={styles.thumbs}>
+              {thumbs.slice(0, 3).map((url, index) => (
+                <ItemThumb
+                  key={`${url}-${index}`}
+                  uri={url}
+                  size={44}
+                  style={[
+                    styles.thumb,
+                    index > 0 ? { marginLeft: -10 } : null,
+                    { zIndex: 3 - index },
+                  ]}
+                />
+              ))}
+            </View>
+          ) : (
+            <ItemThumb uri={null} size={44} />
+          )}
+          <View style={styles.midCopy}>
+            <Text style={KType.bodyStrong}>{order.customerName}</Text>
+            <Text style={KType.meta} numberOfLines={2}>
+              {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
+              {order.scheduledFor
+                ? ` · ${formatKitchenScheduled(order.scheduledFor)}`
+                : ""}
+              {" · "}
+              {order.itemSummary}
+            </Text>
+            {order.notes ? (
+              <Text style={styles.notes} numberOfLines={1}>
+                {order.notes}
+              </Text>
+            ) : null}
+          </View>
+        </View>
       </Pressable>
 
       {bump ? (
@@ -88,19 +113,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 12,
-    gap: 3,
+    gap: 8,
   },
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 8,
-    marginBottom: 2,
   },
   topRight: {
     alignItems: "flex-end",
     gap: 2,
   },
+  mid: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  thumbs: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  thumb: {
+    borderWidth: 2,
+    borderColor: Colors.surface,
+  },
+  midCopy: { flex: 1, gap: 2 },
   notes: {
     ...KType.metaStrong,
     marginTop: 2,

@@ -295,6 +295,34 @@ export function buildPasswordResetEmail(input: {
   return { subject, html, text };
 }
 
+export function buildStaffOtpEmail(input: {
+  name: string;
+  code: string;
+  purpose: "password_change" | "email_change";
+}): { subject: string; html: string; text: string } {
+  const first = input.name.trim().split(/\s+/)[0] || "there";
+  const isPassword = input.purpose === "password_change";
+  const subject = isPassword
+    ? "Your password change code"
+    : "Confirm your new email";
+  const reason = isPassword
+    ? "You’re receiving this because a password change was requested on your staff account."
+    : "You’re receiving this because an email change was requested on your staff account.";
+  const intro = isPassword
+    ? "Use this code to finish changing your password. It expires in 10 minutes."
+    : "Use this code to confirm your new email address. It expires in 10 minutes.";
+  const html = layout({
+    title: subject,
+    reason,
+    bodyHtml: `<p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(first)},</p>
+     <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#444;">${escapeHtml(intro)}</p>
+     <p style="margin:20px 0;font-size:28px;letter-spacing:0.35em;font-weight:700;text-align:center;">${escapeHtml(input.code)}</p>
+     <p style="margin:0;font-size:13px;line-height:1.5;color:#71717a;">If you didn’t request this, you can ignore this email.</p>`,
+  });
+  const text = `Hi ${first},\n\n${intro}\n\nCode: ${input.code}\n\n${footerText(reason)}`;
+  return { subject, html, text };
+}
+
 export function buildEmailVerificationEmail(input: {
   name: string;
   verifyUrl: string;

@@ -1,8 +1,8 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import { deliveryRepository } from "@/lib/db/repositories/delivery.repository";
 import {
-  mapOrderToStaffDetail,
   orderRepository,
+  toStaffDetail,
 } from "@/lib/db/repositories/order.repository";
 import { canClaimCourierDispatch } from "@/lib/domain/order/fulfill-preconditions";
 import type { StaffOrderDetail } from "@/lib/domain/order/types";
@@ -141,5 +141,5 @@ export async function fulfillOrderDelivergo(
     displayNumber: updated.displayNumber,
   });
 
-  return mapOrderToStaffDetail(updated);
+  return toStaffDetail(updated);
 }

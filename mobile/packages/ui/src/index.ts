@@ -7,6 +7,7 @@ export {
   CartScreenSkeleton,
   ItemScreenSkeleton,
   KitchenBoardSkeleton,
+  KitchenCustomersSkeleton,
   KitchenTicketSkeleton,
   MenuScreenSkeleton,
   OrdersScreenSkeleton,

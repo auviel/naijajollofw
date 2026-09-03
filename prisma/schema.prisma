@@ -129,6 +129,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   refreshTokens           RefreshToken[]
   pushDevices             PushDevice[]
+  staffOtpChallenges      StaffOtpChallenge[]
 
   @@index([storeId])
   @@index([storeId, role])
@@ -174,6 +175,23 @@ model PasswordResetToken {
 
   @@index([tokenHash])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+/// Short-lived 6-digit OTP for staff password / email change (mobile + dashboard).
+model StaffOtpChallenge {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// password_change | email_change
+  purpose      String
+  codeHash     String
+  /// For email_change: the pending new email address.
+  pendingEmail String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, purpose, createdAt(sort: Desc)])
 }
 
 model EmailVerificationToken {
