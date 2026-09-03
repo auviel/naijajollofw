@@ -55,7 +55,7 @@ npx eas init         # writes the real projectId into app.json
 | Profile | Who installs it | API URL | Use |
 |---------|-----------------|---------|-----|
 | `development` | Internal dev client | from local `.env` | Square IAP, push, native debug |
-| `preview` | Internal Testers | `https://new.naijajollofw.ca` | Staff + diner QA before store |
+| `preview` | Internal Testers | `https://naijajollofw.ca` | Staff + diner QA before store |
 | `production` | Diner: store. Kitchen: internal only | production origin | Release |
 
 ```bash

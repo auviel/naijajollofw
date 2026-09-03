@@ -12,7 +12,7 @@
       "ios": { "image": "latest" },
       "android": { "image": "latest" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://new.naijajollofw.ca"
+        "EXPO_PUBLIC_API_URL": "https://naijajollofw.ca"
       }
     },
     "production": {
@@ -20,7 +20,7 @@
       "ios": { "image": "latest" },
       "android": { "image": "latest" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://new.naijajollofw.ca"
+        "EXPO_PUBLIC_API_URL": "https://naijajollofw.ca"
       }
     }
   },
