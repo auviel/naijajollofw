@@ -3,10 +3,15 @@ import { z } from "zod";
 import { requireStoreManager } from "@/lib/auth/session";
 import { orderIdParamSchema } from "@/lib/domain/order/ids";
 import { fulfillDelivergoSchema } from "@/lib/domain/order/validation-staff";
+import {
+  ORDER_FULFILL_LIMIT,
+  ORDER_FULFILL_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { fulfillOrderDelivergo } from "@/lib/services/order/fulfill-delivergo";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { AppError, handleApiError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { handleApiError } from "@/lib/utils/errors";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 
 const paramsSchema = z.object({
   id: orderIdParamSchema,
@@ -18,15 +23,14 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await requireStoreManager();
-    const rateLimit = checkRateLimit("order-fulfill-delivergo", 20, 60_000);
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many requests. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    const user = await requireStoreManager();
+    await assertDurableRateLimit({
+      kind: "order-fulfill",
+      ip: getRequestIpFromRequest(request),
+      subject: user.id,
+      limit: ORDER_FULFILL_LIMIT,
+      windowMs: ORDER_FULFILL_WINDOW_MS,
+    });
 
     const { id } = paramsSchema.parse(await context.params);
     const body = await parseJsonBody(request, fulfillDelivergoSchema);

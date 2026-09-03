@@ -1,30 +1,26 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import { updateStoreProfile } from "@/lib/services/store/update-store-profile";
+import {
+  STORE_UPDATE_LIMIT,
+  STORE_UPDATE_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { handleApiError, AppError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { handleApiError } from "@/lib/utils/errors";
 import { updateStoreProfileSchema } from "@/lib/domain/store/validation";
-
-const STORE_UPDATE_RATE_LIMIT = 10;
-const STORE_UPDATE_RATE_WINDOW_MS = 60_000;
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 
 export async function PATCH(request: Request) {
   try {
     const user = await requireStoreManager();
 
-    const rateLimit = checkRateLimit(
-      `store-update:${user.id}`,
-      STORE_UPDATE_RATE_LIMIT,
-      STORE_UPDATE_RATE_WINDOW_MS,
-    );
-
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many store updates. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "store-update",
+      ip: getRequestIpFromRequest(request),
+      subject: user.id,
+      limit: STORE_UPDATE_LIMIT,
+      windowMs: STORE_UPDATE_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, updateStoreProfileSchema);
     const store = await updateStoreProfile({

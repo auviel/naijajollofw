@@ -1,26 +1,26 @@
 import { confirmStaffPasswordChange } from "@/lib/services/staff/account";
+import {
+  STAFF_PASSWORD_CONFIRM_LIMIT,
+  STAFF_PASSWORD_CONFIRM_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { AppError, handleApiError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { handleApiError } from "@/lib/utils/errors";
 import { requireStoreManager } from "@/lib/auth/session";
 import { staffPasswordConfirmSchema } from "@/lib/domain/account/validation-staff";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
     const user = await requireStoreManager();
-    const rateLimit = checkRateLimit(
-      `staff-password-confirm:${user.id}`,
-      10,
-      60_000,
-    );
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many attempts. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "staff-password-confirm",
+      ip: getRequestIpFromRequest(request),
+      subject: user.id,
+      limit: STAFF_PASSWORD_CONFIRM_LIMIT,
+      windowMs: STAFF_PASSWORD_CONFIRM_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, staffPasswordConfirmSchema);
     await confirmStaffPasswordChange(body);

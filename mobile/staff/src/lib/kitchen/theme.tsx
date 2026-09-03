@@ -1,6 +1,5 @@
 import { Colors as LightColors } from "@naijajollof/ui";
 import { kvGet, kvSet } from "@/lib/kv";
-import { DarkTheme, DefaultTheme, type Theme } from "expo-router";
 import React, {
   createContext,
   useCallback,
@@ -36,7 +35,6 @@ type ThemeContextValue = {
   appearance: AppearancePref;
   resolved: "light" | "dark";
   colors: typeof LightColors;
-  navigationTheme: Theme;
   setAppearance: (value: AppearancePref) => void;
 };
 
@@ -72,32 +70,14 @@ export function KitchenThemeProvider({
 
   const colors = resolved === "dark" ? DarkPalette : LightColors;
 
-  const navigationTheme = useMemo<Theme>(() => {
-    const base = resolved === "dark" ? DarkTheme : DefaultTheme;
-    return {
-      ...base,
-      dark: resolved === "dark",
-      colors: {
-        ...base.colors,
-        primary: colors.accent,
-        background: colors.background,
-        card: colors.surface,
-        text: colors.text,
-        border: colors.border,
-        notification: colors.accent,
-      },
-    };
-  }, [colors, resolved]);
-
   const value = useMemo(
     () => ({
       appearance,
       resolved,
       colors,
-      navigationTheme,
       setAppearance,
     }),
-    [appearance, resolved, colors, navigationTheme, setAppearance],
+    [appearance, resolved, colors, setAppearance],
   );
 
   return (

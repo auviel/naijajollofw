@@ -282,6 +282,13 @@ export function BoardScreen() {
   return (
     <SafeScreen>
       <OfflineBanner />
+      <SessionTipBanner
+        visible={showSessionTip}
+        onDismiss={() => {
+          setShowSessionTip(false);
+          void kvSet(SESSION_TIP_KEY, "1");
+        }}
+      />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -295,14 +302,6 @@ export function BoardScreen() {
           />
         }
       >
-        <SessionTipBanner
-          visible={showSessionTip}
-          onDismiss={() => {
-            setShowSessionTip(false);
-            void kvSet(SESSION_TIP_KEY, "1");
-          }}
-        />
-
         <View style={styles.topRow}>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={KType.page}>{store?.name ?? "Kitchen"}</Text>

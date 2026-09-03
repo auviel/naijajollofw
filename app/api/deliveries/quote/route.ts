@@ -1,30 +1,26 @@
 import { requireStoreManager } from "@/lib/auth/session";
 import { createQuoteSchema } from "@/lib/domain/delivery/validation";
+import {
+  DELIVERY_QUOTE_LIMIT,
+  DELIVERY_QUOTE_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { createQuote } from "@/lib/services/delivery/create-quote";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { handleApiError, AppError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
-
-const QUOTE_RATE_LIMIT = 20;
-const QUOTE_RATE_WINDOW_MS = 60_000;
+import { handleApiError } from "@/lib/utils/errors";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 
 export async function POST(request: Request) {
   try {
     const user = await requireStoreManager();
 
-    const rateLimit = checkRateLimit(
-      `delivery-quote:${user.id}`,
-      QUOTE_RATE_LIMIT,
-      QUOTE_RATE_WINDOW_MS,
-    );
-
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many quote requests. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "delivery-quote",
+      ip: getRequestIpFromRequest(request),
+      subject: user.id,
+      limit: DELIVERY_QUOTE_LIMIT,
+      windowMs: DELIVERY_QUOTE_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, createQuoteSchema);
     const result = await createQuote(body);

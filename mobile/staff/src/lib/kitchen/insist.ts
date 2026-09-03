@@ -1,6 +1,4 @@
 import { kvGet } from "@/lib/kv";
-import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
-import type { AudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 
 const KEY_SOUND = "kitchen.pref.sound";
@@ -8,8 +6,14 @@ const KEY_HAPTIC = "kitchen.pref.haptic";
 
 const bumpSource = require("../../../assets/sounds/bump.wav");
 
-let bumpPlayer: AudioPlayer | null = null;
-let soundReady: Promise<AudioPlayer | null> | null = null;
+type BumpPlayer = {
+  volume: number;
+  play: () => void;
+  seekTo: (seconds: number) => Promise<void>;
+};
+
+let bumpPlayer: BumpPlayer | null = null;
+let soundReady: Promise<BumpPlayer | null> | null = null;
 
 async function prefs() {
   const [s, h] = await Promise.all([kvGet(KEY_SOUND), kvGet(KEY_HAPTIC)]);
@@ -19,17 +23,19 @@ async function prefs() {
   };
 }
 
-async function ensureBumpPlayer(): Promise<AudioPlayer | null> {
+async function ensureBumpPlayer(): Promise<BumpPlayer | null> {
   if (bumpPlayer) return bumpPlayer;
   if (!soundReady) {
     soundReady = (async () => {
       try {
-        await setAudioModeAsync({
+        // Dynamic import so Expo Go never hard-fails on a missing AV native module.
+        const audio = await import("expo-audio");
+        await audio.setAudioModeAsync({
           playsInSilentMode: false,
           shouldPlayInBackground: false,
           interruptionMode: "mixWithOthers",
         });
-        const player = createAudioPlayer(bumpSource);
+        const player = audio.createAudioPlayer(bumpSource);
         player.volume = 0.7;
         bumpPlayer = player;
         return player;

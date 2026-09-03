@@ -6,12 +6,14 @@ import {
 } from "@/lib/domain/delivery/validation";
 import { createDelivery } from "@/lib/services/delivery/create-delivery";
 import { listDeliveries } from "@/lib/services/delivery/list-deliveries";
+import {
+  DELIVERY_CREATE_LIMIT,
+  DELIVERY_CREATE_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { parseJsonBody } from "@/lib/utils/api-request";
-import { handleApiError, AppError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
-
-const CREATE_RATE_LIMIT = 10;
-const CREATE_RATE_WINDOW_MS = 60_000;
+import { handleApiError } from "@/lib/utils/errors";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 
 export async function GET(request: Request) {
   try {
@@ -42,19 +44,13 @@ export async function POST(request: Request) {
   try {
     const user = await requireStoreManager();
 
-    const rateLimit = checkRateLimit(
-      `delivery-create:${user.id}`,
-      CREATE_RATE_LIMIT,
-      CREATE_RATE_WINDOW_MS,
-    );
-
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many delivery requests. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "delivery-create",
+      ip: getRequestIpFromRequest(request),
+      subject: user.id,
+      limit: DELIVERY_CREATE_LIMIT,
+      windowMs: DELIVERY_CREATE_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, createDeliverySchema);
     const result = await createDelivery(body);

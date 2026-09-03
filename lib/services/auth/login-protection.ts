@@ -17,6 +17,24 @@ export const CART_ADD_LIMIT = 60;
 export const CART_ADD_WINDOW_MS = 60_000;
 export const MOBILE_LOGIN_LIMIT = 20;
 export const MOBILE_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+export const STAFF_PASSWORD_OTP_LIMIT = 5;
+export const STAFF_PASSWORD_OTP_WINDOW_MS = 60_000;
+export const STAFF_PASSWORD_CONFIRM_LIMIT = 10;
+export const STAFF_PASSWORD_CONFIRM_WINDOW_MS = 60_000;
+export const STAFF_EMAIL_CONFIRM_LIMIT = 10;
+export const STAFF_EMAIL_CONFIRM_WINDOW_MS = 60_000;
+export const STAFF_ME_PATCH_LIMIT = 20;
+export const STAFF_ME_PATCH_WINDOW_MS = 60_000;
+export const DELIVERY_QUOTE_LIMIT = 20;
+export const DELIVERY_QUOTE_WINDOW_MS = 60_000;
+export const DELIVERY_CREATE_LIMIT = 10;
+export const DELIVERY_CREATE_WINDOW_MS = 60_000;
+export const STORE_UPDATE_LIMIT = 10;
+export const STORE_UPDATE_WINDOW_MS = 60_000;
+export const CUSTOMER_CREATE_LIMIT = 20;
+export const CUSTOMER_CREATE_WINDOW_MS = 60_000;
+export const ORDER_FULFILL_LIMIT = 20;
+export const ORDER_FULFILL_WINDOW_MS = 60_000;
 
 function loginPairKey(email: string, ip: string): string {
   return hashAuthChallengeKey([
@@ -124,6 +142,7 @@ export async function clearLoginFailures(
 
 /**
  * Fixed-window durable rate limit. Throws AppError 429 when exceeded.
+ * Prefer `subject` (e.g. userId) for authenticated routes; falls back to IP.
  */
 export async function assertDurableRateLimit(input: {
   kind:
@@ -132,12 +151,23 @@ export async function assertDurableRateLimit(input: {
     | "login-challenge"
     | "checkout"
     | "cart-add"
-    | "mobile-login";
+    | "mobile-login"
+    | "staff-password-otp"
+    | "staff-password-confirm"
+    | "staff-email-confirm"
+    | "staff-me-patch"
+    | "delivery-quote"
+    | "delivery-create"
+    | "store-update"
+    | "customer-create"
+    | "order-fulfill";
   ip: string;
+  /** Authenticated subject (user id). When set, buckets by subject instead of IP. */
+  subject?: string;
   limit: number;
   windowMs: number;
 }): Promise<void> {
-  const key = rateKey(input.kind, input.ip);
+  const key = rateKey(input.kind, input.subject?.trim() || input.ip);
   const window = await readWindow(key, input.windowMs);
   const nextCount = window.fresh ? 1 : window.failCount + 1;
 

@@ -1,10 +1,43 @@
 import { API_URL } from "@/lib/config";
 import { clearTokens, loadTokens, saveTokens } from "@/lib/storage";
+import * as Sentry from "@sentry/react-native";
 
 type ApiError = {
   error?: string;
   code?: string;
 };
+
+function reportApiFailure(input: {
+  path: string;
+  method: string;
+  status?: number;
+  code?: string;
+  message: string;
+  cause?: unknown;
+}) {
+  // Skip expected auth-expiry noise (refresh path handles 401).
+  if (input.status === 401) return;
+
+  const error =
+    input.cause instanceof Error ? input.cause : new Error(input.message);
+
+  Sentry.captureException(error, {
+    tags: {
+      api_path: input.path.split("?")[0] ?? input.path,
+      api_method: input.method,
+      ...(input.status !== undefined
+        ? { api_status: String(input.status) }
+        : {}),
+      ...(input.code ? { api_code: input.code } : {}),
+    },
+    fingerprint: [
+      "apiFetch",
+      input.method,
+      input.path.split("?")[0] ?? input.path,
+      String(input.status ?? "network"),
+    ],
+  });
+}
 
 async function refreshAccessToken(): Promise<string | null> {
   const { refreshToken } = await loadTokens();
@@ -39,18 +72,34 @@ export async function apiFetch<T>(
   init: RequestInit = {},
   retry = true,
 ): Promise<T> {
-  const { accessToken } = await loadTokens();
-  const headers = new Headers(init.headers);
-  headers.set("Accept", "application/json");
-  // Let RN set multipart boundary when uploading FormData.
-  if (init.body && !headers.has("Content-Type") && !isFormDataBody(init.body)) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (accessToken) {
-    headers.set("Authorization", `Bearer ${accessToken}`);
-  }
+  const method = (init.method ?? "GET").toUpperCase();
 
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  let response: Response;
+  try {
+    const { accessToken } = await loadTokens();
+    const headers = new Headers(init.headers);
+    headers.set("Accept", "application/json");
+    if (
+      init.body &&
+      !headers.has("Content-Type") &&
+      !isFormDataBody(init.body)
+    ) {
+      headers.set("Content-Type", "application/json");
+    }
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+
+    response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  } catch (cause) {
+    reportApiFailure({
+      path,
+      method,
+      message: cause instanceof Error ? cause.message : "Network error",
+      cause,
+    });
+    throw cause;
+  }
 
   if (response.status === 401 && retry) {
     const next = await refreshAccessToken();
@@ -64,7 +113,15 @@ export async function apiFetch<T>(
   };
 
   if (!response.ok) {
-    throw new Error(json.error || `Request failed (${response.status})`);
+    const message = json.error || `Request failed (${response.status})`;
+    reportApiFailure({
+      path,
+      method,
+      status: response.status,
+      code: json.code,
+      message,
+    });
+    throw new Error(message);
   }
 
   return json.data as T;

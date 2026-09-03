@@ -4,7 +4,8 @@ import {
   useInboxUnread,
 } from "@/lib/kitchen/inbox-unread";
 import { KType } from "@/lib/kitchen/typography";
-import { Card, Colors, Screen } from "@naijajollof/ui";
+import { Card, Colors, Radii, Screen } from "@naijajollof/ui";
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
@@ -79,11 +80,27 @@ function RightActions({
 
   return (
     <View style={styles.actions}>
-      <Pressable style={[styles.action, styles.actionRead]} onPress={onToggleRead}>
-        <Text style={styles.actionLabel}>{read ? "Unread" : "Read"}</Text>
+      <Pressable
+        style={[styles.action, styles.actionRead]}
+        onPress={onToggleRead}
+        accessibilityRole="button"
+        accessibilityLabel={read ? "Mark unread" : "Mark read"}
+      >
+        <Ionicons
+          name={read ? "mail-unread-outline" : "mail-open-outline"}
+          size={18}
+          color={Colors.text}
+        />
+        <Text style={styles.actionLabelRead}>{read ? "Unread" : "Read"}</Text>
       </Pressable>
-      <Pressable style={[styles.action, styles.actionDelete]} onPress={onDelete}>
-        <Text style={styles.actionLabel}>Delete</Text>
+      <Pressable
+        style={[styles.action, styles.actionDelete]}
+        onPress={onDelete}
+        accessibilityRole="button"
+        accessibilityLabel="Delete"
+      >
+        <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+        <Text style={styles.actionLabelDelete}>Delete</Text>
       </Pressable>
     </View>
   );
@@ -228,23 +245,33 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "center",
+    gap: 8,
+    paddingLeft: 8,
+    paddingRight: 4,
   },
   action: {
-    width: 76,
+    minWidth: 72,
+    minHeight: 72,
+    borderRadius: Radii.pill,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   actionRead: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.secondarySoft,
   },
   actionDelete: {
-    backgroundColor: Colors.danger,
+    backgroundColor: Colors.dangerSoft,
   },
-  actionLabel: {
-    color: Colors.inverse,
-    fontSize: 13,
-    fontWeight: "600",
+  actionLabelRead: {
+    ...KType.metaStrong,
+    color: Colors.text,
+  },
+  actionLabelDelete: {
+    ...KType.metaStrong,
+    color: Colors.danger,
   },
 });

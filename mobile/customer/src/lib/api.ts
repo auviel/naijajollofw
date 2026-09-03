@@ -7,8 +7,40 @@ import {
   saveCartSid,
   saveTokens,
 } from "@/lib/storage";
+import * as Sentry from "@sentry/react-native";
 
-type ApiError = { error?: string };
+type ApiError = { error?: string; code?: string };
+
+function reportApiFailure(input: {
+  path: string;
+  method: string;
+  status?: number;
+  code?: string;
+  message: string;
+  cause?: unknown;
+}) {
+  if (input.status === 401) return;
+
+  const error =
+    input.cause instanceof Error ? input.cause : new Error(input.message);
+
+  Sentry.captureException(error, {
+    tags: {
+      api_path: input.path.split("?")[0] ?? input.path,
+      api_method: input.method,
+      ...(input.status !== undefined
+        ? { api_status: String(input.status) }
+        : {}),
+      ...(input.code ? { api_code: input.code } : {}),
+    },
+    fingerprint: [
+      "apiFetch",
+      input.method,
+      input.path.split("?")[0] ?? input.path,
+      String(input.status ?? "network"),
+    ],
+  });
+}
 
 async function refreshAccessToken(): Promise<string | null> {
   const { refreshToken } = await loadTokens();
@@ -34,23 +66,36 @@ export async function apiFetch<T>(
   init: RequestInit = {},
   retry = true,
 ): Promise<T> {
-  const [{ accessToken }, cartSid] = await Promise.all([
-    loadTokens(),
-    loadCartSid(),
-  ]);
-  const headers = new Headers(init.headers);
-  headers.set("Accept", "application/json");
-  if (init.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (accessToken) {
-    headers.set("Authorization", `Bearer ${accessToken}`);
-  }
-  if (cartSid) {
-    headers.set(CART_SESSION_HEADER, cartSid);
+  const method = (init.method ?? "GET").toUpperCase();
+
+  let response: Response;
+  let accessToken: string | null = null;
+  try {
+    const [tokens, cartSid] = await Promise.all([loadTokens(), loadCartSid()]);
+    accessToken = tokens.accessToken;
+    const headers = new Headers(init.headers);
+    headers.set("Accept", "application/json");
+    if (init.body && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+    if (cartSid) {
+      headers.set(CART_SESSION_HEADER, cartSid);
+    }
+
+    response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  } catch (cause) {
+    reportApiFailure({
+      path,
+      method,
+      message: cause instanceof Error ? cause.message : "Network error",
+      cause,
+    });
+    throw cause;
   }
 
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers });
   if (response.status === 401 && retry && accessToken) {
     const next = await refreshAccessToken();
     if (next) return apiFetch<T>(path, init, false);
@@ -66,7 +111,15 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    throw new Error(json.error || `Request failed (${response.status})`);
+    const message = json.error || `Request failed (${response.status})`;
+    reportApiFailure({
+      path,
+      method,
+      status: response.status,
+      code: json.code,
+      message,
+    });
+    throw new Error(message);
   }
 
   return json.data as T;

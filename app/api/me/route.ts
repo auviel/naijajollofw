@@ -1,12 +1,14 @@
 import { getSessionContext } from "@/lib/auth/session";
+import { updateStaffProfile } from "@/lib/services/staff/account";
 import {
-  confirmStaffEmailChange,
-  updateStaffProfile,
-} from "@/lib/services/staff/account";
+  STAFF_ME_PATCH_LIMIT,
+  STAFF_ME_PATCH_WINDOW_MS,
+  assertDurableRateLimit,
+} from "@/lib/services/auth/login-protection";
 import { parseJsonBody } from "@/lib/utils/api-request";
 import { AppError, handleApiError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { updateStaffProfileSchema } from "@/lib/domain/account/validation-staff";
+import { getRequestIpFromRequest } from "@/lib/utils/request-ip";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -46,14 +48,13 @@ export async function PATCH(request: Request) {
       throw new AppError("UNAUTHORIZED", "Authentication required", 401);
     }
 
-    const rateLimit = checkRateLimit(`staff-me-patch:${context.user.id}`, 20, 60_000);
-    if (!rateLimit.allowed) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `Too many updates. Try again in ${rateLimit.retryAfterSeconds}s.`,
-        429,
-      );
-    }
+    await assertDurableRateLimit({
+      kind: "staff-me-patch",
+      ip: getRequestIpFromRequest(request),
+      subject: context.user.id,
+      limit: STAFF_ME_PATCH_LIMIT,
+      windowMs: STAFF_ME_PATCH_WINDOW_MS,
+    });
 
     const body = await parseJsonBody(request, updateStaffProfileSchema);
     const result = await updateStaffProfile(body);

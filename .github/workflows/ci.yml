@@ -107,3 +107,44 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  build:
+    name: Web build
+    if: ${{ env.SKIP_CI != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AUTH_SECRET: ci-test-auth-secret-not-for-production
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      CHECKOUT_SIMULATE_PAYMENTS: "true"
+      STORE_TIMEZONE: America/Toronto
+      DATABASE_URL: postgresql://delivergo:delivergo@localhost:5433/delivergo?schema=public
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ""
+      TURNSTILE_SECRET_KEY: ""
+      SQUARE_ACCESS_TOKEN: ""
+      SQUARE_LOCATION_ID: ""
+      NEXT_PUBLIC_SQUARE_LOCATION_ID: ""
+      NEXT_PUBLIC_SQUARE_APPLICATION_ID: ""
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
+      CI: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  semgrep:
+    name: Semgrep
+    if: ${{ env.SKIP_CI != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Scan
+        run: semgrep scan --config p/typescript --config p/nextjs --error --metrics=off

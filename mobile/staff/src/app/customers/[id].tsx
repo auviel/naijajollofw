@@ -14,6 +14,7 @@ import {
   KitchenTicketSkeleton,
   Screen,
 } from "@naijajollof/ui";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
@@ -63,6 +64,7 @@ export default function CustomerDetailScreen() {
   const [customer, setCustomer] = useState<CustomerDetailPayload | null>(null);
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -126,11 +128,24 @@ export default function CustomerDetailScreen() {
       );
       setName(updated.name);
       setNotes(updated.notes ?? "");
+      setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save");
     } finally {
       setSaving(false);
     }
+  }
+
+  function cancelEdit() {
+    if (!customer) return;
+    setName(customer.name);
+    setNotes(customer.notes ?? "");
+    setError(null);
+    setEditing(false);
+  }
+
+  function startEdit() {
+    setEditing(true);
   }
 
   function confirmDelete() {
@@ -187,25 +202,61 @@ export default function CustomerDetailScreen() {
   return (
     <Screen>
       <StackScroll>
-        <Text style={KType.meta}>
-          {customer.orderCount} orders
-          {customer.deliveryCount > 0
-            ? ` · ${customer.deliveryCount} deliveries`
-            : ""}
-        </Text>
-
         <Card style={styles.card}>
-          <Text style={KType.kicker}>Profile</Text>
-          <Text style={styles.label}>Name</Text>
-          <Field value={name} onChangeText={setName} autoCapitalize="words" />
-          <Text style={styles.label}>Notes</Text>
-          <Field
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Kitchen notes"
-            multiline
-            style={styles.notes}
-          />
+          <View style={styles.cardHead}>
+            <Text style={KType.kicker}>Profile</Text>
+            {editing ? (
+              <Pressable
+                onPress={cancelEdit}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel editing"
+                style={styles.editBtn}
+              >
+                <Ionicons name="close" size={18} color={Colors.text} />
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={startEdit}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile"
+                style={styles.editBtn}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={18}
+                  color={Colors.accent}
+                />
+              </Pressable>
+            )}
+          </View>
+
+          {editing ? (
+            <>
+              <Text style={styles.label}>Name</Text>
+              <Field
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+              <Text style={styles.label}>Notes</Text>
+              <Field
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Kitchen notes"
+                multiline
+                style={styles.notes}
+              />
+            </>
+          ) : (
+            <View style={styles.infoBlock}>
+              <Text style={KType.bodyStrong}>{customer.name}</Text>
+              <Text style={KType.meta}>
+                {customer.notes?.trim() ? customer.notes : "No notes"}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
           <Text style={KType.kicker}>Phones</Text>
@@ -238,7 +289,12 @@ export default function CustomerDetailScreen() {
         </Card>
 
         <View style={styles.past}>
-          <Text style={KType.kicker}>Past orders</Text>
+          <Text style={KType.kicker}>
+            Past orders · {customer.orderCount}
+            {customer.deliveryCount > 0
+              ? ` · ${customer.deliveryCount} deliveries`
+              : ""}
+          </Text>
           {customer.recentOrders.length === 0 ? (
             <Text style={KType.meta}>No linked orders yet.</Text>
           ) : (
@@ -276,10 +332,13 @@ export default function CustomerDetailScreen() {
           variant="danger"
           onPress={confirmDelete}
           disabled={deleting || saving}
+          icon={
+            <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+          }
         />
       </StackScroll>
 
-      {dirty ? (
+      {editing && dirty ? (
         <View
           style={[
             styles.footer,
@@ -299,6 +358,21 @@ export default function CustomerDetailScreen() {
 
 const styles = StyleSheet.create({
   card: { gap: 8 },
+  cardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  editBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.secondarySoft,
+  },
+  infoBlock: { gap: 4 },
   label: { ...KType.metaStrong, marginTop: 4 },
   notes: { minHeight: 88, textAlignVertical: "top", paddingTop: 12 },
   divider: {

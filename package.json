@@ -32,6 +32,11 @@
     "postinstall": "prisma generate",
     "prepare": "husky"
   },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --max-warnings 0 --fix"
+    ]
+  },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.51",
     "@ai-sdk/react": "^4.0.87",
@@ -73,6 +78,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.12",
     "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prisma": "^6.19.0",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
