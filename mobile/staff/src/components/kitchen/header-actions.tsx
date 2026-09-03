@@ -33,7 +33,6 @@ export function KitchenHeaderActions({
         >
           <Ionicons name="list-outline" size={14} color={colors.accent} />
           <Text style={[styles.link, { color: colors.accent }]}>All orders</Text>
-          <Ionicons name="chevron-forward" size={12} color={colors.accent} />
         </Pressable>
       ) : null}
       <Pressable

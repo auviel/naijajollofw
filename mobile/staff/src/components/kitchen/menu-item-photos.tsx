@@ -3,8 +3,10 @@ import type {
   KitchenMenuImage,
   UploadMenuImageResult,
 } from "@/lib/kitchen/menu-types";
+import { DarkPalette, useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Button, Colors, Radii } from "@naijajollof/ui";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
+import { Radii } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -29,6 +31,44 @@ export function MenuItemPhotos({
   images,
   onChange,
 }: MenuItemPhotosProps) {
+  const { colors } = useKitchenTheme();
+  const styles = useThemedStyles((c) => {
+    const dark = c.background === DarkPalette.background;
+    return {
+      wrap: { gap: 10 },
+      row: { gap: 10, alignItems: "center" as const, paddingVertical: 4 },
+      thumbWrap: { position: "relative" as const },
+      thumb: {
+        width: 72,
+        height: 72,
+        borderRadius: Radii.sm,
+        backgroundColor: c.backgroundWash,
+      },
+      deleteBtn: {
+        position: "absolute" as const,
+        top: -6,
+        right: -6,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: c.danger,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+      },
+      add: {
+        width: 72,
+        height: 72,
+        borderRadius: Radii.sm,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: c.border,
+        backgroundColor: dark ? c.surfaceElevated : c.surface,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        gap: 4,
+      },
+      error: { ...KType.meta, color: c.danger },
+    };
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,7 +177,7 @@ export function MenuItemPhotos({
               }
               accessibilityLabel="Remove photo"
             >
-              <Ionicons name="close" size={14} color={Colors.inverse} />
+              <Ionicons name="close" size={14} color={colors.inverse} />
             </Pressable>
           </View>
         ))}
@@ -148,52 +188,17 @@ export function MenuItemPhotos({
           accessibilityRole="button"
           accessibilityLabel="Add photo"
         >
-          <Ionicons name="image-outline" size={22} color={Colors.textSecondary} />
-          <Text style={KType.meta}>{busy ? "…" : "Add"}</Text>
+          <Ionicons
+            name="image-outline"
+            size={22}
+            color={colors.textSecondary}
+          />
+          <Text style={[KType.meta, { color: colors.textSecondary }]}>
+            {busy ? "…" : "Add"}
+          </Text>
         </Pressable>
       </ScrollView>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        variant="secondary"
-        label={busy ? "Working…" : "Add from library"}
-        disabled={busy}
-        onPress={() => void pickAndUpload()}
-      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: 10 },
-  row: { gap: 10, alignItems: "center", paddingVertical: 4 },
-  thumbWrap: { position: "relative" },
-  thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: Radii.sm,
-    backgroundColor: Colors.backgroundWash,
-  },
-  deleteBtn: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.danger,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  add: {
-    width: 72,
-    height: 72,
-    borderRadius: Radii.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  error: { ...KType.meta, color: Colors.danger },
-});

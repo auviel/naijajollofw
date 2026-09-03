@@ -62,19 +62,6 @@ function formatDayHours(day: HoursDay): string {
   return `${day.openTime ?? "—"}–${day.closeTime ?? "—"}`;
 }
 
-function summarizeHours(hours: HoursSchedule | null): string {
-  if (!hours) return "Loading…";
-  if (!hours.configured) return "No schedule — treated as always open";
-  const openDays = hours.days.filter((d) => !d.closed);
-  if (openDays.length === 0) return "Closed every day";
-  return openDays
-    .map((d) => {
-      const label = (DAY_LABELS[d.dayOfWeek] ?? "?").slice(0, 3);
-      return `${label} ${d.openTime}–${d.closeTime}`;
-    })
-    .join(" · ");
-}
-
 export default function AccountStoreScreen() {
   const { store, user, refreshMe } = useAuth();
   const insets = useSafeAreaInsets();
@@ -427,15 +414,20 @@ export default function AccountStoreScreen() {
             </>
           ) : (
             <View style={styles.infoBlock}>
-              <Text style={KType.meta}>{summarizeHours(hours)}</Text>
-              {(hours?.days ?? []).map((day) => (
-                <View key={day.dayOfWeek} style={styles.hoursViewRow}>
-                  <Text style={KType.body}>
-                    {DAY_LABELS[day.dayOfWeek] ?? `Day ${day.dayOfWeek}`}
-                  </Text>
-                  <Text style={KType.meta}>{formatDayHours(day)}</Text>
-                </View>
-              ))}
+              {!hours?.configured ? (
+                <Text style={KType.meta}>
+                  No schedule — treated as always open
+                </Text>
+              ) : (
+                (hours?.days ?? []).map((day) => (
+                  <View key={day.dayOfWeek} style={styles.hoursViewRow}>
+                    <Text style={KType.body}>
+                      {DAY_LABELS[day.dayOfWeek] ?? `Day ${day.dayOfWeek}`}
+                    </Text>
+                    <Text style={KType.meta}>{formatDayHours(day)}</Text>
+                  </View>
+                ))
+              )}
             </View>
           )}
         </Card>

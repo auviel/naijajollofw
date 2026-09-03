@@ -301,6 +301,13 @@ export default function TicketScreen() {
               />
             ))}
         </View>
+
+        <Button
+          variant="ghost"
+          icon={<ActionIcon to="back" variant="ghost" />}
+          label="Back to board"
+          onPress={() => router.back()}
+        />
       </StackScroll>
     </Screen>
   );

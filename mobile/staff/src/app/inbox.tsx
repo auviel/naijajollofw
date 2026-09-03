@@ -66,12 +66,6 @@ function useInboxStyles() {
         borderLeftWidth: 3,
         borderLeftColor: c.accent,
       },
-      dot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: c.accent,
-      },
       empty: {
         ...KType.meta,
         textAlign: "center" as const,
@@ -100,8 +94,8 @@ function useInboxStyles() {
         borderColor: dark ? "rgba(255,255,255,0.16)" : c.border,
       },
       actionDelete: {
-        backgroundColor: dark ? "rgba(220,38,38,0.22)" : c.dangerSoft,
-        borderColor: dark ? "rgba(220,38,38,0.4)" : "rgba(220,38,38,0.2)",
+        backgroundColor: dark ? "rgba(248,113,113,0.18)" : c.dangerSoft,
+        borderColor: dark ? "rgba(248,113,113,0.4)" : "rgba(220,38,38,0.2)",
       },
       actionLabelRead: {
         ...KType.metaStrong,
@@ -228,9 +222,7 @@ function InboxRow({
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={KType.bodyStrong}>{item.title}</Text>
           <Text style={KType.meta}>{item.body}</Text>
-          <Text style={KType.meta}>{item.createdAt}</Text>
         </View>
-        {!item.read ? <View style={styles.dot} /> : null}
       </Card>
     </Swipeable>
   );
@@ -268,23 +260,16 @@ export default function InboxScreen() {
         {items.length === 0 ? (
           <Text style={styles.empty}>You’re caught up</Text>
         ) : (
-          <>
-            {unread > 0 ? (
-              <Text style={KType.meta}>{unread} unread</Text>
-            ) : (
-              <Text style={KType.meta}>You’re caught up</Text>
-            )}
-            <View style={styles.list}>
-              {items.map((item) => (
-                <InboxRow
-                  key={item.id}
-                  item={item}
-                  onToggleRead={() => toggleRead(item.id)}
-                  onDelete={() => deleteItem(item.id)}
-                />
-              ))}
-            </View>
-          </>
+          <View style={styles.list}>
+            {items.map((item) => (
+              <InboxRow
+                key={item.id}
+                item={item}
+                onToggleRead={() => toggleRead(item.id)}
+                onDelete={() => deleteItem(item.id)}
+              />
+            ))}
+          </View>
         )}
       </StackScroll>
     </Screen>

@@ -5,10 +5,7 @@ import {
   type BoardColumnId,
 } from "@/components/kitchen/column-tabs";
 import { TicketCard } from "@/components/kitchen/ticket-card";
-import {
-  OfflineBanner,
-  SessionTipBanner,
-} from "@/components/kitchen/network-banners";
+import { OfflineBanner } from "@/components/kitchen/network-banners";
 import {
   markBoardSeen,
   setBoardPendingAcceptance,
@@ -19,7 +16,6 @@ import {
 } from "@/lib/kitchen/board-column-state";
 import { isStatusBump, primaryBumpFor } from "@/lib/kitchen/bump";
 import { insistBumpConfirm, insistError } from "@/lib/kitchen/insist";
-import { kvGet, kvSet } from "@/lib/kv";
 import {
   isKitchenBoardDeferred,
   KITCHEN_BOARD_COLUMNS,
@@ -47,7 +43,6 @@ import { SafeScreen } from "@/components/kitchen/safe-screen";
 import { KType } from "@/lib/kitchen/typography";
 
 const POLL_MS = 10_000;
-const SESSION_TIP_KEY = "kitchen.sessionTip.dismissed";
 
 function orderTimeMs(order: StaffOrderListItem): number {
   const iso = order.placedAt ?? order.createdAt;
@@ -90,19 +85,12 @@ export function BoardScreen() {
   );
   const [columnTouched, setColumnTouched] = useState(persisted.columnTouched);
   const [laterOpen, setLaterOpen] = useState(false);
-  const [showSessionTip, setShowSessionTip] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       markBoardSeen();
     }, []),
   );
-
-  useEffect(() => {
-    void kvGet(SESSION_TIP_KEY).then((v) => {
-      if (v !== "1") setShowSessionTip(true);
-    });
-  }, []);
 
   useEffect(() => {
     setPersistedBoardColumn(activeColumnId, columnTouched);
@@ -260,13 +248,6 @@ export function BoardScreen() {
   return (
     <SafeScreen>
       <OfflineBanner />
-      <SessionTipBanner
-        visible={showSessionTip}
-        onDismiss={() => {
-          setShowSessionTip(false);
-          void kvSet(SESSION_TIP_KEY, "1");
-        }}
-      />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -292,11 +273,6 @@ export function BoardScreen() {
             >
               <Ionicons name="list-outline" size={14} color={Colors.accent} />
               <Text style={styles.allOrders}>All orders</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={12}
-                color={Colors.accent}
-              />
             </Pressable>
           </View>
           <KitchenHeaderActions />

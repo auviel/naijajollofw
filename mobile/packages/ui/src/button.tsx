@@ -78,7 +78,7 @@ export function Button({
             lightLabel && { color: colors.inverse },
             dangerLabel && { color: colors.danger },
             (variant === "secondary" || variant === "ghost") && {
-              color: colors.secondary,
+              color: colors.text,
             },
           ]}
         >

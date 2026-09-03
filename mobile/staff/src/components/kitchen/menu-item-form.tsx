@@ -8,8 +8,10 @@ import {
   centsToDollarsInput,
   dollarsToCents,
 } from "@/lib/kitchen/menu-types";
+import { DarkPalette, useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Button, Card, Colors, Field, Radii } from "@naijajollof/ui";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
+import { Button, Card, Field, Radii } from "@naijajollof/ui";
 import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
@@ -60,6 +62,49 @@ export function MenuItemForm({
   viewEdit = false,
   onSubmit,
 }: MenuItemFormProps) {
+  const { colors } = useKitchenTheme();
+  const styles = useThemedStyles((c) => {
+    const dark = c.background === DarkPalette.background;
+    return {
+      wrap: { gap: 14, paddingBottom: 24 },
+      card: { gap: 12 },
+      cardHead: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+      },
+      fieldBlock: { gap: 6 },
+      multiline: { minHeight: 88, paddingTop: 12, textAlignVertical: "top" as const },
+      infoBlock: { gap: 6 },
+      switchRow: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+        gap: 12,
+      },
+      divider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: c.border,
+        marginVertical: 2,
+      },
+      chips: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 8 },
+      chip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: Radii.sm,
+        backgroundColor: dark ? c.surfaceElevated : c.surface,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: c.border,
+      },
+      chipSelected: {
+        backgroundColor: c.accentSoft,
+        borderColor: dark ? "rgba(255,143,74,0.45)" : c.border,
+      },
+      chipLabel: { ...KType.meta, color: c.textSecondary },
+      chipLabelSelected: { ...KType.metaStrong, color: c.accent },
+      error: { ...KType.meta, color: c.danger },
+    };
+  });
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description);
   const [priceDollars, setPriceDollars] = useState(initial.priceDollars);
@@ -136,7 +181,7 @@ export function MenuItemForm({
             editing ? (
               <IconBtn
                 name="close"
-                color={Colors.text}
+                color={colors.text}
                 label="Cancel editing"
                 onPress={cancelEdit}
                 soft
@@ -144,7 +189,7 @@ export function MenuItemForm({
             ) : (
               <IconBtn
                 name="create-outline"
-                color={Colors.accent}
+                color={colors.accent}
                 label="Edit item"
                 onPress={() => setEditing(true)}
                 soft

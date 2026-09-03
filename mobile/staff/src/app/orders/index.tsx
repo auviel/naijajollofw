@@ -3,7 +3,6 @@ import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { apiFetch } from "@/lib/api";
 import {
-  formatCadFromCents,
   type ListStaffOrdersResult,
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
@@ -19,12 +18,11 @@ import {
   View,
 } from "react-native";
 
-type OrderFilter = "active" | "completed" | "cancelled" | "all";
+type OrderFilter = "active" | "completed" | "all";
 
 const FILTERS: Array<{ id: OrderFilter; label: string }> = [
   { id: "active", label: "Active" },
-  { id: "completed", label: "Completed" },
-  { id: "cancelled", label: "Cancelled" },
+  { id: "completed", label: "Done" },
   { id: "all", label: "All" },
 ];
 
@@ -69,7 +67,7 @@ export default function OrdersListScreen() {
       color: c.inverse,
     },
     list: { gap: 10 },
-    row: { gap: 4 },
+    row: { gap: 2 },
     rowTop: {
       flexDirection: "row" as const,
       justifyContent: "space-between" as const,
@@ -177,16 +175,11 @@ export default function OrdersListScreen() {
                 <Card style={styles.row}>
                   <View style={styles.rowTop}>
                     <Text style={KType.bodyStrong}>{ticketLabel(order)}</Text>
-                    <Text style={KType.numeric}>
-                      {formatCadFromCents(order.totalCents)}
+                    <Text style={KType.meta}>
+                      {order.status.replaceAll("_", " ")}
                     </Text>
                   </View>
                   <Text style={KType.meta}>{order.customerName}</Text>
-                  <Text style={KType.meta}>
-                    {order.status.replaceAll("_", " ")}
-                    {" · "}
-                    {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
-                  </Text>
                 </Card>
               </Pressable>
             ))}

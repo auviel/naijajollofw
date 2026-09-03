@@ -193,9 +193,6 @@ export default function AccountPreferencesScreen() {
                 onPress={() => void enablePush()}
               />
             )}
-            <Text style={[KType.meta, { marginTop: 4 }]}>
-              Quiet hours — coming later
-            </Text>
           </View>
         </Card>
 

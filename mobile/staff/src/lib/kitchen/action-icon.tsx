@@ -44,7 +44,7 @@ export function ActionIcon({
       ? colors.inverse
       : variant === "danger"
         ? colors.danger
-        : colors.secondary;
+        : colors.text;
 
   return <Ionicons name={actionIconName(to)} size={size} color={color} />;
 }

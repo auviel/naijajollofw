@@ -7,7 +7,6 @@ import { Button, Card, Colors, Field, Screen } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -227,21 +226,6 @@ export default function AccountYouScreen() {
             </View>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-          <View style={styles.divider} />
-          <Pressable
-            style={[styles.row, styles.rowDisabled]}
-            disabled
-            onPress={() =>
-              Alert.alert("Coming soon", "Passkeys aren’t available yet.")
-            }
-            accessibilityRole="button"
-            accessibilityState={{ disabled: true }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[KType.bodyStrong, styles.muted]}>Passkeys</Text>
-              <Text style={KType.meta}>Coming soon</Text>
-            </View>
-          </Pressable>
         </Card>
       </StackScroll>
 
@@ -279,7 +263,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 8,
   },
-  rowDisabled: { opacity: 0.7 },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: Colors.border,
@@ -289,7 +272,6 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: "400",
   },
-  muted: { color: Colors.textSecondary },
   error: { ...KType.meta, color: Colors.danger },
   ok: { ...KType.meta, color: Colors.success },
   footer: {

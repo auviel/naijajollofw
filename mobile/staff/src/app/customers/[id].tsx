@@ -392,9 +392,9 @@ export default function CustomerDetailScreen() {
           ) : (
             <View style={styles.infoBlock}>
               <Text style={KType.bodyStrong}>{customer.name}</Text>
-              <Text style={KType.meta}>
-                {customer.notes?.trim() ? customer.notes : "No notes"}
-              </Text>
+              {customer.notes?.trim() ? (
+                <Text style={KType.meta}>{customer.notes}</Text>
+              ) : null}
             </View>
           )}
 
@@ -446,12 +446,18 @@ export default function CustomerDetailScreen() {
                     {editing ? (
                       <Text style={KType.body}>
                         {formatPhone(phone.phoneE164)}
-                        {phone.isPrimary ? " · primary" : ""}
+                        {phone.isPrimary && customer.phones.length > 1
+                          ? " · primary"
+                          : ""}
                       </Text>
                     ) : (
                       <TelLink
                         phone={phone.phoneE164}
-                        label={`${formatPhone(phone.phoneE164)}${phone.isPrimary ? " · primary" : ""}`}
+                        label={`${formatPhone(phone.phoneE164)}${
+                          phone.isPrimary && customer.phones.length > 1
+                            ? " · primary"
+                            : ""
+                        }`}
                       />
                     )}
                   </View>
@@ -550,14 +556,16 @@ export default function CustomerDetailScreen() {
                     {editing ? (
                       <>
                         <Text style={KType.body}>{address.formatted}</Text>
-                        {address.isPrimary ? (
+                        {address.isPrimary &&
+                        customer.addresses.length > 1 ? (
                           <Text style={KType.meta}>Primary</Text>
                         ) : null}
                       </>
                     ) : (
                       <View style={{ gap: 2 }}>
                         <MapsLink address={address.formatted} />
-                        {address.isPrimary ? (
+                        {address.isPrimary &&
+                        customer.addresses.length > 1 ? (
                           <Text style={KType.meta}>Primary</Text>
                         ) : null}
                       </View>
@@ -614,9 +622,6 @@ export default function CustomerDetailScreen() {
         <View style={styles.past}>
           <Text style={KType.kicker}>
             Past orders · {customer.orderCount}
-            {customer.deliveryCount > 0
-              ? ` · ${customer.deliveryCount} deliveries`
-              : ""}
           </Text>
           {customer.recentOrders.length === 0 ? (
             <Text style={KType.meta}>No linked orders yet.</Text>
@@ -650,15 +655,17 @@ export default function CustomerDetailScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Button
-          label={deleting ? "Deleting…" : "Delete customer"}
-          variant="danger"
-          onPress={confirmDelete}
-          disabled={deleting || saving || contactBusy}
-          icon={
-            <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-          }
-        />
+        {editing ? (
+          <Button
+            label={deleting ? "Deleting…" : "Delete customer"}
+            variant="danger"
+            onPress={confirmDelete}
+            disabled={deleting || saving || contactBusy}
+            icon={
+              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+            }
+          />
+        ) : null}
       </StackScroll>
 
       {editing && dirty ? (
