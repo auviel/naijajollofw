@@ -1,7 +1,7 @@
 import { openMapsAddress, openTel } from "@/lib/kitchen/linking";
-import { Colors } from "@naijajollof/ui";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 
 export function TelLink({
   phone,
@@ -10,6 +10,7 @@ export function TelLink({
   phone: string;
   label?: string;
 }) {
+  const { colors } = useKitchenTheme();
   return (
     <Pressable
       onPress={() => void openTel(phone)}
@@ -17,12 +18,15 @@ export function TelLink({
       accessibilityLabel={`Call ${label ?? phone}`}
       hitSlop={6}
     >
-      <Text style={styles.link}>{label ?? phone}</Text>
+      <Text style={[KType.body, { color: colors.accent }]}>
+        {label ?? phone}
+      </Text>
     </Pressable>
   );
 }
 
 export function MapsLink({ address }: { address: string }) {
+  const { colors } = useKitchenTheme();
   return (
     <Pressable
       onPress={() => void openMapsAddress(address)}
@@ -30,13 +34,10 @@ export function MapsLink({ address }: { address: string }) {
       accessibilityLabel={`Open ${address} in Maps`}
       hitSlop={6}
     >
-      <Text style={styles.link}>{address}</Text>
-      <Text style={styles.hint}>Open in Maps</Text>
+      <Text style={[KType.body, { color: colors.accent }]}>{address}</Text>
+      <Text style={[KType.meta, { color: colors.accent, marginTop: 2 }]}>
+        Open in Maps
+      </Text>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  link: { ...KType.body, color: Colors.accent },
-  hint: { ...KType.meta, color: Colors.accent, marginTop: 2 },
-});

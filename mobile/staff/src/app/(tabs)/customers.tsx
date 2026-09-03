@@ -134,15 +134,7 @@ export default function CustomersTab() {
                   <Text style={KType.bodyStrong}>{customer.name}</Text>
                   <Text style={KType.meta}>
                     {customer.primaryPhone ?? "No phone"}
-                    {customer.orderCount > 0
-                      ? ` · ${customer.orderCount} orders`
-                      : ""}
                   </Text>
-                  {customer.primaryAddress ? (
-                    <Text style={KType.meta} numberOfLines={1}>
-                      {customer.primaryAddress}
-                    </Text>
-                  ) : null}
                 </Card>
               </Pressable>
             ))}

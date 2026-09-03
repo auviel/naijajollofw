@@ -1,4 +1,4 @@
-import { Colors, Field, Touch } from "@naijajollof/ui";
+import { Field, Touch, useUiColors } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
@@ -12,6 +12,7 @@ type PasswordFieldProps = Omit<TextInputProps, "secureTextEntry">;
 
 export function PasswordField(props: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
+  const colors = useUiColors();
 
   return (
     <View style={styles.wrap}>
@@ -30,7 +31,7 @@ export function PasswordField(props: PasswordFieldProps) {
         <Ionicons
           name={visible ? "eye-off-outline" : "eye-outline"}
           size={20}
-          color={Colors.textSecondary}
+          color={colors.textSecondary}
         />
       </Pressable>
     </View>

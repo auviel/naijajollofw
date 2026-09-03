@@ -24,11 +24,17 @@ export const DarkPalette = {
   text: "#F4F4F5",
   textSecondary: "#A1A1AA",
   border: "rgba(255,255,255,0.12)",
-  accentSoft: "#2A211C",
+  /** Lighter brand orange — readable as text/links on dark surfaces */
+  accent: "#FF8F4A",
+  accentHover: "#FFA86B",
+  accentSoft: "#3A2418",
   secondary: "#D4D4D8",
   secondarySoft: "#27272A",
+  success: "#4ADE80",
   successSoft: "#14532D",
-  dangerSoft: "#3F1D1D",
+  /** Coral red — readable on dark danger Soft fills */
+  danger: "#F87171",
+  dangerSoft: "#4A1C1C",
   inverse: "#FFFFFF",
 } as typeof LightColors;
 

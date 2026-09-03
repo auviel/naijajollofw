@@ -3,8 +3,10 @@ import {
   setInboxUnreadCount,
   useInboxUnread,
 } from "@/lib/kitchen/inbox-unread";
+import { DarkPalette, useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Card, Colors, Radii, Screen } from "@naijajollof/ui";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
+import { Card, Radii, Screen } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -50,6 +52,69 @@ const SEED: InboxItem[] = [
 
 const LONG_SWIPE_PX = -140;
 
+function useInboxStyles() {
+  return useThemedStyles((c) => {
+    const dark = c.background === DarkPalette.background;
+    return {
+      list: { gap: 8 },
+      row: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 12,
+      },
+      rowUnread: {
+        borderLeftWidth: 3,
+        borderLeftColor: c.accent,
+      },
+      dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: c.accent,
+      },
+      empty: {
+        ...KType.meta,
+        textAlign: "center" as const,
+        marginTop: 48,
+      },
+      actions: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 8,
+        paddingLeft: 8,
+        paddingRight: 4,
+      },
+      action: {
+        minWidth: 72,
+        minHeight: 72,
+        borderRadius: Radii.pill,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderWidth: StyleSheet.hairlineWidth,
+      },
+      actionRead: {
+        backgroundColor: dark ? "rgba(255,255,255,0.12)" : c.secondarySoft,
+        borderColor: dark ? "rgba(255,255,255,0.16)" : c.border,
+      },
+      actionDelete: {
+        backgroundColor: dark ? "rgba(220,38,38,0.22)" : c.dangerSoft,
+        borderColor: dark ? "rgba(220,38,38,0.4)" : "rgba(220,38,38,0.2)",
+      },
+      actionLabelRead: {
+        ...KType.metaStrong,
+        color: c.text,
+      },
+      actionLabelDelete: {
+        ...KType.metaStrong,
+        color: c.danger,
+      },
+    };
+  });
+}
+
 function RightActions({
   dragX,
   read,
@@ -63,6 +128,9 @@ function RightActions({
   onDelete: () => void;
   onLongSwipe: () => void;
 }) {
+  const styles = useInboxStyles();
+  const { colors } = useKitchenTheme();
+  const deleteColor = colors.danger;
   const fired = useRef(false);
 
   useEffect(() => {
@@ -89,7 +157,7 @@ function RightActions({
         <Ionicons
           name={read ? "mail-unread-outline" : "mail-open-outline"}
           size={18}
-          color={Colors.text}
+          color={colors.text}
         />
         <Text style={styles.actionLabelRead}>{read ? "Unread" : "Read"}</Text>
       </Pressable>
@@ -99,7 +167,7 @@ function RightActions({
         accessibilityRole="button"
         accessibilityLabel="Delete"
       >
-        <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+        <Ionicons name="trash-outline" size={18} color={deleteColor} />
         <Text style={styles.actionLabelDelete}>Delete</Text>
       </Pressable>
     </View>
@@ -115,6 +183,7 @@ function InboxRow({
   onToggleRead: () => void;
   onDelete: () => void;
 }) {
+  const styles = useInboxStyles();
   const ref = useRef<Swipeable>(null);
 
   const close = useCallback(() => {
@@ -168,6 +237,7 @@ function InboxRow({
 }
 
 export default function InboxScreen() {
+  const styles = useInboxStyles();
   const { refresh } = useInboxUnread();
   const [items, setItems] = useState<InboxItem[]>(SEED);
 
@@ -220,58 +290,3 @@ export default function InboxScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { gap: 8 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  rowUnread: {
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.accent,
-  },
-  empty: {
-    ...KType.meta,
-    textAlign: "center",
-    marginTop: 48,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingLeft: 8,
-    paddingRight: 4,
-  },
-  action: {
-    minWidth: 72,
-    minHeight: 72,
-    borderRadius: Radii.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  actionRead: {
-    backgroundColor: Colors.secondarySoft,
-  },
-  actionDelete: {
-    backgroundColor: Colors.dangerSoft,
-  },
-  actionLabelRead: {
-    ...KType.metaStrong,
-    color: Colors.text,
-  },
-  actionLabelDelete: {
-    ...KType.metaStrong,
-    color: Colors.danger,
-  },
-});

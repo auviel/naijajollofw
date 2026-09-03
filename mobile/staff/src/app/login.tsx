@@ -1,8 +1,9 @@
 import { PasswordField } from "@/components/kitchen/password-field";
 import { useAuth } from "@/lib/auth";
 import { emailLooksValid } from "@/lib/kitchen/linking";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Button, Colors, Field, GlassSurface, Radii } from "@naijajollof/ui";
+import { Button, Field, GlassSurface, Radii } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
@@ -23,6 +24,7 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useKitchenTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -67,13 +69,15 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.brand}>
-          <Text style={styles.brandName}>Naija Jollof</Text>
+          <Text style={[styles.brandName, { color: colors.inverse }]}>
+            Naija Jollof
+          </Text>
           <Text style={styles.brandLine}>Kitchen staff</Text>
         </View>
 
         <GlassSurface style={styles.card} interactive>
           <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
             <Field
               autoCapitalize="none"
               autoCorrect={false}
@@ -86,7 +90,7 @@ export default function LoginScreen() {
             />
           </View>
           <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
             <PasswordField
               placeholder="Password"
               value={password}
@@ -95,7 +99,9 @@ export default function LoginScreen() {
               autoComplete="password"
             />
           </View>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+          ) : null}
           <Button
             disabled={!canSubmit}
             label={busy ? "Signing in…" : "Sign in"}
@@ -111,7 +117,9 @@ export default function LoginScreen() {
             hitSlop={8}
             accessibilityRole="link"
           >
-            <Text style={styles.forgot}>Forgot password?</Text>
+            <Text style={[styles.forgot, { color: colors.accent }]}>
+              Forgot password?
+            </Text>
           </Pressable>
         </GlassSurface>
       </KeyboardAvoidingView>
@@ -137,7 +145,6 @@ const styles = StyleSheet.create({
     fontSize: 36,
     lineHeight: 40,
     letterSpacing: -0.8,
-    color: Colors.inverse,
   },
   brandLine: {
     ...KType.metaStrong,
@@ -149,11 +156,10 @@ const styles = StyleSheet.create({
     borderRadius: Radii.lg,
   },
   fieldBlock: { gap: 6 },
-  label: { ...KType.metaStrong, color: Colors.text },
-  error: { ...KType.metaStrong, color: Colors.danger },
+  label: { ...KType.metaStrong },
+  error: { ...KType.metaStrong },
   forgot: {
     ...KType.metaStrong,
-    color: Colors.accent,
     textAlign: "center",
     paddingVertical: 4,
   },

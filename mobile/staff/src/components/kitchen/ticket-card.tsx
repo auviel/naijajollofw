@@ -14,18 +14,46 @@ import {
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
+function isReadyish(status: StaffOrderListItem["status"]): boolean {
+  return (
+    status === "ready" ||
+    status === "ready_for_pickup" ||
+    status === "out_for_delivery"
+  );
+}
+
+function metaLine(order: StaffOrderListItem, hasThumbs: boolean): string | null {
+  const parts: string[] = [];
+  if (order.fulfillmentType === "delivery") {
+    parts.push("Delivery");
+  }
+  if (order.scheduledFor) {
+    parts.push(formatKitchenScheduled(order.scheduledFor));
+  }
+  if (!hasThumbs && order.itemSummary) {
+    parts.push(order.itemSummary);
+  }
+  if (parts.length === 0 && order.fulfillmentType === "pickup" && !hasThumbs) {
+    parts.push("Pickup");
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export function TicketCard({
   order,
   onOpen,
   onBump,
   onLongPressBump,
   bumpBusy,
+  showPrice,
 }: {
   order: StaffOrderListItem;
   onOpen: () => void;
   onBump: () => void;
   onLongPressBump?: () => void;
   bumpBusy?: boolean;
+  /** Override; default shows price on Ready (and similar) only. */
+  showPrice?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
     card: {
@@ -100,6 +128,9 @@ export function TicketCard({
     order.displayNumber ??
     (order.dayTicket ? `#${order.dayTicket}` : "Order");
   const thumbs = order.thumbImageUrls ?? [];
+  const hasThumbs = thumbs.length > 0;
+  const line = metaLine(order, hasThumbs);
+  const priceVisible = showPrice ?? isReadyish(order.status);
 
   async function copyTicket() {
     try {
@@ -130,14 +161,16 @@ export function TicketCard({
           </Text>
           <View style={styles.topRight}>
             {wait ? <Text style={KType.wait}>{wait}</Text> : null}
-            <Text style={KType.numeric}>
-              {formatCadFromCents(order.totalCents)}
-            </Text>
+            {priceVisible ? (
+              <Text style={KType.numeric}>
+                {formatCadFromCents(order.totalCents)}
+              </Text>
+            ) : null}
           </View>
         </View>
 
         <View style={styles.mid}>
-          {thumbs.length > 0 ? (
+          {hasThumbs ? (
             <View style={styles.thumbs}>
               {thumbs.slice(0, 3).map((url, index) => (
                 <ItemThumb
@@ -156,14 +189,11 @@ export function TicketCard({
             <ItemThumb uri={null} size={44} />
           )}
           <View style={styles.midCopy}>
-            <Text style={KType.meta} numberOfLines={2}>
-              {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
-              {order.scheduledFor
-                ? ` · ${formatKitchenScheduled(order.scheduledFor)}`
-                : ""}
-              {" · "}
-              {order.itemSummary}
-            </Text>
+            {line ? (
+              <Text style={KType.meta} numberOfLines={2}>
+                {line}
+              </Text>
+            ) : null}
             {order.notes ? (
               <Text style={styles.notes} numberOfLines={1}>
                 {order.notes}

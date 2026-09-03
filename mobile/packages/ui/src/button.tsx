@@ -1,5 +1,5 @@
 import { Radii, Touch } from "./theme";
-import { useUiColors } from "./theme-context";
+import { useUiTheme } from "./theme-context";
 import {
   Pressable,
   StyleSheet,
@@ -27,7 +27,7 @@ export function Button({
   icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  const colors = useUiColors();
+  const { colors, scheme } = useUiTheme();
   const lightLabel = variant === "primary";
   const dangerLabel = variant === "danger";
 
@@ -44,7 +44,10 @@ export function Button({
           ? {
               backgroundColor: colors.dangerSoft,
               borderWidth: StyleSheet.hairlineWidth,
-              borderColor: "rgba(220,38,38,0.35)",
+              borderColor:
+                scheme === "dark"
+                  ? "rgba(248,113,113,0.45)"
+                  : "rgba(220,38,38,0.35)",
             }
           : { backgroundColor: "transparent" };
 

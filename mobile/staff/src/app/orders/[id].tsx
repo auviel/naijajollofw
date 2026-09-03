@@ -3,16 +3,17 @@ import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { MapsLink, TelLink } from "@/components/kitchen/contact-links";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
 import { ActionIcon } from "@/lib/kitchen/action-icon";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { formatCadFromCents, type StaffOrderDetail } from "@naijajollof/api-types";
 import {
   Button,
   Card,
-  Colors,
   KitchenTicketSkeleton,
   Screen,
 } from "@naijajollof/ui";
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
@@ -36,12 +37,19 @@ function OrderHeaderTitle({
   title: string;
   subtitle: string;
 }) {
+  const { colors } = useKitchenTheme();
   return (
     <View style={headerStyles.wrap} accessibilityRole="header">
-      <Text style={headerStyles.title} numberOfLines={1}>
+      <Text
+        style={[headerStyles.title, { color: colors.text }]}
+        numberOfLines={1}
+      >
         {title}
       </Text>
-      <Text style={headerStyles.subtitle} numberOfLines={1}>
+      <Text
+        style={[headerStyles.subtitle, { color: colors.textSecondary }]}
+        numberOfLines={1}
+      >
         {subtitle}
       </Text>
     </View>
@@ -57,21 +65,54 @@ const headerStyles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: "700",
-    color: Colors.text,
     letterSpacing: -0.2,
   },
   subtitle: {
     fontSize: 12,
     fontWeight: "500",
-    color: Colors.textSecondary,
     marginTop: 1,
   },
 });
 
 export default function TicketScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const navigation = useNavigation();
+  const styles = useThemedStyles((c) => ({
+    card: { gap: 4 },
+    blockGap: { marginTop: 4 },
+    notesBlock: {
+      gap: 4,
+      marginBottom: 10,
+      paddingBottom: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    lines: { gap: 0 },
+    lineRow: {
+      flexDirection: "row" as const,
+      alignItems: "flex-start" as const,
+      justifyContent: "space-between" as const,
+      gap: 12,
+      paddingVertical: 10,
+    },
+    lineRowBorder: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+  lineCopy: { flex: 1, gap: 2 },
+  totalRow: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      marginTop: 4,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    actions: { gap: 10, marginTop: 8 },
+    error: { ...KType.metaStrong, color: c.danger },
+  }));
+  const { resolved } = useKitchenTheme();
   const [order, setOrder] = useState<StaffOrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -105,7 +146,7 @@ export default function TicketScreen() {
       title,
       headerTitle: () => <OrderHeaderTitle title={title} subtitle={subtitle} />,
     });
-  }, [navigation, order]);
+  }, [navigation, order, resolved]);
 
   async function transition(to: string) {
     if (!id) return;
@@ -186,9 +227,6 @@ export default function TicketScreen() {
                     </Text>
                   ) : null}
                 </View>
-                <Text style={styles.linePrice}>
-                  {formatCadFromCents(line.lineTotalCents)}
-                </Text>
               </View>
             ))}
           </View>
@@ -263,51 +301,7 @@ export default function TicketScreen() {
               />
             ))}
         </View>
-
-        <Button
-          variant="ghost"
-          icon={<ActionIcon to="back" variant="ghost" />}
-          label="Back to board"
-          onPress={() => router.back()}
-        />
       </StackScroll>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  card: { gap: 4 },
-  blockGap: { marginTop: 4 },
-  notesBlock: {
-    gap: 4,
-    marginBottom: 10,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  lines: { gap: 0 },
-  lineRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-    paddingVertical: 10,
-  },
-  lineRowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  lineCopy: { flex: 1, gap: 2 },
-  linePrice: { ...KType.numeric, marginTop: 1 },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  actions: { gap: 10, marginTop: 8 },
-  error: { ...KType.metaStrong, color: Colors.danger },
-});

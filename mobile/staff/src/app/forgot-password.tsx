@@ -1,7 +1,8 @@
 import { apiFetch } from "@/lib/api";
 import { PasswordField } from "@/components/kitchen/password-field";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Button, Colors, Field, GlassSurface, Radii } from "@naijajollof/ui";
+import { Button, Field, GlassSurface, Radii } from "@naijajollof/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
@@ -23,6 +24,7 @@ type Step = "email" | "reset" | "done";
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useKitchenTheme();
   const params = useLocalSearchParams<{ email?: string }>();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState(
@@ -77,6 +79,8 @@ export default function ForgotPasswordScreen() {
     }
   }
 
+  const labelStyle = [styles.label, { color: colors.text }];
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -98,7 +102,9 @@ export default function ForgotPasswordScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.brand}>
-          <Text style={styles.brandName}>Reset password</Text>
+          <Text style={[styles.brandName, { color: colors.inverse }]}>
+            Reset password
+          </Text>
           <Text style={styles.brandLine}>Kitchen staff</Text>
         </View>
 
@@ -110,7 +116,7 @@ export default function ForgotPasswordScreen() {
                 account.
               </Text>
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={labelStyle}>Email</Text>
                 <Field
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -122,7 +128,11 @@ export default function ForgotPasswordScreen() {
                   autoComplete="email"
                 />
               </View>
-              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? (
+                <Text style={[styles.error, { color: colors.danger }]}>
+                  {error}
+                </Text>
+              ) : null}
               <Button
                 disabled={busy || !email.trim()}
                 label={busy ? "Sending…" : "Send code"}
@@ -133,13 +143,17 @@ export default function ForgotPasswordScreen() {
 
           {step === "reset" ? (
             <>
-              {message ? <Text style={styles.ok}>{message}</Text> : null}
+              {message ? (
+                <Text style={[styles.ok, { color: colors.success }]}>
+                  {message}
+                </Text>
+              ) : null}
               <Text style={KType.meta}>
                 Enter the code and choose a new password. Code expires in 10
                 minutes.
               </Text>
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Code</Text>
+                <Text style={labelStyle}>Code</Text>
                 <Field
                   value={code}
                   onChangeText={setCode}
@@ -150,7 +164,7 @@ export default function ForgotPasswordScreen() {
                 />
               </View>
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>New password</Text>
+                <Text style={labelStyle}>New password</Text>
                 <PasswordField
                   value={newPassword}
                   onChangeText={setNewPassword}
@@ -159,7 +173,7 @@ export default function ForgotPasswordScreen() {
                 />
               </View>
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Confirm password</Text>
+                <Text style={labelStyle}>Confirm password</Text>
                 <PasswordField
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -167,7 +181,11 @@ export default function ForgotPasswordScreen() {
                   textContentType="newPassword"
                 />
               </View>
-              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? (
+                <Text style={[styles.error, { color: colors.danger }]}>
+                  {error}
+                </Text>
+              ) : null}
               <Button
                 disabled={
                   busy ||
@@ -190,9 +208,7 @@ export default function ForgotPasswordScreen() {
           {step === "done" ? (
             <>
               <Text style={KType.bodyStrong}>Password updated</Text>
-              <Text style={KType.meta}>
-                Sign in with your new password.
-              </Text>
+              <Text style={KType.meta}>Sign in with your new password.</Text>
               <Button
                 label="Back to sign in"
                 onPress={() => router.replace("/login")}
@@ -206,7 +222,9 @@ export default function ForgotPasswordScreen() {
               hitSlop={8}
               accessibilityRole="link"
             >
-              <Text style={styles.forgot}>Back to sign in</Text>
+              <Text style={[styles.forgot, { color: colors.accent }]}>
+                Back to sign in
+              </Text>
             </Pressable>
           ) : null}
         </GlassSurface>
@@ -233,7 +251,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     lineHeight: 36,
     letterSpacing: -0.6,
-    color: Colors.inverse,
   },
   brandLine: {
     ...KType.metaStrong,
@@ -245,12 +262,11 @@ const styles = StyleSheet.create({
     borderRadius: Radii.lg,
   },
   fieldBlock: { gap: 6 },
-  label: { ...KType.metaStrong, color: Colors.text },
-  error: { ...KType.metaStrong, color: Colors.danger },
-  ok: { ...KType.metaStrong, color: Colors.success },
+  label: { ...KType.metaStrong },
+  error: { ...KType.metaStrong },
+  ok: { ...KType.metaStrong },
   forgot: {
     ...KType.metaStrong,
-    color: Colors.accent,
     textAlign: "center",
     paddingVertical: 4,
   },

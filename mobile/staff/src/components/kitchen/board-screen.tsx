@@ -89,7 +89,7 @@ export function BoardScreen() {
     persisted.activeColumnId,
   );
   const [columnTouched, setColumnTouched] = useState(persisted.columnTouched);
-  const [laterOpen, setLaterOpen] = useState(true);
+  const [laterOpen, setLaterOpen] = useState(false);
   const [showSessionTip, setShowSessionTip] = useState(false);
 
   useFocusEffect(
@@ -386,6 +386,7 @@ export function BoardScreen() {
                       <TicketCard
                         key={order.id}
                         order={order}
+                        showPrice
                         bumpBusy={busyId === order.id}
                         onOpen={() => router.push(`/orders/${order.id}`)}
                         onBump={() => void bumpOrder(order)}

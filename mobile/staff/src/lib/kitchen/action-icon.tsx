@@ -1,5 +1,5 @@
 import type { TransitionAction } from "@naijajollof/api-types";
-import { Colors } from "@naijajollof/ui";
+import { useUiColors } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 
 type IonName = React.ComponentProps<typeof Ionicons>["name"];
@@ -38,12 +38,13 @@ export function ActionIcon({
   variant?: "primary" | "secondary" | "danger" | "ghost";
   size?: number;
 }) {
+  const colors = useUiColors();
   const color =
     variant === "primary"
-      ? Colors.inverse
+      ? colors.inverse
       : variant === "danger"
-        ? Colors.danger
-        : Colors.secondary;
+        ? colors.danger
+        : colors.secondary;
 
   return <Ionicons name={actionIconName(to)} size={size} color={color} />;
 }
