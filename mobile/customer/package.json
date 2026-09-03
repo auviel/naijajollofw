@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@ai-sdk/react": "^4.0.87",
+    "@ai-sdk/react": "^4.0.88",
     "@expo/vector-icons": "^15.1.1",
     "@naijajollof/api-types": "file:../packages/api-types",
     "@naijajollof/ui": "file:../packages/ui",
