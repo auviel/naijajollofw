@@ -1,12 +1,15 @@
 import { kvGet } from "@/lib/kv";
-import { Audio } from "expo-av";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
+import type { AudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 
 const KEY_SOUND = "kitchen.pref.sound";
 const KEY_HAPTIC = "kitchen.pref.haptic";
 
-let bumpSound: Audio.Sound | null = null;
-let soundLoading: Promise<void> | null = null;
+const bumpSource = require("../../../assets/sounds/bump.wav");
+
+let bumpPlayer: AudioPlayer | null = null;
+let soundReady: Promise<AudioPlayer | null> | null = null;
 
 async function prefs() {
   const [s, h] = await Promise.all([kvGet(KEY_SOUND), kvGet(KEY_HAPTIC)]);
@@ -16,24 +19,28 @@ async function prefs() {
   };
 }
 
-async function ensureBumpSound() {
-  if (bumpSound) return;
-  if (!soundLoading) {
-    soundLoading = (async () => {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: false,
-        shouldDuckAndroid: true,
-      });
-      const { sound } = await Audio.Sound.createAsync(
-        require("../../assets/sounds/bump.wav"),
-        { shouldPlay: false, volume: 0.7 },
-      );
-      bumpSound = sound;
+async function ensureBumpPlayer(): Promise<AudioPlayer | null> {
+  if (bumpPlayer) return bumpPlayer;
+  if (!soundReady) {
+    soundReady = (async () => {
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: false,
+          shouldPlayInBackground: false,
+          interruptionMode: "mixWithOthers",
+        });
+        const player = createAudioPlayer(bumpSource);
+        player.volume = 0.7;
+        bumpPlayer = player;
+        return player;
+      } catch {
+        return null;
+      }
     })().finally(() => {
-      soundLoading = null;
+      soundReady = null;
     });
   }
-  await soundLoading;
+  return soundReady;
 }
 
 /** Confirm bump without looking — haptic + short click (respects prefs). */
@@ -44,8 +51,10 @@ export async function insistBumpConfirm() {
   }
   if (sound) {
     try {
-      await ensureBumpSound();
-      await bumpSound?.replayAsync();
+      const player = await ensureBumpPlayer();
+      if (!player) return;
+      await player.seekTo(0);
+      player.play();
     } catch {
       // Sound is best-effort; bump still succeeds.
     }

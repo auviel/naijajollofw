@@ -67,7 +67,8 @@
           "organization": "naija-jollof-waterloo",
           "project": "naijajollofw-kitchen"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

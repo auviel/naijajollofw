@@ -1,4 +1,4 @@
-import { Colors, Radii } from "@naijajollof/ui";
+import { Colors } from "@naijajollof/ui";
 import { KType } from "@/lib/kitchen/typography";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
@@ -48,8 +48,8 @@ export function SessionTipBanner({
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: Colors.secondary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   text: {
     ...KType.metaStrong,
@@ -60,14 +60,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginHorizontal: 20,
-    marginBottom: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: Radii.sm,
     backgroundColor: Colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
   },
   tipText: { ...KType.meta, flex: 1 },
   dismiss: { ...KType.metaStrong, color: Colors.accent },

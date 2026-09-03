@@ -65,7 +65,7 @@ function ThemedRoot() {
   }, [appearance]);
 
   return (
-    <ThemeProvider value={navigationTheme as React.ComponentProps<typeof ThemeProvider>["value"]}>
+    <ThemeProvider value={navigationTheme}>
       <AuthProvider>
         <StatusBar style={resolved === "dark" ? "light" : "dark"} />
         <Gate>

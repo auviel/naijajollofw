@@ -59,7 +59,8 @@ export default function TabsLayout() {
         tintColor={Colors.accent}
         labelVisibilityMode="unlabeled"
       >
-        <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger name="index" accessibilityLabel="Board">
+          <NativeTabs.Trigger.Label hidden>Board</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{
               default: "square.grid.2x2",
@@ -70,7 +71,8 @@ export default function TabsLayout() {
             <NativeTabs.Trigger.Badge>{String(badge)}</NativeTabs.Trigger.Badge>
           ) : null}
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="menu">
+        <NativeTabs.Trigger name="menu" accessibilityLabel="Menu">
+          <NativeTabs.Trigger.Label hidden>Menu</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{
               default: "list.bullet.rectangle",
@@ -78,7 +80,8 @@ export default function TabsLayout() {
             }}
           />
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="customers">
+        <NativeTabs.Trigger name="customers" accessibilityLabel="Customers">
+          <NativeTabs.Trigger.Label hidden>Customers</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{
               default: "person.2",
@@ -86,7 +89,8 @@ export default function TabsLayout() {
             }}
           />
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="account">
+        <NativeTabs.Trigger name="account" accessibilityLabel="Account">
+          <NativeTabs.Trigger.Label hidden>Account</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{
               default: "person.crop.circle",
