@@ -1,4 +1,5 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
+import { PasswordField } from "@/components/kitchen/password-field";
 import { useAuth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import { KType } from "@/lib/kitchen/typography";
@@ -89,19 +90,17 @@ export default function ChangePasswordScreen() {
               </View>
               <View style={styles.fieldBlock}>
                 <Text style={KType.meta}>New password</Text>
-                <Field
+                <PasswordField
                   value={newPassword}
                   onChangeText={setNewPassword}
-                  secureTextEntry
                   autoCapitalize="none"
                 />
               </View>
               <View style={styles.fieldBlock}>
                 <Text style={KType.meta}>Confirm password</Text>
-                <Field
+                <PasswordField
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
-                  secureTextEntry
                   autoCapitalize="none"
                 />
               </View>

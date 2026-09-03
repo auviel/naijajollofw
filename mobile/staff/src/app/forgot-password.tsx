@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { PasswordField } from "@/components/kitchen/password-field";
 import { KType } from "@/lib/kitchen/typography";
 import { Button, Colors, Field, GlassSurface, Radii } from "@naijajollof/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -150,20 +151,18 @@ export default function ForgotPasswordScreen() {
               </View>
               <View style={styles.fieldBlock}>
                 <Text style={styles.label}>New password</Text>
-                <Field
+                <PasswordField
                   value={newPassword}
                   onChangeText={setNewPassword}
-                  secureTextEntry
                   autoCapitalize="none"
                   textContentType="newPassword"
                 />
               </View>
               <View style={styles.fieldBlock}>
                 <Text style={styles.label}>Confirm password</Text>
-                <Field
+                <PasswordField
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
-                  secureTextEntry
                   autoCapitalize="none"
                   textContentType="newPassword"
                 />

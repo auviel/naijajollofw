@@ -150,6 +150,20 @@ function RootLayout() {
                   headerBackButtonDisplayMode: "minimal",
                 }}
               />
+              <Stack.Screen
+                name="menu/new"
+                options={{
+                  title: "New item",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="menu/[id]"
+                options={{
+                  title: "Edit item",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
             </Stack>
           </Gate>
         </AuthProvider>

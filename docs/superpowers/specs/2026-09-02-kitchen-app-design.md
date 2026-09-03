@@ -32,7 +32,7 @@ Kitchen staff need a phone-first app to see live tickets, bump status without fr
 | Nav shell (4 tabs + header chrome) | **Next** |
 | Permission priming (post-login) | With insist / push |
 | Insist overlay + inbox | Soon |
-| Menu CRUD | After nav shell |
+| Menu CRUD | Done (add/edit/category/photos; no modifiers) |
 | Customers list + detail | After nav shell |
 | Orders history (from Board) | After nav shell |
 | Tablet landscape | Later |
@@ -220,9 +220,11 @@ Sub-screens: chevron-only back (`headerBackButtonDisplayMode: "minimal"`).
 ## Menu
 
 - List categories → items (reuse staff menu APIs).
-- Edit: name, price cents, available, description.
-- Add item into a category.
-- No full modifier-graph editor unless APIs already support it simply.
+- **Add / edit** item: name, price (CAD), available, description, primary category.
+- **New category** from Menu (+) — name only; appears in chips.
+- **Photos:** upload from library / delete on edit screen (`POST/DELETE` image APIs; R2 required). After create, opens edit so photos can be added.
+- **Sold-out toggle** on list rows (optimistic) without opening edit.
+- No full modifier-graph editor, delete item/category, or drag reorder in kitchen v1 (web dashboard covers modifiers).
 
 ---
 

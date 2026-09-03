@@ -2,6 +2,7 @@ import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
 import { apiFetch } from "@/lib/api";
+import type { KitchenMenuCatalog } from "@/lib/kitchen/menu-types";
 import { KType } from "@/lib/kitchen/typography";
 import { formatCadFromCents } from "@naijajollof/api-types";
 import {
@@ -10,46 +11,37 @@ import {
   KitchenCustomersSkeleton,
   Radii,
 } from "@naijajollof/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
+  ActionSheetIOS,
+  Alert,
+  Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
-type MenuItemRow = {
-  id: string;
-  name: string;
-  description: string | null;
-  priceCents: number;
-  imageUrl: string | null;
-  available: boolean;
-  categoryName: string;
-};
-
-type MenuCategory = {
-  id: string;
-  name: string;
-  active: boolean;
-  items: MenuItemRow[];
-};
-
-type MenuCatalog = {
-  categories: MenuCategory[];
-};
-
 export default function MenuTab() {
-  const [catalog, setCatalog] = useState<MenuCatalog | null>(null);
+  const router = useRouter();
+  const [catalog, setCatalog] = useState<KitchenMenuCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryModal, setCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const data = await apiFetch<MenuCatalog>("/api/menu");
+      const data = await apiFetch<KitchenMenuCatalog>("/api/menu");
       setCatalog(data);
       setError(null);
       setCategoryId((current) => {
@@ -63,9 +55,11 @@ export default function MenuTab() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   const activeCategories = useMemo(
     () => (catalog?.categories ?? []).filter((c) => c.active),
@@ -78,6 +72,90 @@ export default function MenuTab() {
   }, [activeCategories, categoryId]);
 
   const initialLoading = catalog === null && !error;
+
+  function openAddMenu() {
+    const goAddItem = () =>
+      router.push({
+        pathname: "/menu/new",
+        params: categoryId ? { categoryId } : {},
+      });
+    const goNewCategory = () => {
+      setNewCategoryName("");
+      setCategoryModal(true);
+    };
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Cancel", "Add item", "New category"],
+          cancelButtonIndex: 0,
+        },
+        (index) => {
+          if (index === 1) goAddItem();
+          if (index === 2) goNewCategory();
+        },
+      );
+      return;
+    }
+
+    Alert.alert("Menu", undefined, [
+      { text: "Add item", onPress: goAddItem },
+      { text: "New category", onPress: goNewCategory },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  async function createCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    setCreatingCategory(true);
+    try {
+      const category = await apiFetch<{ id: string; name: string }>(
+        "/api/menu/categories",
+        {
+          method: "POST",
+          body: JSON.stringify({ name }),
+        },
+      );
+      setCategoryModal(false);
+      setNewCategoryName("");
+      await load();
+      setCategoryId(category.id);
+    } catch (e) {
+      Alert.alert(
+        "Could not create category",
+        e instanceof Error ? e.message : "Try again.",
+      );
+    } finally {
+      setCreatingCategory(false);
+    }
+  }
+
+  async function toggleAvailability(itemId: string, available: boolean) {
+    setCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        categories: prev.categories.map((cat) => ({
+          ...cat,
+          items: cat.items.map((item) =>
+            item.id === itemId ? { ...item, available } : item,
+          ),
+        })),
+      };
+    });
+    try {
+      await apiFetch(`/api/menu/items/${itemId}/availability`, {
+        method: "PATCH",
+        body: JSON.stringify({ available }),
+      });
+    } catch (e) {
+      await load();
+      Alert.alert(
+        "Could not update",
+        e instanceof Error ? e.message : "Try again.",
+      );
+    }
+  }
 
   return (
     <SafeScreen>
@@ -96,6 +174,15 @@ export default function MenuTab() {
       >
         <View style={styles.topRow}>
           <Text style={[KType.page, { flex: 1 }]}>Menu</Text>
+          <Pressable
+            onPress={openAddMenu}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Add menu item or category"
+            style={styles.addBtn}
+          >
+            <Ionicons name="add" size={24} color={Colors.text} />
+          </Pressable>
           <KitchenHeaderActions />
         </View>
 
@@ -136,25 +223,86 @@ export default function MenuTab() {
                 <Text style={styles.empty}>No items in this category.</Text>
               ) : (
                 items.map((item) => (
-                  <Card key={item.id} style={styles.row}>
-                    <ItemThumb uri={item.imageUrl} size={56} />
-                    <View style={styles.rowCopy}>
-                      <Text style={KType.bodyStrong}>{item.name}</Text>
-                      <Text style={KType.meta} numberOfLines={2}>
-                        {item.available ? "Available" : "Unavailable"}
-                        {item.description ? ` · ${item.description}` : ""}
-                      </Text>
-                      <Text style={KType.numeric}>
-                        {formatCadFromCents(item.priceCents)}
-                      </Text>
-                    </View>
-                  </Card>
+                  <Pressable
+                    key={item.id}
+                    onPress={() => router.push(`/menu/${item.id}`)}
+                    accessibilityRole="button"
+                  >
+                    <Card style={styles.row}>
+                      <ItemThumb uri={item.imageUrl} size={56} />
+                      <View style={styles.rowCopy}>
+                        <Text style={KType.bodyStrong}>{item.name}</Text>
+                        <Text style={KType.meta} numberOfLines={2}>
+                          {item.available ? "Available" : "Sold out"}
+                          {item.description ? ` · ${item.description}` : ""}
+                        </Text>
+                        <Text style={KType.numeric}>
+                          {formatCadFromCents(item.priceCents)}
+                        </Text>
+                      </View>
+                      <View
+                        style={styles.switchCol}
+                        onStartShouldSetResponder={() => true}
+                      >
+                        <Text style={KType.meta}>
+                          {item.available ? "On" : "Off"}
+                        </Text>
+                        <Switch
+                          value={item.available}
+                          onValueChange={(next) =>
+                            void toggleAvailability(item.id, next)
+                          }
+                        />
+                      </View>
+                    </Card>
+                  </Pressable>
                 ))
               )}
             </View>
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={categoryModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCategoryModal(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setCategoryModal(false)}
+        >
+          <Pressable
+            style={styles.modalCard}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={KType.bodyStrong}>New category</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              placeholder="Category name"
+              placeholderTextColor={Colors.textSecondary}
+              autoFocus
+              maxLength={80}
+            />
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setCategoryModal(false)}>
+                <Text style={KType.meta}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void createCategory()}
+                disabled={creatingCategory || !newCategoryName.trim()}
+              >
+                <Text style={[KType.metaStrong, { color: Colors.accent }]}>
+                  {creatingCategory ? "Creating…" : "Create"}
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeScreen>
   );
 }
@@ -164,8 +312,9 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
+  addBtn: { padding: 4 },
   chips: { gap: 8, paddingVertical: 2 },
   chip: {
     paddingHorizontal: 12,
@@ -183,10 +332,37 @@ const styles = StyleSheet.create({
   list: { gap: 10 },
   row: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 12,
   },
   rowCopy: { flex: 1, gap: 2 },
+  switchCol: { alignItems: "center", gap: 4 },
   error: { ...KType.metaStrong, color: Colors.danger },
   empty: { ...KType.meta, textAlign: "center", marginTop: 24 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(24,24,27,0.4)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.md,
+    padding: 20,
+    gap: 14,
+  },
+  modalInput: {
+    minHeight: 48,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
+    borderRadius: Radii.sm,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: Colors.text,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 20,
+  },
 });

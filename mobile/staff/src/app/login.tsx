@@ -1,3 +1,4 @@
+import { PasswordField } from "@/components/kitchen/password-field";
 import { useAuth } from "@/lib/auth";
 import { KType } from "@/lib/kitchen/typography";
 import { Button, Colors, Field, GlassSurface, Radii } from "@naijajollof/ui";
@@ -79,8 +80,7 @@ export default function LoginScreen() {
           </View>
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Password</Text>
-            <Field
-              secureTextEntry
+            <PasswordField
               placeholder="Password"
               value={password}
               onChangeText={setPassword}

@@ -6,9 +6,20 @@ import {
 } from "@/components/kitchen/column-tabs";
 import { TicketCard } from "@/components/kitchen/ticket-card";
 import {
-  isStatusBump,
-  primaryBumpFor,
-} from "@/lib/kitchen/bump";
+  OfflineBanner,
+  SessionTipBanner,
+} from "@/components/kitchen/network-banners";
+import {
+  markBoardSeen,
+  setBoardPendingAcceptance,
+} from "@/lib/kitchen/board-attention";
+import {
+  getPersistedBoardColumn,
+  setPersistedBoardColumn,
+} from "@/lib/kitchen/board-column-state";
+import { isStatusBump, primaryBumpFor } from "@/lib/kitchen/bump";
+import { insistBumpConfirm, insistError } from "@/lib/kitchen/insist";
+import { kvGet, kvSet } from "@/lib/kv";
 import {
   isKitchenBoardDeferred,
   KITCHEN_BOARD_COLUMNS,
@@ -18,9 +29,10 @@ import {
 } from "@naijajollof/api-types";
 import { Colors, KitchenBoardSkeleton } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   AppState,
   type AppStateStatus,
   Pressable,
@@ -35,6 +47,7 @@ import { SafeScreen } from "@/components/kitchen/safe-screen";
 import { KType } from "@/lib/kitchen/typography";
 
 const POLL_MS = 10_000;
+const SESSION_TIP_KEY = "kitchen.sessionTip.dismissed";
 
 function orderTimeMs(order: StaffOrderListItem): number {
   const iso = order.placedAt ?? order.createdAt;
@@ -64,16 +77,57 @@ function firstColumnWithWork(items: StaffOrderListItem[]): BoardColumnId {
   return "new";
 }
 
+function formatUpdatedAt(at: number | null): string {
+  if (at == null) return "";
+  const sec = Math.round((Date.now() - at) / 1000);
+  if (sec < 8) return "Updated just now";
+  if (sec < 60) return `Updated ${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `Updated ${min}m ago`;
+  return "Updated earlier";
+}
+
 export function BoardScreen() {
   const router = useRouter();
   const { store } = useAuth();
+  const persisted = getPersistedBoardColumn();
   const [data, setData] = useState<ListStaffOrdersResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [activeColumnId, setActiveColumnId] = useState<BoardColumnId>("new");
-  const [columnTouched, setColumnTouched] = useState(false);
+  const [activeColumnId, setActiveColumnId] = useState<BoardColumnId>(
+    persisted.activeColumnId,
+  );
+  const [columnTouched, setColumnTouched] = useState(persisted.columnTouched);
   const [laterOpen, setLaterOpen] = useState(true);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [updatedLabel, setUpdatedLabel] = useState("");
+  const [showSessionTip, setShowSessionTip] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      markBoardSeen();
+    }, []),
+  );
+
+  useEffect(() => {
+    void kvGet(SESSION_TIP_KEY).then((v) => {
+      if (v !== "1") setShowSessionTip(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    setPersistedBoardColumn(activeColumnId, columnTouched);
+  }, [activeColumnId, columnTouched]);
+
+  useEffect(() => {
+    if (updatedAt == null) return;
+    setUpdatedLabel(formatUpdatedAt(updatedAt));
+    const id = setInterval(() => {
+      setUpdatedLabel(formatUpdatedAt(updatedAt));
+    }, 5_000);
+    return () => clearInterval(id);
+  }, [updatedAt]);
 
   const load = useCallback(async () => {
     try {
@@ -81,6 +135,8 @@ export function BoardScreen() {
         "/api/orders?filter=active&channel=kitchen&limit=80",
       );
       setData(result);
+      setBoardPendingAcceptance(result.pendingAcceptanceCount ?? 0);
+      setUpdatedAt(Date.now());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load board");
@@ -145,46 +201,64 @@ export function BoardScreen() {
 
   const activeOrders = ordersForColumn(grouped.live, activeColumnId);
 
-  async function bumpOrder(order: StaffOrderListItem) {
-    const bump = primaryBumpFor(order);
-    if (!bump) return;
+  const selectColumn = useCallback((id: BoardColumnId) => {
+    setColumnTouched(true);
+    setActiveColumnId(id);
+  }, []);
 
-    if (!isStatusBump(bump)) {
-      router.push(`/orders/${order.id}`);
-      return;
-    }
+  const bumpOrder = useCallback(
+    async (order: StaffOrderListItem) => {
+      const bump = primaryBumpFor(order);
+      if (!bump) return;
 
-    const previous = data;
-    setBusyId(order.id);
-    setData((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        items: current.items.map((item) =>
-          item.id === order.id
-            ? { ...item, status: bump.to as OrderStatus }
-            : item,
-        ),
-        pendingAcceptanceCount:
-          order.status === "pending_acceptance"
-            ? Math.max(0, current.pendingAcceptanceCount - 1)
-            : current.pendingAcceptanceCount,
-      };
-    });
+      if (!isStatusBump(bump)) {
+        router.push(`/orders/${order.id}`);
+        return;
+      }
 
-    try {
-      await apiFetch(`/api/orders/${order.id}/transition`, {
-        method: "POST",
-        body: JSON.stringify({ to: bump.to }),
+      const previous = data;
+      setBusyId(order.id);
+      setData((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          items: current.items.map((item) =>
+            item.id === order.id
+              ? { ...item, status: bump.to as OrderStatus }
+              : item,
+          ),
+          pendingAcceptanceCount:
+            order.status === "pending_acceptance"
+              ? Math.max(0, current.pendingAcceptanceCount - 1)
+              : current.pendingAcceptanceCount,
+        };
       });
-      await load();
-    } catch (err) {
-      setData(previous);
-      setError(err instanceof Error ? err.message : "Bump failed");
-    } finally {
-      setBusyId(null);
-    }
-  }
+      void insistBumpConfirm();
+
+      try {
+        await apiFetch(`/api/orders/${order.id}/transition`, {
+          method: "POST",
+          body: JSON.stringify({ to: bump.to }),
+        });
+        await load();
+      } catch (err) {
+        setData(previous);
+        void insistError();
+        const message = err instanceof Error ? err.message : "Bump failed";
+        setError(message);
+        Alert.alert("Bump failed", message, [
+          { text: "Dismiss", style: "cancel" },
+          {
+            text: "Retry",
+            onPress: () => void bumpOrder(order),
+          },
+        ]);
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [data, load, router],
+  );
 
   const emptyBoard =
     data !== null &&
@@ -193,8 +267,21 @@ export function BoardScreen() {
     !error;
   const initialLoading = data === null && !error;
 
+  const nextColumnWithWork = useMemo(() => {
+    for (const column of KITCHEN_BOARD_COLUMNS) {
+      if (
+        column.id !== activeColumnId &&
+        ordersForColumn(grouped.live, column.id).length > 0
+      ) {
+        return column;
+      }
+    }
+    return null;
+  }, [activeColumnId, grouped.live]);
+
   return (
     <SafeScreen>
+      <OfflineBanner />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -208,6 +295,14 @@ export function BoardScreen() {
           />
         }
       >
+        <SessionTipBanner
+          visible={showSessionTip}
+          onDismiss={() => {
+            setShowSessionTip(false);
+            void kvSet(SESSION_TIP_KEY, "1");
+          }}
+        />
+
         <View style={styles.topRow}>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={KType.page}>{store?.name ?? "Kitchen"}</Text>
@@ -226,6 +321,9 @@ export function BoardScreen() {
                 color={Colors.accent}
               />
             </Pressable>
+            {updatedLabel ? (
+              <Text style={styles.updated}>{updatedLabel}</Text>
+            ) : null}
           </View>
           <KitchenHeaderActions />
         </View>
@@ -235,17 +333,17 @@ export function BoardScreen() {
         {initialLoading ? (
           <KitchenBoardSkeleton />
         ) : emptyBoard ? (
-          <Text style={styles.empty}>
-            No active orders. Pull to refresh — new paid tickets land here.
-          </Text>
+          <View style={styles.emptyBlock}>
+            <Text style={styles.empty}>No active orders right now.</Text>
+            <Pressable onPress={() => void load()} hitSlop={8}>
+              <Text style={styles.emptyCta}>Pull to refresh · or tap here</Text>
+            </Pressable>
+          </View>
         ) : (
           <>
             <ColumnTabs
               activeId={activeColumnId}
-              onChange={(id) => {
-                setColumnTouched(true);
-                setActiveColumnId(id);
-              }}
+              onChange={selectColumn}
               columns={[
                 { id: "new", title: "New", count: columnCounts.new },
                 {
@@ -259,7 +357,31 @@ export function BoardScreen() {
 
             <View style={styles.list}>
               {activeOrders.length === 0 ? (
-                <Text style={styles.emptyColumn}>None in this column</Text>
+                <View style={styles.emptyBlock}>
+                  <Text style={styles.emptyColumn}>
+                    None in{" "}
+                    {activeColumnId === "new"
+                      ? "New"
+                      : activeColumnId === "cooking"
+                        ? "Cooking"
+                        : "Ready"}
+                  </Text>
+                  {nextColumnWithWork ? (
+                    <Pressable
+                      onPress={() => selectColumn(nextColumnWithWork.id)}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.emptyCta}>
+                        Switch to{" "}
+                        {nextColumnWithWork.id === "new"
+                          ? "New"
+                          : nextColumnWithWork.id === "cooking"
+                            ? "Cooking"
+                            : "Ready"}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               ) : (
                 activeOrders.map((order) => (
                   <TicketCard
@@ -268,6 +390,7 @@ export function BoardScreen() {
                     bumpBusy={busyId === order.id}
                     onOpen={() => router.push(`/orders/${order.id}`)}
                     onBump={() => void bumpOrder(order)}
+                    onLongPressBump={() => void bumpOrder(order)}
                   />
                 ))
               )}
@@ -292,6 +415,7 @@ export function BoardScreen() {
                         bumpBusy={busyId === order.id}
                         onOpen={() => router.push(`/orders/${order.id}`)}
                         onBump={() => void bumpOrder(order)}
+                        onLongPressBump={() => void bumpOrder(order)}
                       />
                     ))
                   : null}
@@ -319,18 +443,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   allOrders: { ...KType.metaStrong, color: Colors.accent },
+  updated: { ...KType.meta, marginTop: 2 },
   error: { ...KType.metaStrong, color: Colors.danger },
+  emptyBlock: { alignItems: "center", gap: 8, marginTop: 24 },
   empty: {
     ...KType.meta,
     textAlign: "center",
-    marginTop: 40,
     paddingHorizontal: 12,
   },
   emptyColumn: {
     ...KType.meta,
     textAlign: "center",
-    paddingVertical: 36,
+    paddingVertical: 12,
   },
+  emptyCta: { ...KType.metaStrong, color: Colors.accent },
   list: { gap: 10 },
   later: { gap: 10, marginTop: 8 },
   laterHeader: {

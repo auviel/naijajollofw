@@ -30,6 +30,10 @@ async function refreshAccessToken(): Promise<string | null> {
   return json.data.accessToken;
 }
 
+function isFormDataBody(body: BodyInit | null | undefined): boolean {
+  return typeof FormData !== "undefined" && body instanceof FormData;
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
@@ -38,7 +42,8 @@ export async function apiFetch<T>(
   const { accessToken } = await loadTokens();
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  if (init.body && !headers.has("Content-Type")) {
+  // Let RN set multipart boundary when uploading FormData.
+  if (init.body && !headers.has("Content-Type") && !isFormDataBody(init.body)) {
     headers.set("Content-Type", "application/json");
   }
   if (accessToken) {
@@ -63,4 +68,13 @@ export async function apiFetch<T>(
   }
 
   return json.data as T;
+}
+
+/** Multipart upload helper — field name defaults to `file` (menu image API). */
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+  method: "POST" | "PUT" | "PATCH" = "POST",
+): Promise<T> {
+  return apiFetch<T>(path, { method, body: formData });
 }
