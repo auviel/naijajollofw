@@ -536,4 +536,12 @@ export const customerRepository = {
     }
     return existing;
   },
+
+  async deleteByIdAndStoreId(id: string, storeId: string): Promise<void> {
+    const existing = await this.findByIdAndStoreId(id, storeId);
+    if (!existing) {
+      throw new Error(`Customer not found: ${id}`);
+    }
+    await prisma.customer.delete({ where: { id: existing.id } });
+  },
 };

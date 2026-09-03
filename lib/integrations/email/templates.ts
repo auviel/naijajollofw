@@ -298,19 +298,26 @@ export function buildPasswordResetEmail(input: {
 export function buildStaffOtpEmail(input: {
   name: string;
   code: string;
-  purpose: "password_change" | "email_change";
+  purpose: "password_change" | "password_reset" | "email_change";
 }): { subject: string; html: string; text: string } {
   const first = input.name.trim().split(/\s+/)[0] || "there";
-  const isPassword = input.purpose === "password_change";
-  const subject = isPassword
-    ? "Your password change code"
-    : "Confirm your new email";
-  const reason = isPassword
-    ? "You’re receiving this because a password change was requested on your staff account."
-    : "You’re receiving this because an email change was requested on your staff account.";
-  const intro = isPassword
-    ? "Use this code to finish changing your password. It expires in 10 minutes."
-    : "Use this code to confirm your new email address. It expires in 10 minutes.";
+  const isEmail = input.purpose === "email_change";
+  const isReset = input.purpose === "password_reset";
+  const subject = isEmail
+    ? "Confirm your new email"
+    : isReset
+      ? "Your password reset code"
+      : "Your password change code";
+  const reason = isEmail
+    ? "You’re receiving this because an email change was requested on your staff account."
+    : isReset
+      ? "You’re receiving this because a password reset was requested for your kitchen staff account."
+      : "You’re receiving this because a password change was requested on your staff account.";
+  const intro = isEmail
+    ? "Use this code to confirm your new email address. It expires in 10 minutes."
+    : isReset
+      ? "Use this code in the Kitchen app to set a new password. It expires in 10 minutes."
+      : "Use this code to finish changing your password. It expires in 10 minutes.";
   const html = layout({
     title: subject,
     reason,

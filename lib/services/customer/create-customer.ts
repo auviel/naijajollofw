@@ -1,4 +1,5 @@
 import { requireSessionContext } from "@/lib/auth/session";
+import { customerRepository } from "@/lib/db/repositories/customer.repository";
 import { createCustomerSchema } from "@/lib/domain/customer/validation";
 import { upsertCustomerFromDropoff } from "@/lib/services/customer/upsert-from-dropoff";
 import { geocodeAddress } from "@/lib/services/geocoding/geocode-address";
@@ -19,17 +20,33 @@ export async function createCustomer(input: unknown): Promise<CreateCustomerResu
     throw new AppError("VALIDATION_ERROR", "Enter a valid Canadian phone number", 400);
   }
 
-  const geocoded = await geocodeAddress({
-    query: parsed.address,
-    storeId: store.id,
-  });
+  let id: string;
 
-  const id = await upsertCustomerFromDropoff({
-    storeId: store.id,
-    name: parsed.name.trim(),
-    phoneE164,
-    address: geocoded.address,
-  });
+  if (parsed.address?.trim()) {
+    const geocoded = await geocodeAddress({
+      query: parsed.address,
+      storeId: store.id,
+    });
+
+    id = await upsertCustomerFromDropoff({
+      storeId: store.id,
+      name: parsed.name.trim(),
+      phoneE164,
+      address: geocoded.address,
+    });
+  } else {
+    const existing = await customerRepository.findByPhone(store.id, phoneE164);
+    if (existing) {
+      id = existing.id;
+    } else {
+      const created = await customerRepository.createFromContact({
+        storeId: store.id,
+        name: parsed.name.trim(),
+        phoneE164,
+      });
+      id = created.id;
+    }
+  }
 
   logger.info("customer.created", {
     customerId: id,

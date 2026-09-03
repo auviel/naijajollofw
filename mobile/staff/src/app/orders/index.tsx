@@ -6,15 +6,14 @@ import {
   type ListStaffOrdersResult,
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
+import { SearchField } from "@/components/kitchen/search-field";
 import {
   Card,
   Colors,
   OrdersScreenSkeleton,
   Radii,
   Screen,
-  Touch,
 } from "@naijajollof/ui";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -22,7 +21,6 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
@@ -94,40 +92,12 @@ export default function OrdersListScreen() {
           />
         }
       >
-        <View style={styles.search}>
-          <Ionicons
-            name="search-outline"
-            size={18}
-            color={Colors.textSecondary}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Ticket #, name, phone"
-            placeholderTextColor={Colors.textSecondary}
-            value={q}
-            onChangeText={setQ}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            clearButtonMode="never"
-            accessibilityLabel="Search orders"
-          />
-          {q.length > 0 ? (
-            <Pressable
-              onPress={() => setQ("")}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-              style={styles.clearBtn}
-            >
-              <Ionicons
-                name="close-circle"
-                size={18}
-                color={Colors.textSecondary}
-              />
-            </Pressable>
-          ) : null}
-        </View>
+        <SearchField
+          value={q}
+          onChangeText={setQ}
+          placeholder="Ticket #, name, phone"
+          accessibilityLabel="Search orders"
+        />
 
         <View style={styles.segments} accessibilityRole="tablist">
           {FILTERS.map((item) => {
@@ -191,27 +161,6 @@ export default function OrdersListScreen() {
 }
 
 const styles = StyleSheet.create({
-  search: {
-    minHeight: Touch.min,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    borderRadius: Radii.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  searchInput: {
-    flex: 1,
-    minHeight: Touch.min,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: Colors.text,
-  },
-  clearBtn: {
-    padding: 2,
-  },
   segments: {
     flexDirection: "row",
     gap: 4,

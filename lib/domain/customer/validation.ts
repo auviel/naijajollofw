@@ -21,7 +21,8 @@ export const updateCustomerSchema = z.object({
 export const createCustomerSchema = z.object({
   name: z.string().trim().min(1, "Customer name is required"),
   phone: canadianPhoneSchema,
-  address: z.string().trim().min(1, "Address is required"),
+  /** Optional — kitchen can create with name + phone only. */
+  address: z.string().trim().min(1, "Address is required").optional(),
 });
 
 export type ListCustomersQuerySchema = z.infer<typeof listCustomersQuerySchema>;

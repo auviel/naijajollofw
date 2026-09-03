@@ -53,9 +53,244 @@ function eventsForStatus(status: OrderStatus): OrderStatus[] {
   }
 }
 
+async function seedKitchenCustomers(storeId: string): Promise<Map<string, string>> {
+  await prisma.customerPhone.deleteMany({
+    where: { customer: { storeId, id: { startsWith: "seed-customer-" } } },
+  });
+  await prisma.customerAddress.deleteMany({
+    where: { customer: { storeId, id: { startsWith: "seed-customer-" } } },
+  });
+  await prisma.customer.deleteMany({
+    where: { storeId, id: { startsWith: "seed-customer-" } },
+  });
+
+  type SeedCustomer = {
+    id: string;
+    name: string;
+    phoneE164: string;
+    notes?: string | null;
+    address?: {
+      line1: string;
+      city: string;
+      province: string;
+      postalCode: string;
+      formatted: string;
+    };
+  };
+
+  const customers: SeedCustomer[] = [
+    {
+      id: "seed-customer-ada",
+      name: "Ada Okonkwo",
+      phoneE164: "+15195550101",
+      notes: "Extra spicy · no onion",
+      address: {
+        line1: "162 University Ave W",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2L 3E9",
+        formatted: "162 University Ave W, Waterloo, ON N2L 3E9, Canada",
+      },
+    },
+    {
+      id: "seed-customer-marcus",
+      name: "Marcus Chen",
+      phoneE164: "+15195550102",
+      address: {
+        line1: "200 University Ave W",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2L 3G1",
+        formatted: "200 University Ave W, Waterloo, ON N2L 3G1, Canada",
+      },
+    },
+    {
+      id: "seed-customer-priya",
+      name: "Priya Nair",
+      phoneE164: "+15195550103",
+    },
+    {
+      id: "seed-customer-jordan",
+      name: "Jordan Blake",
+      phoneE164: "+15195550104",
+      notes: "Gate code 4421",
+      address: {
+        line1: "75 King St S",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2J 1N7",
+        formatted: "75 King St S, Waterloo, ON N2J 1N7, Canada",
+      },
+    },
+    {
+      id: "seed-customer-sam",
+      name: "Later Pickup — Sam",
+      phoneE164: "+15195550105",
+    },
+    {
+      id: "seed-customer-tess",
+      name: "Later Delivery — Tess",
+      phoneE164: "+15195550106",
+      address: {
+        line1: "31 Caroline St N",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2L 2Y5",
+        formatted: "31 Caroline St N, Waterloo, ON N2L 2Y5, Canada",
+      },
+    },
+    {
+      id: "seed-customer-noah",
+      name: "Noah Patel",
+      phoneE164: "+15195550107",
+    },
+    {
+      id: "seed-customer-elena",
+      name: "Elena Rossi",
+      phoneE164: "+15195550108",
+      notes: "Leave at door",
+      address: {
+        line1: "155 King St N",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2J 2Y2",
+        formatted: "155 King St N, Waterloo, ON N2J 2Y2, Canada",
+      },
+    },
+    {
+      id: "seed-customer-chris",
+      name: "Chris Adeyemi",
+      phoneE164: "+15195550109",
+    },
+    {
+      id: "seed-customer-kim",
+      name: "Accepted Hold — Kim",
+      phoneE164: "+15195550110",
+    },
+    {
+      id: "seed-customer-fatima",
+      name: "Fatima Hassan",
+      phoneE164: "+15195550111",
+    },
+    {
+      id: "seed-customer-will",
+      name: "Will Torres",
+      phoneE164: "+15195550112",
+    },
+    {
+      id: "seed-customer-maya",
+      name: "Needs Courier — Maya",
+      phoneE164: "+15195550113",
+      address: {
+        line1: "90 Westmount Rd N",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2L 2L9",
+        formatted: "90 Westmount Rd N, Waterloo, ON N2L 2L9, Canada",
+      },
+    },
+    {
+      id: "seed-customer-dev",
+      name: "Needs Courier — Dev",
+      phoneE164: "+15195550114",
+      notes: "Apartment 4B",
+      address: {
+        line1: "330 Phillip St",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2L 3W9",
+        formatted: "330 Phillip St, Waterloo, ON N2L 3W9, Canada",
+      },
+    },
+    {
+      id: "seed-customer-lex",
+      name: "On the Road — Lex",
+      phoneE164: "+15195550115",
+      address: {
+        line1: "10 Regina St N",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2J 2Z8",
+        formatted: "10 Regina St N, Waterloo, ON N2J 2Z8, Canada",
+      },
+    },
+    {
+      id: "seed-customer-amaka",
+      name: "Big Party — Amaka",
+      phoneE164: "+15195550116",
+      notes: "Call when ready — large order",
+    },
+    {
+      id: "seed-customer-chidi",
+      name: "Chidi Okoro",
+      phoneE164: "+15195550120",
+      notes: "Prefers WhatsApp for updates",
+      address: {
+        line1: "250 Laurelwood Dr",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2J 0E2",
+        formatted: "250 Laurelwood Dr, Waterloo, ON N2J 0E2, Canada",
+      },
+    },
+    {
+      id: "seed-customer-zoe",
+      name: "Zoe Martins",
+      phoneE164: "+15195550121",
+      address: {
+        line1: "55 Erb St W",
+        city: "Waterloo",
+        province: "ON",
+        postalCode: "N2L 0G7",
+        formatted: "55 Erb St W, Waterloo, ON N2L 0G7, Canada",
+      },
+    },
+  ];
+
+  const byPhone = new Map<string, string>();
+
+  for (const customer of customers) {
+    await prisma.customer.create({
+      data: {
+        id: customer.id,
+        storeId,
+        name: customer.name,
+        notes: customer.notes ?? null,
+        phones: {
+          create: {
+            storeId,
+            phoneE164: customer.phoneE164,
+            isPrimary: true,
+          },
+        },
+        ...(customer.address
+          ? {
+              addresses: {
+                create: {
+                  line1: customer.address.line1,
+                  city: customer.address.city,
+                  province: customer.address.province,
+                  postalCode: customer.address.postalCode,
+                  country: "CA",
+                  formatted: customer.address.formatted,
+                  isPrimary: true,
+                },
+              },
+            }
+          : {}),
+      },
+    });
+    byPhone.set(customer.phoneE164, customer.id);
+  }
+
+  console.log(`  Customers: ${customers.length} seeded CRM rows (seed-customer-*)`);
+  return byPhone;
+}
+
 async function seedKitchenBoardOrders(
   storeId: string,
   menuItemIdByName: Map<string, string>,
+  customerIdByPhone: Map<string, string>,
 ) {
   await prisma.orderEvent.deleteMany({
     where: { order: { storeId, id: { startsWith: "seed-kitchen-" } } },
@@ -381,6 +616,7 @@ async function seedKitchenBoardOrders(
           spec.status === "out_for_delivery" ? "manual" : "unassigned",
         customerName: spec.customerName,
         customerPhone: spec.customerPhone,
+        customerId: customerIdByPhone.get(spec.customerPhone) ?? null,
         customerEmail: `${spec.id}@seed.naijajollofw.ca`,
         dropoffAddress: spec.dropoffAddress ?? null,
         notes: spec.notes ?? null,
@@ -870,7 +1106,11 @@ async function main() {
     });
   }
 
-  await seedKitchenBoardOrders(store.id, menuItemIdByName);
+  await seedKitchenBoardOrders(
+    store.id,
+    menuItemIdByName,
+    await seedKitchenCustomers(store.id),
+  );
 
   console.log("Seed complete:");
   console.log(`  Store: ${store.name} (${store.id})`);

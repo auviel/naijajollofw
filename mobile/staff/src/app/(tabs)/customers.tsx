@@ -1,14 +1,15 @@
 import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
+import { SearchField } from "@/components/kitchen/search-field";
 import { KType } from "@/lib/kitchen/typography";
 import { apiFetch } from "@/lib/api";
 import {
   Card,
   Colors,
-  Field,
   KitchenCustomersSkeleton,
 } from "@naijajollof/ui";
-import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
@@ -63,6 +64,12 @@ export default function CustomersTab() {
     void load();
   }, [load]);
 
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
   const initialLoading = items === null && !error;
 
   return (
@@ -83,16 +90,23 @@ export default function CustomersTab() {
       >
         <View style={styles.topRow}>
           <Text style={[KType.page, { flex: 1 }]}>Customers</Text>
+          <Pressable
+            onPress={() => router.push("/customers/new")}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Add customer"
+            style={styles.addBtn}
+          >
+            <Ionicons name="add" size={22} color={Colors.text} />
+          </Pressable>
           <KitchenHeaderActions />
         </View>
 
-        <Field
-          placeholder="Name, phone, or email"
+        <SearchField
           value={q}
           onChangeText={setQ}
-          autoCapitalize="none"
-          autoCorrect={false}
-          clearButtonMode="while-editing"
+          placeholder="Name, phone, or email"
+          accessibilityLabel="Search customers"
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -116,6 +130,11 @@ export default function CustomersTab() {
                       ? ` · ${customer.orderCount} orders`
                       : ""}
                   </Text>
+                  {customer.primaryAddress ? (
+                    <Text style={KType.meta} numberOfLines={1}>
+                      {customer.primaryAddress}
+                    </Text>
+                  ) : null}
                 </Card>
               </Pressable>
             ))}
@@ -131,7 +150,10 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
+  },
+  addBtn: {
+    padding: 4,
   },
   list: { gap: 10 },
   row: { gap: 4 },

@@ -13,7 +13,10 @@ export function SidebarProfileMenu() {
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const isActive =
-    pathname === "/dashboard/store" || pathname.startsWith("/dashboard/store/");
+    pathname === "/dashboard/account" ||
+    pathname.startsWith("/dashboard/account/") ||
+    pathname === "/dashboard/store" ||
+    pathname.startsWith("/dashboard/store/");
 
   useEffect(() => {
     if (!open) return;
@@ -75,6 +78,17 @@ export function SidebarProfileMenu() {
           className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-2xl bg-surface-elevated shadow-md"
         >
           <li role="none">
+            <Link
+              role="menuitem"
+              href="/dashboard/account"
+              className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-surface"
+              onClick={() => setOpen(false)}
+            >
+              <User className="h-4 w-4 text-text-secondary" aria-hidden />
+              Account
+            </Link>
+          </li>
+          <li role="none" className="border-t border-border">
             <Link
               role="menuitem"
               href="/dashboard/store"

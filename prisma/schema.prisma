@@ -182,7 +182,7 @@ model StaffOtpChallenge {
   id           String    @id @default(cuid())
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// password_change | email_change
+  /// password_change | password_reset | email_change
   purpose      String
   codeHash     String
   /// For email_change: the pending new email address.

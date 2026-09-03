@@ -166,33 +166,42 @@ export function KitchenBoardSkeleton() {
   );
 }
 
-/** Kitchen ticket detail — order card + guest card + actions. */
+/** Kitchen ticket detail — mirrors order card + guest card + primary action. */
 export function KitchenTicketSkeleton() {
   return (
-    <View style={styles.screenPad} accessibilityLabel="Loading ticket">
-      <View style={styles.orderCard}>
-        <Skeleton height={12} width={48} />
-        <Skeleton height={16} width="70%" style={{ marginTop: Space.sm }} />
-        <Skeleton
-          height={1}
-          width="100%"
-          style={{ marginTop: Space.md, marginBottom: Space.sm }}
-        />
+    <View style={styles.ticketPad} accessibilityLabel="Loading ticket">
+      <View style={styles.ticketCard}>
         {Array.from({ length: 2 }, (_, i) => (
-          <View key={i} style={{ marginTop: i === 0 ? 0 : Space.sm }}>
-            <Skeleton height={15} width="75%" />
-            <Skeleton height={12} width="30%" style={{ marginTop: Space.xs }} />
+          <View
+            key={i}
+            style={[styles.lineRow, i > 0 && styles.lineRowBorder]}
+          >
+            <Skeleton height={48} width={48} radius={Radii.sm} />
+            <View style={styles.lineCopy}>
+              <Skeleton height={15} width="78%" />
+              <Skeleton height={12} width="42%" style={{ marginTop: Space.xs }} />
+            </View>
+            <Skeleton height={14} width={44} />
           </View>
         ))}
-        <Skeleton height={18} width="40%" style={{ marginTop: Space.md }} />
+        <View style={styles.totalRow}>
+          <Skeleton height={16} width={52} />
+          <Skeleton height={16} width={64} />
+        </View>
       </View>
-      <View style={styles.orderCard}>
-        <Skeleton height={12} width={40} />
-        <Skeleton height={16} width="50%" style={{ marginTop: Space.sm }} />
-        <Skeleton height={13} width="45%" style={{ marginTop: Space.xs }} />
+
+      <View style={styles.ticketCard}>
+        <Skeleton height={11} width={44} />
+        <Skeleton height={16} width="55%" style={{ marginTop: Space.sm }} />
+        <Skeleton height={13} width="40%" style={{ marginTop: Space.xs }} />
+        <Skeleton height={13} width="75%" style={{ marginTop: Space.xs }} />
       </View>
-      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.md }} />
-      <Skeleton height={48} radius={Radii.button} style={{ marginTop: Space.sm }} />
+
+      <Skeleton
+        height={48}
+        radius={Radii.button}
+        style={{ marginTop: Space.sm }}
+      />
     </View>
   );
 }
@@ -223,6 +232,9 @@ const styles = StyleSheet.create({
   boardPad: {
     paddingTop: Space.xs,
     gap: Space.md,
+  },
+  ticketPad: {
+    gap: Space.sm,
   },
   chipRow: {
     flexDirection: "row",
@@ -264,5 +276,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  lineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Space.md,
+    paddingVertical: Space.sm,
+  },
+  lineRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+  },
+  lineCopy: {
+    flex: 1,
+  },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Space.xs,
+    paddingTop: Space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
   },
 });

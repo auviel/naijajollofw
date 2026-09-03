@@ -6,7 +6,10 @@ const optionalPhone = z
   .trim()
   .optional()
   .transform((value, ctx) => {
-    if (value === undefined || value === "") {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (value === "") {
       return null;
     }
     const phone = normalizeCanadianPhone(value);
@@ -34,6 +37,28 @@ export const updateStaffProfileSchema = z.object({
 export const staffPasswordOtpSchema = z.object({});
 
 export const staffPasswordConfirmSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm your password"),
+});
+
+export const staffForgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email address")
+    .transform((v) => v.toLowerCase()),
+});
+
+export const staffResetPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email address")
+    .transform((v) => v.toLowerCase()),
   code: z
     .string()
     .trim()

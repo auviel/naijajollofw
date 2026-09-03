@@ -1,7 +1,10 @@
 import { createHash, randomInt } from "node:crypto";
 import { prisma } from "@/lib/db/client";
 
-export type StaffOtpPurpose = "password_change" | "email_change";
+export type StaffOtpPurpose =
+  | "password_change"
+  | "password_reset"
+  | "email_change";
 
 export function hashStaffOtpCode(code: string): string {
   return createHash("sha256").update(code).digest("hex");

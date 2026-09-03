@@ -14,7 +14,6 @@ import {
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function ticketTitle(order: StaffOrderDetail): string {
   return (
@@ -72,7 +71,6 @@ export default function TicketScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const [order, setOrder] = useState<StaffOrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -146,9 +144,9 @@ export default function TicketScreen() {
         {error ? (
           <Text style={[styles.error, { margin: 20, marginTop: 12 }]}>{error}</Text>
         ) : (
-          <View style={{ paddingBottom: insets.bottom }}>
+          <StackScroll>
             <KitchenTicketSkeleton />
-          </View>
+          </StackScroll>
         )}
       </Screen>
     );

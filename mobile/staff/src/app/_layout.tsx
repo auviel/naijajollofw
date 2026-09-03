@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import * as Sentry from "@sentry/react-native";
 import { useEffect, type ReactNode } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
@@ -42,10 +43,11 @@ function Gate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    const onLogin = segments[0] === "login";
-    if (!user && !onLogin) {
+    const onAuthScreen =
+      segments[0] === "login" || segments[0] === "forgot-password";
+    if (!user && !onAuthScreen) {
       router.replace("/login");
-    } else if (user && onLogin) {
+    } else if (user && onAuthScreen) {
       router.replace("/");
     }
   }, [loading, user, segments, router]);
@@ -70,69 +72,89 @@ function Gate({ children }: { children: ReactNode }) {
 
 function RootLayout() {
   return (
-    <ThemeProvider value={kitchenTheme}>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <Gate>
-          <Stack screenOptions={headerScreenOptions}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={kitchenTheme}>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <Gate>
+            <Stack screenOptions={headerScreenOptions}>
+              <Stack.Screen
+                name="(tabs)"
+                options={{ headerShown: false, title: "Board" }}
+              />
+              <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen
-              name="(tabs)"
-              options={{ headerShown: false, title: "Board" }}
+              name="forgot-password"
+              options={{ headerShown: false }}
             />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="orders/index"
-              options={{
-                title: "Orders",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-            <Stack.Screen
-              name="orders/[id]"
-              options={{
-                title: "Order",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-            <Stack.Screen
-              name="inbox"
-              options={{
-                title: "Inbox",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-            <Stack.Screen
-              name="account/you"
-              options={{
-                title: "You",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-            <Stack.Screen
-              name="account/store"
-              options={{
-                title: "Store",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-            <Stack.Screen
-              name="account/preferences"
-              options={{
-                title: "Preferences",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-            <Stack.Screen
-              name="customers/[id]"
-              options={{
-                title: "Customer",
-                headerBackButtonDisplayMode: "minimal",
-              }}
-            />
-          </Stack>
-        </Gate>
-      </AuthProvider>
-    </ThemeProvider>
+              <Stack.Screen
+                name="orders/index"
+                options={{
+                  title: "Orders",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="orders/[id]"
+                options={{
+                  title: "Order",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="inbox"
+                options={{
+                  title: "Inbox",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="account/you"
+                options={{
+                  title: "You",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="account/change-password"
+                options={{
+                  title: "Change password",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="account/store"
+                options={{
+                  title: "Store",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="account/preferences"
+                options={{
+                  title: "Preferences",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="customers/new"
+                options={{
+                  title: "New customer",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+              <Stack.Screen
+                name="customers/[id]"
+                options={{
+                  title: "Customer",
+                  headerBackButtonDisplayMode: "minimal",
+                }}
+              />
+            </Stack>
+          </Gate>
+        </AuthProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
