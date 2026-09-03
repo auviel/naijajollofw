@@ -65,13 +65,14 @@ export default function TabsLayout() {
   if (Platform.OS === "ios") {
     return (
       <NativeTabs
-        key={resolved}
+        key={`tabs-${resolved}`}
         minimizeBehavior="onScrollDown"
         tintColor={colors.accent}
         iconColor={{
           default: colors.textSecondary,
           selected: colors.accent,
         }}
+        backgroundColor={colors.surface}
         blurEffect={blurEffect}
         labelVisibilityMode="unlabeled"
         badgeBackgroundColor={colors.accent}

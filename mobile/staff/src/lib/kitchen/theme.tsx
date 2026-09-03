@@ -55,34 +55,22 @@ function resolveScheme(
   return system === "dark" ? "dark" : "light";
 }
 
+/** Native chrome (tab bar materials) follows this — keep it aligned with preference. */
+function syncAppearanceToOS(appearance: AppearancePref) {
+  if (appearance === "light" || appearance === "dark") {
+    Appearance.setColorScheme(appearance);
+    return;
+  }
+  Appearance.setColorScheme("unspecified");
+}
+
 export function KitchenThemeProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const systemFromHook = useColorScheme();
-  /** Keep a live OS reading — native tab chrome follows OS even when RN was forced. */
-  const [systemScheme, setSystemScheme] = useState<"light" | "dark" | null>(
-    () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
-  );
   const [appearance, setAppearanceState] = useState<AppearancePref>("system");
-
-  useEffect(() => {
-    // Drop any leftover Appearance.setColorScheme override from older builds so
-    // System can track the real device setting again.
-    Appearance.setColorScheme("unspecified");
-  }, []);
-
-  useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      setSystemScheme(colorScheme === "dark" ? "dark" : "light");
-    });
-    return () => sub.remove();
-  }, []);
-
-  useEffect(() => {
-    setSystemScheme(systemFromHook === "dark" ? "dark" : "light");
-  }, [systemFromHook]);
 
   useEffect(() => {
     void kvGet(KEY).then((v) => {
@@ -92,19 +80,20 @@ export function KitchenThemeProvider({
     });
   }, []);
 
+  // Light/Dark must force RN so NativeTabs/liquid glass match app screens.
+  // System clears the override so the real device scheme wins.
+  useEffect(() => {
+    syncAppearanceToOS(appearance);
+  }, [appearance]);
+
   const setAppearance = useCallback((value: AppearancePref) => {
     setAppearanceState(value);
     void kvSet(KEY, value);
-    // Never force RN's global color scheme — Light/Dark are app-only.
-    // Forcing broke System (native tab bar followed OS dark while RN stayed light).
-    Appearance.setColorScheme("unspecified");
   }, []);
 
-  const system = systemScheme ?? systemFromHook;
-  const resolved = resolveScheme(appearance, system);
+  const resolved = resolveScheme(appearance, systemFromHook);
   const colors = resolved === "dark" ? DarkPalette : LightColors;
 
-  // Keep typography + UI package tokens in sync for this render tree.
   syncKitchenType(colors);
 
   const value = useMemo(
@@ -134,7 +123,6 @@ export function useKitchenTheme() {
   return ctx;
 }
 
-/** Clears any RN color-scheme override so System can follow the device. */
-export function applyAppearanceToOS(_appearance?: AppearancePref) {
-  Appearance.setColorScheme("unspecified");
+export function applyAppearanceToOS(appearance: AppearancePref) {
+  syncAppearanceToOS(appearance);
 }
