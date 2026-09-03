@@ -1,3 +1,4 @@
+import { IconBtn } from "@/components/kitchen/icon-btn";
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { useAuth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
@@ -7,7 +8,7 @@ import {
 } from "@/lib/kitchen/staff-me";
 import { KType } from "@/lib/kitchen/typography";
 import { Button, Card, Colors, Field, Screen, Skeleton } from "@naijajollof/ui";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -16,6 +17,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type HoursDay = {
   dayOfWeek: number;
@@ -55,16 +57,40 @@ function validateDays(days: HoursDay[]): string | null {
   return null;
 }
 
+function formatDayHours(day: HoursDay): string {
+  if (day.closed) return "Closed";
+  return `${day.openTime ?? "—"}–${day.closeTime ?? "—"}`;
+}
+
+function summarizeHours(hours: HoursSchedule | null): string {
+  if (!hours) return "Loading…";
+  if (!hours.configured) return "No schedule — treated as always open";
+  const openDays = hours.days.filter((d) => !d.closed);
+  if (openDays.length === 0) return "Closed every day";
+  return openDays
+    .map((d) => {
+      const label = (DAY_LABELS[d.dayOfWeek] ?? "?").slice(0, 3);
+      return `${label} ${d.openTime}–${d.closeTime}`;
+    })
+    .join(" · ");
+}
+
 export default function AccountStoreScreen() {
   const { store, user, refreshMe } = useAuth();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [addressQuery, setAddressQuery] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [hours, setHours] = useState<HoursSchedule | null>(null);
+  const [hoursBaseline, setHoursBaseline] = useState<HoursSchedule | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingHours, setEditingHours] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +110,7 @@ export default function AccountStoreScreen() {
       await refreshMe();
       const schedule = await apiFetch<HoursSchedule>("/api/store/hours");
       setHours(schedule);
+      setHoursBaseline(schedule);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load store.");
     } finally {
@@ -100,6 +127,22 @@ export default function AccountStoreScreen() {
     if (store) applyStore(store);
   }, [store, applyStore]);
 
+  const profileDirty = useMemo(() => {
+    if (!store) return false;
+    return (
+      name.trim() !== store.name ||
+      phone.trim() !== store.phone ||
+      email.trim().toLowerCase() !== store.email.toLowerCase() ||
+      addressQuery.trim() !== formatStoreAddressLine(store) ||
+      (addressLine2.trim() || "") !== (store.addressLine2 ?? "")
+    );
+  }, [store, name, phone, email, addressQuery, addressLine2]);
+
+  const hoursDirty = useMemo(() => {
+    if (!hours || !hoursBaseline) return false;
+    return JSON.stringify(hours.days) !== JSON.stringify(hoursBaseline.days);
+  }, [hours, hoursBaseline]);
+
   function updateDay(dayOfWeek: number, patch: Partial<HoursDay>) {
     setHours((prev) => {
       if (!prev) return prev;
@@ -110,6 +153,18 @@ export default function AccountStoreScreen() {
         ),
       };
     });
+  }
+
+  function cancelProfileEdit() {
+    if (store) applyStore(store);
+    setEditingProfile(false);
+    setError(null);
+  }
+
+  function cancelHoursEdit() {
+    if (hoursBaseline) setHours(hoursBaseline);
+    setEditingHours(false);
+    setError(null);
   }
 
   async function saveProfile() {
@@ -128,6 +183,7 @@ export default function AccountStoreScreen() {
         }),
       });
       await refreshMe();
+      setEditingProfile(false);
       setMessage("Store profile saved.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to save store.");
@@ -152,6 +208,8 @@ export default function AccountStoreScreen() {
         body: JSON.stringify({ days: hours.days }),
       });
       setHours(next);
+      setHoursBaseline(next);
+      setEditingHours(false);
       setMessage("Hours saved.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to save hours.");
@@ -180,6 +238,9 @@ export default function AccountStoreScreen() {
     );
   }
 
+  const showFooter =
+    (editingProfile && profileDirty) || (editingHours && hoursDirty);
+
   return (
     <Screen>
       <StackScroll
@@ -195,129 +256,230 @@ export default function AccountStoreScreen() {
         }
       >
         <Card style={styles.card}>
-          <Text style={KType.kicker}>Info</Text>
-          <Text style={KType.meta}>
-            {store?.name ?? user?.storeName ?? "Store"}
-          </Text>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Name</Text>
-            <Field value={name} onChangeText={setName} />
+          <View style={styles.cardHead}>
+            <Text style={KType.kicker}>Store</Text>
+            {editingProfile ? (
+              <IconBtn
+                name="close"
+                color={Colors.text}
+                label="Cancel editing store"
+                onPress={cancelProfileEdit}
+                soft
+              />
+            ) : (
+              <IconBtn
+                name="create-outline"
+                color={Colors.accent}
+                label="Edit store"
+                onPress={() => setEditingProfile(true)}
+                soft
+              />
+            )}
           </View>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Phone</Text>
-            <Field
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
-          </View>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Email</Text>
-            <Field
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Address</Text>
-            <Field
-              value={addressQuery}
-              onChangeText={setAddressQuery}
-              placeholder="Street, city, province postal"
-            />
-          </View>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Unit / suite (optional)</Text>
-            <Field value={addressLine2} onChangeText={setAddressLine2} />
-          </View>
-          <Button
-            label={savingProfile ? "Saving…" : "Save store"}
-            disabled={savingProfile}
-            onPress={() => void saveProfile()}
-          />
+
+          {editingProfile ? (
+            <>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Name</Text>
+                <Field value={name} onChangeText={setName} />
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Phone</Text>
+                <Field
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Email</Text>
+                <Field
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Address</Text>
+                <Field
+                  value={addressQuery}
+                  onChangeText={setAddressQuery}
+                  placeholder="Street, city, province postal"
+                />
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Unit / suite (optional)</Text>
+                <Field value={addressLine2} onChangeText={setAddressLine2} />
+              </View>
+            </>
+          ) : (
+            <View style={styles.infoBlock}>
+              <Text style={KType.bodyStrong}>
+                {store?.name ?? user?.storeName ?? "Store"}
+              </Text>
+              <Text style={KType.meta}>{store?.phone || "—"}</Text>
+              <Text style={KType.meta}>{store?.email || "—"}</Text>
+              <Text style={KType.meta}>
+                {store ? formatStoreAddressLine(store) : "—"}
+              </Text>
+              {store?.addressLine2 ? (
+                <Text style={KType.meta}>{store.addressLine2}</Text>
+              ) : null}
+            </View>
+          )}
         </Card>
 
         <Card style={styles.card}>
-          <Text style={KType.kicker}>Hours</Text>
-          <Text style={KType.meta}>
-            Times use {hours?.timezone ?? "store timezone"}. Overnight closes
-            are supported (e.g. 22:00–02:00).
-          </Text>
-          {!hours?.configured ? (
-            <Text style={KType.meta}>
-              No schedule saved yet — treated as always open until you save one.
-            </Text>
-          ) : null}
-          {(hours?.days ?? []).map((day) => (
-            <View key={day.dayOfWeek} style={styles.dayRow}>
-              <View style={styles.dayHead}>
-                <Text style={KType.bodyStrong}>
-                  {DAY_LABELS[day.dayOfWeek] ?? `Day ${day.dayOfWeek}`}
+          <View style={styles.cardHead}>
+            <Text style={KType.kicker}>Hours</Text>
+            {editingHours ? (
+              <IconBtn
+                name="close"
+                color={Colors.text}
+                label="Cancel editing hours"
+                onPress={cancelHoursEdit}
+                soft
+              />
+            ) : (
+              <IconBtn
+                name="create-outline"
+                color={Colors.accent}
+                label="Edit hours"
+                onPress={() => setEditingHours(true)}
+                soft
+              />
+            )}
+          </View>
+
+          {editingHours ? (
+            <>
+              <Text style={KType.meta}>
+                Times use {hours?.timezone ?? "store timezone"}. Overnight
+                closes are supported (e.g. 22:00–02:00).
+              </Text>
+              {!hours?.configured ? (
+                <Text style={KType.meta}>
+                  No schedule saved yet — treated as always open until you save
+                  one.
                 </Text>
-                <Pressable
-                  style={styles.closedToggle}
-                  onPress={() =>
-                    updateDay(day.dayOfWeek, {
-                      closed: !day.closed,
-                      openTime: !day.closed ? null : day.openTime ?? "11:00",
-                      closeTime: !day.closed ? null : day.closeTime ?? "22:00",
-                    })
-                  }
-                >
-                  <Text style={KType.meta}>Closed</Text>
-                  <Switch
-                    value={day.closed}
-                    onValueChange={(closed) =>
-                      updateDay(day.dayOfWeek, {
-                        closed,
-                        openTime: closed ? null : day.openTime ?? "11:00",
-                        closeTime: closed ? null : day.closeTime ?? "22:00",
-                      })
-                    }
-                  />
-                </Pressable>
-              </View>
-              {!day.closed ? (
-                <View style={styles.times}>
-                  <Field
-                    style={styles.timeField}
-                    value={day.openTime ?? ""}
-                    onChangeText={(openTime) =>
-                      updateDay(day.dayOfWeek, { openTime })
-                    }
-                    placeholder="11:00"
-                  />
-                  <Text style={KType.meta}>–</Text>
-                  <Field
-                    style={styles.timeField}
-                    value={day.closeTime ?? ""}
-                    onChangeText={(closeTime) =>
-                      updateDay(day.dayOfWeek, { closeTime })
-                    }
-                    placeholder="22:00"
-                  />
-                </View>
               ) : null}
+              {(hours?.days ?? []).map((day) => (
+                <View key={day.dayOfWeek} style={styles.dayRow}>
+                  <View style={styles.dayHead}>
+                    <Text style={KType.bodyStrong}>
+                      {DAY_LABELS[day.dayOfWeek] ?? `Day ${day.dayOfWeek}`}
+                    </Text>
+                    <Pressable
+                      style={styles.closedToggle}
+                      onPress={() =>
+                        updateDay(day.dayOfWeek, {
+                          closed: !day.closed,
+                          openTime: !day.closed
+                            ? null
+                            : (day.openTime ?? "11:00"),
+                          closeTime: !day.closed
+                            ? null
+                            : (day.closeTime ?? "22:00"),
+                        })
+                      }
+                    >
+                      <Text style={KType.meta}>Closed</Text>
+                      <Switch
+                        value={day.closed}
+                        onValueChange={(closed) =>
+                          updateDay(day.dayOfWeek, {
+                            closed,
+                            openTime: closed
+                              ? null
+                              : (day.openTime ?? "11:00"),
+                            closeTime: closed
+                              ? null
+                              : (day.closeTime ?? "22:00"),
+                          })
+                        }
+                      />
+                    </Pressable>
+                  </View>
+                  {!day.closed ? (
+                    <View style={styles.times}>
+                      <Field
+                        style={styles.timeField}
+                        value={day.openTime ?? ""}
+                        onChangeText={(openTime) =>
+                          updateDay(day.dayOfWeek, { openTime })
+                        }
+                        placeholder="11:00"
+                      />
+                      <Text style={KType.meta}>–</Text>
+                      <Field
+                        style={styles.timeField}
+                        value={day.closeTime ?? ""}
+                        onChangeText={(closeTime) =>
+                          updateDay(day.dayOfWeek, { closeTime })
+                        }
+                        placeholder="22:00"
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </>
+          ) : (
+            <View style={styles.infoBlock}>
+              <Text style={KType.meta}>{summarizeHours(hours)}</Text>
+              {(hours?.days ?? []).map((day) => (
+                <View key={day.dayOfWeek} style={styles.hoursViewRow}>
+                  <Text style={KType.body}>
+                    {DAY_LABELS[day.dayOfWeek] ?? `Day ${day.dayOfWeek}`}
+                  </Text>
+                  <Text style={KType.meta}>{formatDayHours(day)}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-          <Button
-            label={savingHours ? "Saving…" : "Save hours"}
-            disabled={savingHours || !hours}
-            onPress={() => void saveHours()}
-          />
+          )}
         </Card>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {message ? <Text style={styles.ok}>{message}</Text> : null}
       </StackScroll>
+
+      {showFooter ? (
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom, 12) },
+          ]}
+        >
+          {editingProfile && profileDirty ? (
+            <Button
+              label={savingProfile ? "Saving…" : "Save store"}
+              disabled={savingProfile}
+              onPress={() => void saveProfile()}
+            />
+          ) : null}
+          {editingHours && hoursDirty ? (
+            <Button
+              label={savingHours ? "Saving…" : "Save hours"}
+              disabled={savingHours || !hours}
+              onPress={() => void saveHours()}
+            />
+          ) : null}
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   card: { gap: 12 },
+  cardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  infoBlock: { gap: 4 },
   fieldBlock: { gap: 6 },
   dayRow: {
     gap: 8,
@@ -342,6 +504,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeField: { flex: 1 },
+  hoursViewRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingVertical: 4,
+  },
   error: { ...KType.meta, color: Colors.danger, marginTop: 8 },
   ok: { ...KType.meta, color: Colors.success, marginTop: 8 },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
 });

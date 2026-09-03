@@ -3,6 +3,7 @@ import { apiFetch } from "@/lib/api";
 import { KType } from "@/lib/kitchen/typography";
 import {
   Button,
+  Card,
   Colors,
   Field,
   Screen,
@@ -60,37 +61,44 @@ export default function NewCustomerScreen() {
           have a delivery dropoff.
         </Text>
 
-        <View style={styles.fields}>
-          <Text style={KType.kicker}>Name</Text>
-          <Field
-            value={name}
-            onChangeText={setName}
-            placeholder="Customer name"
-            autoCapitalize="words"
-          />
-
-          <Text style={KType.kicker}>Phone</Text>
-          <Field
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="(519) 555-0100"
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-          />
-
-          <Text style={KType.kicker}>Address (optional)</Text>
-          <Field
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Street, city, postal code"
-            autoCapitalize="words"
-          />
-        </View>
+        <Card style={styles.card}>
+          <Text style={KType.kicker}>Customer</Text>
+          <View style={styles.fieldBlock}>
+            <Text style={KType.meta}>Name</Text>
+            <Field
+              value={name}
+              onChangeText={setName}
+              placeholder="Customer name"
+              autoCapitalize="words"
+            />
+          </View>
+          <View style={styles.fieldBlock}>
+            <Text style={KType.meta}>Phone</Text>
+            <Field
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="(519) 555-0100"
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.fieldBlock}>
+            <Text style={KType.meta}>Address (optional)</Text>
+            <Field
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Street, city, postal code"
+              autoCapitalize="words"
+            />
+          </View>
+        </Card>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </StackScroll>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View
+        style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}
+      >
         <Button
           label={saving ? "Saving…" : "Create customer"}
           onPress={() => void onSave()}
@@ -102,7 +110,8 @@ export default function NewCustomerScreen() {
 }
 
 const styles = StyleSheet.create({
-  fields: { gap: 8 },
+  card: { gap: 12 },
+  fieldBlock: { gap: 6 },
   error: { ...KType.metaStrong, color: Colors.danger },
   footer: {
     paddingHorizontal: 20,

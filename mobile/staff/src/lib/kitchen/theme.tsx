@@ -1,4 +1,5 @@
-import { Colors as LightColors } from "@naijajollof/ui";
+import { Colors as LightColors, UiThemeProvider } from "@naijajollof/ui";
+import { syncKitchenType } from "@/lib/kitchen/typography";
 import { kvGet, kvSet } from "@/lib/kv";
 import React, {
   createContext,
@@ -29,7 +30,7 @@ export const DarkPalette = {
   successSoft: "#14532D",
   dangerSoft: "#3F1D1D",
   inverse: "#FFFFFF",
-} as const;
+} as typeof LightColors;
 
 type ThemeContextValue = {
   appearance: AppearancePref;
@@ -70,6 +71,9 @@ export function KitchenThemeProvider({
 
   const colors = resolved === "dark" ? DarkPalette : LightColors;
 
+  // Keep typography + UI package tokens in sync for this render tree.
+  syncKitchenType(colors);
+
   const value = useMemo(
     () => ({
       appearance,
@@ -81,7 +85,9 @@ export function KitchenThemeProvider({
   );
 
   return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>
+      <UiThemeProvider colors={colors}>{children}</UiThemeProvider>
+    </ThemeContext.Provider>
   );
 }
 
@@ -94,7 +100,9 @@ export function useKitchenTheme() {
 }
 
 export function applyAppearanceToOS(appearance: AppearancePref) {
-  if (appearance === "light" || appearance === "dark") {
-    Appearance.setColorScheme(appearance);
+  if (appearance === "system") {
+    Appearance.setColorScheme(null);
+    return;
   }
+  Appearance.setColorScheme(appearance);
 }

@@ -25,7 +25,23 @@ export const createCustomerSchema = z.object({
   address: z.string().trim().min(1, "Address is required").optional(),
 });
 
+export const customerPhoneInputSchema = z.object({
+  phone: canadianPhoneSchema,
+  label: z.string().trim().max(40).nullable().optional(),
+  isPrimary: z.boolean().optional(),
+});
+
+export const customerAddressInputSchema = z.object({
+  address: z.string().trim().min(5, "Address is required"),
+  label: z.string().trim().max(40).nullable().optional(),
+  isPrimary: z.boolean().optional(),
+});
+
 export type ListCustomersQuerySchema = z.infer<typeof listCustomersQuerySchema>;
 export type SearchCustomersQuerySchema = z.infer<typeof searchCustomersQuerySchema>;
 export type UpdateCustomerSchema = z.infer<typeof updateCustomerSchema>;
 export type CreateCustomerSchema = z.infer<typeof createCustomerSchema>;
+export type CustomerPhoneInputSchema = z.infer<typeof customerPhoneInputSchema>;
+export type CustomerAddressInputSchema = z.infer<
+  typeof customerAddressInputSchema
+>;

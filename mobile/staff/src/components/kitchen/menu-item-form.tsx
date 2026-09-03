@@ -1,3 +1,4 @@
+import { IconBtn } from "@/components/kitchen/icon-btn";
 import { MenuItemPhotos } from "@/components/kitchen/menu-item-photos";
 import type {
   KitchenMenuCategoryOption,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/kitchen/menu-types";
 import { KType } from "@/lib/kitchen/typography";
 import { Button, Card, Colors, Field, Radii } from "@naijajollof/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -36,6 +37,8 @@ type MenuItemFormProps = {
   submitLabel: string;
   busy?: boolean;
   error?: string | null;
+  /** Start in read-only view with pencil (edit screens). Create stays always-form. */
+  viewEdit?: boolean;
   onSubmit: (values: {
     name: string;
     description: string | null;
@@ -54,6 +57,7 @@ export function MenuItemForm({
   submitLabel,
   busy,
   error,
+  viewEdit = false,
   onSubmit,
 }: MenuItemFormProps) {
   const [name, setName] = useState(initial.name);
@@ -61,6 +65,7 @@ export function MenuItemForm({
   const [priceDollars, setPriceDollars] = useState(initial.priceDollars);
   const [available, setAvailable] = useState(initial.available);
   const [categoryId, setCategoryId] = useState(initial.categoryId);
+  const [editing, setEditing] = useState(!viewEdit);
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,7 +74,28 @@ export function MenuItemForm({
     setPriceDollars(initial.priceDollars);
     setAvailable(initial.available);
     setCategoryId(initial.categoryId);
-  }, [initial]);
+    if (viewEdit) setEditing(false);
+  }, [initial, viewEdit]);
+
+  const dirty = useMemo(
+    () =>
+      name.trim() !== initial.name.trim() ||
+      description.trim() !== initial.description.trim() ||
+      priceDollars.trim() !== initial.priceDollars.trim() ||
+      available !== initial.available ||
+      categoryId !== initial.categoryId,
+    [name, description, priceDollars, available, categoryId, initial],
+  );
+
+  function cancelEdit() {
+    setName(initial.name);
+    setDescription(initial.description);
+    setPriceDollars(initial.priceDollars);
+    setAvailable(initial.available);
+    setCategoryId(initial.categoryId);
+    setLocalError(null);
+    setEditing(false);
+  }
 
   function submit() {
     setLocalError(null);
@@ -97,66 +123,112 @@ export function MenuItemForm({
   }
 
   const activeCategories = categories.filter((c) => c.active);
+  const categoryName =
+    categories.find((c) => c.id === categoryId)?.name ?? "—";
+  const showSave = !viewEdit || (editing && dirty);
 
   return (
     <View style={styles.wrap}>
       <Card style={styles.card}>
-        <Text style={KType.kicker}>Item</Text>
-        <View style={styles.fieldBlock}>
-          <Text style={KType.meta}>Name</Text>
-          <Field value={name} onChangeText={setName} autoCapitalize="sentences" />
+        <View style={styles.cardHead}>
+          <Text style={KType.kicker}>Item</Text>
+          {viewEdit ? (
+            editing ? (
+              <IconBtn
+                name="close"
+                color={Colors.text}
+                label="Cancel editing"
+                onPress={cancelEdit}
+                soft
+              />
+            ) : (
+              <IconBtn
+                name="create-outline"
+                color={Colors.accent}
+                label="Edit item"
+                onPress={() => setEditing(true)}
+                soft
+              />
+            )
+          ) : null}
         </View>
-        <View style={styles.fieldBlock}>
-          <Text style={KType.meta}>Price (CAD)</Text>
-          <Field
-            value={priceDollars}
-            onChangeText={setPriceDollars}
-            keyboardType="decimal-pad"
-            placeholder="0.00"
-          />
-        </View>
-        <View style={styles.fieldBlock}>
-          <Text style={KType.meta}>Description</Text>
-          <Field
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            style={styles.multiline}
-            placeholder="Optional"
-          />
-        </View>
-        <View style={styles.switchRow}>
-          <Text style={KType.bodyStrong}>Available</Text>
-          <Switch value={available} onValueChange={setAvailable} />
-        </View>
-      </Card>
 
-      <Card style={styles.card}>
-        <Text style={KType.kicker}>Category</Text>
-        <View style={styles.chips}>
-          {activeCategories.map((cat) => {
-            const selected = cat.id === categoryId;
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => setCategoryId(cat.id)}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text
-                  style={[
-                    styles.chipLabel,
-                    selected && styles.chipLabelSelected,
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        {activeCategories.length === 0 ? (
-          <Text style={KType.meta}>Create a category first.</Text>
-        ) : null}
+        {editing ? (
+          <>
+            <View style={styles.fieldBlock}>
+              <Text style={KType.meta}>Name</Text>
+              <Field
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="sentences"
+              />
+            </View>
+            <View style={styles.fieldBlock}>
+              <Text style={KType.meta}>Price (CAD)</Text>
+              <Field
+                value={priceDollars}
+                onChangeText={setPriceDollars}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+              />
+            </View>
+            <View style={styles.fieldBlock}>
+              <Text style={KType.meta}>Description</Text>
+              <Field
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                style={styles.multiline}
+                placeholder="Optional"
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={KType.bodyStrong}>Available</Text>
+              <Switch value={available} onValueChange={setAvailable} />
+            </View>
+            <View style={styles.divider} />
+            <Text style={KType.kicker}>Category</Text>
+            <View style={styles.chips}>
+              {activeCategories.map((cat) => {
+                const selected = cat.id === categoryId;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => setCategoryId(cat.id)}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                  >
+                    <Text
+                      style={[
+                        styles.chipLabel,
+                        selected && styles.chipLabelSelected,
+                      ]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {activeCategories.length === 0 ? (
+              <Text style={KType.meta}>Create a category first.</Text>
+            ) : null}
+          </>
+        ) : (
+          <View style={styles.infoBlock}>
+            <Text style={KType.bodyStrong}>{initial.name || "—"}</Text>
+            <Text style={KType.numeric}>${initial.priceDollars}</Text>
+            <Text style={KType.meta}>
+              {initial.description.trim()
+                ? initial.description
+                : "No description"}
+            </Text>
+            <Text style={KType.meta}>
+              {initial.available ? "Available" : "Unavailable"}
+              {" · "}
+              {categoryName}
+            </Text>
+          </View>
+        )}
       </Card>
 
       {itemId && onImagesChange ? (
@@ -173,11 +245,13 @@ export function MenuItemForm({
         <Text style={styles.error}>{localError ?? error}</Text>
       ) : null}
 
-      <Button
-        label={busy ? "Saving…" : submitLabel}
-        disabled={busy}
-        onPress={submit}
-      />
+      {showSave ? (
+        <Button
+          label={busy ? "Saving…" : submitLabel}
+          disabled={busy}
+          onPress={submit}
+        />
+      ) : null}
     </View>
   );
 }
@@ -213,6 +287,13 @@ export function menuItemToFormValues(item: {
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
   card: { gap: 12 },
+  cardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  infoBlock: { gap: 4 },
   fieldBlock: { gap: 6 },
   multiline: { minHeight: 88, paddingTop: 12, textAlignVertical: "top" },
   switchRow: {
@@ -220,6 +301,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Colors.border,
+    marginVertical: 2,
   },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {

@@ -2,7 +2,7 @@ import {
   formatCadFromCents,
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
-import { Colors, Radii, Shadows } from "@naijajollof/ui";
+import { Radii, Shadows } from "@naijajollof/ui";
 import * as Clipboard from "expo-clipboard";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
@@ -12,6 +12,7 @@ import {
   formatKitchenWait,
 } from "@/lib/kitchen/format";
 import { KType } from "@/lib/kitchen/typography";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
 export function TicketCard({
   order,
@@ -26,6 +27,73 @@ export function TicketCard({
   onLongPressBump?: () => void;
   bumpBusy?: boolean;
 }) {
+  const styles = useThemedStyles((c) => ({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: Radii.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      ...Shadows.card,
+      overflow: "hidden" as const,
+    },
+    body: {
+      paddingHorizontal: 14,
+      paddingTop: 14,
+      paddingBottom: 12,
+      gap: 8,
+    },
+    top: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "flex-start" as const,
+      gap: 8,
+    },
+    topRight: {
+      alignItems: "flex-end" as const,
+      gap: 2,
+    },
+    mid: {
+      flexDirection: "row" as const,
+      alignItems: "flex-start" as const,
+      gap: 10,
+    },
+    thumbs: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+    },
+    thumb: {
+      borderWidth: 2,
+      borderColor: c.surface,
+    },
+    midCopy: { flex: 1, gap: 2 },
+    notes: {
+      ...KType.metaStrong,
+      marginTop: 2,
+      fontStyle: "italic" as const,
+    },
+    bumpWrap: {
+      paddingHorizontal: 12,
+      paddingBottom: 12,
+    },
+    bump: {
+      minHeight: 44,
+      borderRadius: Radii.button,
+      backgroundColor: c.accent,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    bumpPressed: {
+      backgroundColor: c.accentHover,
+    },
+    bumpDisabled: {
+      opacity: 0.55,
+    },
+    bumpText: {
+      ...KType.action,
+      color: c.inverse,
+    },
+  }));
+
   const bump = primaryBumpFor(order);
   const wait = formatKitchenWait(order.placedAt ?? order.createdAt);
   const ticket =
@@ -124,79 +192,10 @@ export function TicketCard({
               bumpBusy && styles.bumpDisabled,
             ]}
           >
-            <Text style={styles.bumpText}>
-              {bumpBusy ? "…" : bump.label}
-            </Text>
+            <Text style={styles.bumpText}>{bumpBusy ? "…" : bump.label}</Text>
           </Pressable>
         </View>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    ...Shadows.card,
-    overflow: "hidden",
-  },
-  body: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  top: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  topRight: {
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  mid: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  thumbs: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  thumb: {
-    borderWidth: 2,
-    borderColor: Colors.surface,
-  },
-  midCopy: { flex: 1, gap: 2 },
-  notes: {
-    ...KType.metaStrong,
-    marginTop: 2,
-    fontStyle: "italic",
-  },
-  bumpWrap: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-  },
-  bump: {
-    minHeight: 44,
-    borderRadius: Radii.button,
-    backgroundColor: Colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bumpPressed: {
-    backgroundColor: Colors.accentHover,
-  },
-  bumpDisabled: {
-    opacity: 0.55,
-  },
-  bumpText: {
-    ...KType.action,
-    color: Colors.inverse,
-  },
-});

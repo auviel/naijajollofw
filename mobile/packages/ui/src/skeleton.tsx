@@ -1,4 +1,5 @@
-import { Colors, Radii, Shadows, Space } from "./theme";
+import { Radii, Shadows, Space } from "./theme";
+import { useUiColors } from "./theme-context";
 import { useEffect, useRef } from "react";
 import {
   Animated,
@@ -23,6 +24,7 @@ export function Skeleton({
   width = "100%",
   radius = Radii.sm,
 }: SkeletonProps) {
+  const colors = useUiColors();
   const opacity = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {
@@ -49,7 +51,13 @@ export function Skeleton({
       accessibilityRole="none"
       style={[
         styles.base,
-        { height, width, borderRadius: radius, opacity },
+        {
+          height,
+          width,
+          borderRadius: radius,
+          opacity,
+          backgroundColor: colors.backgroundWash,
+        },
         style,
       ]}
     />
@@ -106,10 +114,16 @@ export function CartScreenSkeleton() {
 }
 
 export function OrdersScreenSkeleton() {
+  const colors = useUiColors();
+  const card = {
+    ...styles.orderCard,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+  };
   return (
     <View style={styles.screenPad} accessibilityLabel="Loading orders">
       {Array.from({ length: 4 }, (_, i) => (
-        <View key={i} style={styles.orderCard}>
+        <View key={i} style={card}>
           <Skeleton height={16} width="55%" />
           <Skeleton height={12} width="40%" style={{ marginTop: Space.xs }} />
           <Skeleton height={14} width="25%" style={{ marginTop: Space.sm }} />
@@ -140,6 +154,12 @@ export function ItemScreenSkeleton() {
 
 /** Kitchen board — segment + ticket cards only (real header stays mounted). */
 export function KitchenBoardSkeleton() {
+  const colors = useUiColors();
+  const card = {
+    ...styles.ticketCard,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  };
   return (
     <View style={styles.boardPad} accessibilityLabel="Loading kitchen board">
       <View style={styles.segment}>
@@ -148,7 +168,7 @@ export function KitchenBoardSkeleton() {
         ))}
       </View>
       {Array.from({ length: 3 }, (_, i) => (
-        <View key={i} style={styles.ticketCard}>
+        <View key={i} style={card}>
           <View style={styles.ticketTop}>
             <Skeleton height={18} width="30%" />
             <Skeleton height={14} width={56} />
@@ -168,13 +188,20 @@ export function KitchenBoardSkeleton() {
 
 /** Kitchen ticket detail — mirrors order card + guest card + primary action. */
 export function KitchenTicketSkeleton() {
+  const colors = useUiColors();
+  const card = {
+    ...styles.ticketCard,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  };
+  const border = { borderTopColor: colors.border };
   return (
     <View style={styles.ticketPad} accessibilityLabel="Loading ticket">
-      <View style={styles.ticketCard}>
+      <View style={card}>
         {Array.from({ length: 2 }, (_, i) => (
           <View
             key={i}
-            style={[styles.lineRow, i > 0 && styles.lineRowBorder]}
+            style={[styles.lineRow, i > 0 && styles.lineRowBorder, i > 0 && border]}
           >
             <Skeleton height={48} width={48} radius={Radii.sm} />
             <View style={styles.lineCopy}>
@@ -184,13 +211,13 @@ export function KitchenTicketSkeleton() {
             <Skeleton height={14} width={44} />
           </View>
         ))}
-        <View style={styles.totalRow}>
+        <View style={[styles.totalRow, border]}>
           <Skeleton height={16} width={52} />
           <Skeleton height={16} width={64} />
         </View>
       </View>
 
-      <View style={styles.ticketCard}>
+      <View style={card}>
         <Skeleton height={11} width={44} />
         <Skeleton height={16} width="55%" style={{ marginTop: Space.sm }} />
         <Skeleton height={13} width="40%" style={{ marginTop: Space.xs }} />
@@ -208,10 +235,16 @@ export function KitchenTicketSkeleton() {
 
 /** Kitchen customers list — search + rows. */
 export function KitchenCustomersSkeleton() {
+  const colors = useUiColors();
+  const card = {
+    ...styles.orderCard,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+  };
   return (
     <View accessibilityLabel="Loading customers" style={{ gap: Space.sm }}>
       {Array.from({ length: 6 }, (_, i) => (
-        <View key={i} style={styles.orderCard}>
+        <View key={i} style={card}>
           <Skeleton height={16} width="55%" />
           <Skeleton height={12} width="40%" style={{ marginTop: Space.xs }} />
         </View>
@@ -221,9 +254,7 @@ export function KitchenCustomersSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  base: {
-    backgroundColor: Colors.backgroundWash,
-  },
+  base: {},
   screenPad: {
     flex: 1,
     padding: Space.md,
@@ -257,18 +288,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   orderCard: {
-    backgroundColor: Colors.surfaceElevated,
     borderRadius: Radii.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
     padding: Space.md,
     marginTop: Space.sm,
   },
   ticketCard: {
-    backgroundColor: Colors.surface,
     borderRadius: Radii.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
     padding: Space.md,
     ...Shadows.card,
   },
@@ -285,7 +312,6 @@ const styles = StyleSheet.create({
   },
   lineRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
   },
   lineCopy: {
     flex: 1,
@@ -297,6 +323,5 @@ const styles = StyleSheet.create({
     marginTop: Space.xs,
     paddingTop: Space.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
   },
 });

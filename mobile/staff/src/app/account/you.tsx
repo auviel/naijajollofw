@@ -1,3 +1,4 @@
+import { IconBtn } from "@/components/kitchen/icon-btn";
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { useAuth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
@@ -6,13 +7,13 @@ import { Button, Card, Colors, Field, Screen } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function humanizeRole(role: string | undefined): string {
   if (!role) return "—";
@@ -24,13 +25,24 @@ function humanizeRole(role: string | undefined): string {
     .join(" ");
 }
 
+function formatPhoneDisplay(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const local = digits.slice(1);
+    return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+  }
+  return value || "—";
+}
+
 export default function AccountYouScreen() {
   const { user, refreshMe } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phoneE164 ?? "");
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [emailCode, setEmailCode] = useState("");
@@ -43,6 +55,20 @@ export default function AccountYouScreen() {
     setEmail(user?.email ?? "");
     setPhone(user?.phoneE164 ?? "");
   }, [user?.name, user?.email, user?.phoneE164]);
+
+  const dirty =
+    name.trim() !== (user?.name ?? "") ||
+    email.trim().toLowerCase() !== (user?.email ?? "").toLowerCase() ||
+    (phone.trim() || "") !== (user?.phoneE164 ?? "");
+
+  function cancelEdit() {
+    setName(user?.name ?? "");
+    setEmail(user?.email ?? "");
+    setPhone(user?.phoneE164 ?? "");
+    setError(null);
+    setMessage(null);
+    setEditing(false);
+  }
 
   async function saveProfile() {
     setSaving(true);
@@ -61,9 +87,12 @@ export default function AccountYouScreen() {
         }),
       });
       await refreshMe();
+      setEditing(false);
       if (result.emailChangePending) {
         setPendingEmail(email.trim().toLowerCase());
-        setMessage(`We sent a code to ${email.trim().toLowerCase()}. Enter it below to confirm.`);
+        setMessage(
+          `We sent a code to ${email.trim().toLowerCase()}. Enter it below to confirm.`,
+        );
       } else {
         setPendingEmail(null);
         setMessage("Profile saved.");
@@ -98,39 +127,70 @@ export default function AccountYouScreen() {
     <Screen>
       <StackScroll>
         <Card style={styles.card}>
-          <Text style={KType.kicker}>Profile</Text>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Name</Text>
-            <Field value={name} onChangeText={setName} autoCapitalize="words" />
+          <View style={styles.cardHead}>
+            <Text style={KType.kicker}>Profile</Text>
+            {editing ? (
+              <IconBtn
+                name="close"
+                color={Colors.text}
+                label="Cancel editing"
+                onPress={cancelEdit}
+                soft
+              />
+            ) : (
+              <IconBtn
+                name="create-outline"
+                color={Colors.accent}
+                label="Edit profile"
+                onPress={() => setEditing(true)}
+                soft
+              />
+            )}
           </View>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Email</Text>
-            <Field
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoCorrect={false}
-            />
-          </View>
-          <View style={styles.fieldBlock}>
-            <Text style={KType.meta}>Phone</Text>
-            <Field
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="+1…"
-            />
-          </View>
+
+          {editing ? (
+            <>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Name</Text>
+                <Field
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Email</Text>
+                <Field
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                />
+              </View>
+              <View style={styles.fieldBlock}>
+                <Text style={KType.meta}>Phone</Text>
+                <Field
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholder="+1…"
+                />
+              </View>
+            </>
+          ) : (
+            <View style={styles.infoBlock}>
+              <Text style={KType.bodyStrong}>{user?.name || "—"}</Text>
+              <Text style={KType.meta}>{user?.email || "—"}</Text>
+              <Text style={KType.meta}>
+                {formatPhoneDisplay(user?.phoneE164 ?? "")}
+              </Text>
+            </View>
+          )}
+
           <Text style={KType.meta}>Role · {humanizeRole(user?.role)}</Text>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {message ? <Text style={styles.ok}>{message}</Text> : null}
-          <Button
-            label={saving ? "Saving…" : "Save"}
-            disabled={saving}
-            onPress={() => void saveProfile()}
-          />
-          {saving ? <ActivityIndicator color={Colors.accent} /> : null}
         </Card>
 
         {pendingEmail ? (
@@ -184,12 +244,34 @@ export default function AccountYouScreen() {
           </Pressable>
         </Card>
       </StackScroll>
+
+      {editing && dirty ? (
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom, 12) },
+          ]}
+        >
+          <Button
+            label={saving ? "Saving…" : "Save changes"}
+            disabled={saving}
+            onPress={() => void saveProfile()}
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   card: { gap: 12 },
+  cardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  infoBlock: { gap: 4 },
   fieldBlock: { gap: 6 },
   row: {
     flexDirection: "row",
@@ -210,4 +292,11 @@ const styles = StyleSheet.create({
   muted: { color: Colors.textSecondary },
   error: { ...KType.meta, color: Colors.danger },
   ok: { ...KType.meta, color: Colors.success },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
 });

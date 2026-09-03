@@ -22,3 +22,4 @@ export {
   Type,
   headerScreenOptions,
 } from "./theme";
+export { UiThemeProvider, useUiColors, type UiColors } from "./theme-context";

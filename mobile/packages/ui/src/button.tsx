@@ -1,4 +1,5 @@
-import { Colors, Radii, Touch } from "./theme";
+import { Radii, Touch } from "./theme";
+import { useUiColors } from "./theme-context";
 import {
   Pressable,
   StyleSheet,
@@ -26,8 +27,26 @@ export function Button({
   icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const colors = useUiColors();
   const lightLabel = variant === "primary";
   const dangerLabel = variant === "danger";
+
+  const variantStyle =
+    variant === "primary"
+      ? { backgroundColor: colors.accent }
+      : variant === "secondary"
+        ? {
+            backgroundColor: colors.surface,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.border,
+          }
+        : variant === "danger"
+          ? {
+              backgroundColor: colors.dangerSoft,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: "rgba(220,38,38,0.35)",
+            }
+          : { backgroundColor: "transparent" };
 
   return (
     <Pressable
@@ -42,7 +61,7 @@ export function Button({
       }}
       style={({ pressed }: { pressed: boolean }) => [
         styles.base,
-        styles[variant],
+        variantStyle,
         disabled && styles.disabled,
         pressed && !disabled && styles.pressed,
         style,
@@ -53,9 +72,11 @@ export function Button({
         <Text
           style={[
             styles.label,
-            lightLabel && styles.labelLight,
-            dangerLabel && styles.labelDanger,
-            (variant === "secondary" || variant === "ghost") && styles.labelDark,
+            lightLabel && { color: colors.inverse },
+            dangerLabel && { color: colors.danger },
+            (variant === "secondary" || variant === "ghost") && {
+              color: colors.secondary,
+            },
           ]}
         >
           {label}
@@ -81,23 +102,7 @@ const styles = StyleSheet.create({
   icon: {
     marginTop: 1,
   },
-  primary: { backgroundColor: Colors.accent },
-  secondary: {
-    backgroundColor: Colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-  },
-  /** Outline destructive — does not compete with primary fill */
-  danger: {
-    backgroundColor: Colors.dangerSoft,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(220,38,38,0.35)",
-  },
-  ghost: { backgroundColor: "transparent" },
   disabled: { opacity: 0.45 },
   pressed: { transform: [{ scale: 0.98 }] },
   label: { fontSize: 15, fontWeight: "600", letterSpacing: -0.1 },
-  labelLight: { color: Colors.inverse },
-  labelDark: { color: Colors.secondary },
-  labelDanger: { color: Colors.danger },
 });

@@ -23,7 +23,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -131,32 +130,6 @@ export default function MenuTab() {
     }
   }
 
-  async function toggleAvailability(itemId: string, available: boolean) {
-    setCatalog((prev) => {
-      if (!prev) return prev;
-      return {
-        categories: prev.categories.map((cat) => ({
-          ...cat,
-          items: cat.items.map((item) =>
-            item.id === itemId ? { ...item, available } : item,
-          ),
-        })),
-      };
-    });
-    try {
-      await apiFetch(`/api/menu/items/${itemId}/availability`, {
-        method: "PATCH",
-        body: JSON.stringify({ available }),
-      });
-    } catch (e) {
-      await load();
-      Alert.alert(
-        "Could not update",
-        e instanceof Error ? e.message : "Try again.",
-      );
-    }
-  }
-
   return (
     <SafeScreen>
       <ScrollView
@@ -231,28 +204,12 @@ export default function MenuTab() {
                     <Card style={styles.row}>
                       <ItemThumb uri={item.imageUrl} size={56} />
                       <View style={styles.rowCopy}>
-                        <Text style={KType.bodyStrong}>{item.name}</Text>
-                        <Text style={KType.meta} numberOfLines={2}>
-                          {item.available ? "Available" : "Sold out"}
-                          {item.description ? ` · ${item.description}` : ""}
+                        <Text style={KType.bodyStrong} numberOfLines={2}>
+                          {item.name}
                         </Text>
                         <Text style={KType.numeric}>
                           {formatCadFromCents(item.priceCents)}
                         </Text>
-                      </View>
-                      <View
-                        style={styles.switchCol}
-                        onStartShouldSetResponder={() => true}
-                      >
-                        <Text style={KType.meta}>
-                          {item.available ? "On" : "Off"}
-                        </Text>
-                        <Switch
-                          value={item.available}
-                          onValueChange={(next) =>
-                            void toggleAvailability(item.id, next)
-                          }
-                        />
                       </View>
                     </Card>
                   </Pressable>
@@ -336,7 +293,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowCopy: { flex: 1, gap: 2 },
-  switchCol: { alignItems: "center", gap: 4 },
   error: { ...KType.metaStrong, color: Colors.danger },
   empty: { ...KType.meta, textAlign: "center", marginTop: 24 },
   modalBackdrop: {

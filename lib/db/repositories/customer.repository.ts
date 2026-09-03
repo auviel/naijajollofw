@@ -537,6 +537,103 @@ export const customerRepository = {
     return existing;
   },
 
+  async createPhone(
+    storeId: string,
+    customerId: string,
+    data: {
+      phoneE164: string;
+      label?: string | null;
+      isPrimary?: boolean;
+    },
+  ) {
+    const customer = await this.findByIdAndStoreId(customerId, storeId);
+    if (!customer) {
+      throw new Error(`Customer not found: ${customerId}`);
+    }
+
+    const makePrimary = Boolean(data.isPrimary);
+    return prisma.$transaction(async (tx) => {
+      if (makePrimary) {
+        await tx.customerPhone.updateMany({
+          where: { customerId, isPrimary: true },
+          data: { isPrimary: false },
+        });
+      }
+      const count = await tx.customerPhone.count({ where: { customerId } });
+      return tx.customerPhone.create({
+        data: {
+          storeId,
+          customerId,
+          phoneE164: data.phoneE164,
+          label: data.label ?? null,
+          isPrimary: makePrimary || count === 0,
+        },
+      });
+    });
+  },
+
+  async updatePhone(
+    storeId: string,
+    customerId: string,
+    id: string,
+    data: {
+      phoneE164?: string;
+      label?: string | null;
+      isPrimary?: boolean;
+    },
+  ) {
+    const customer = await this.findByIdAndStoreId(customerId, storeId);
+    if (!customer) {
+      throw new Error(`Customer not found: ${customerId}`);
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.customerPhone.findFirst({
+        where: { id, customerId, storeId },
+      });
+      if (!existing) {
+        return null;
+      }
+      if (data.isPrimary) {
+        await tx.customerPhone.updateMany({
+          where: { customerId, isPrimary: true, NOT: { id } },
+          data: { isPrimary: false },
+        });
+      }
+      return tx.customerPhone.update({
+        where: { id },
+        data: {
+          ...(data.phoneE164 !== undefined ? { phoneE164: data.phoneE164 } : {}),
+          ...(data.label !== undefined ? { label: data.label } : {}),
+          ...(data.isPrimary !== undefined ? { isPrimary: data.isPrimary } : {}),
+        },
+      });
+    });
+  },
+
+  async deletePhone(storeId: string, customerId: string, id: string) {
+    const existing = await prisma.customerPhone.findFirst({
+      where: { id, customerId, storeId },
+    });
+    if (!existing) {
+      return null;
+    }
+    await prisma.customerPhone.delete({ where: { id } });
+    if (existing.isPrimary) {
+      const next = await prisma.customerPhone.findFirst({
+        where: { customerId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (next) {
+        await prisma.customerPhone.update({
+          where: { id: next.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
+    return existing;
+  },
+
   async deleteByIdAndStoreId(id: string, storeId: string): Promise<void> {
     const existing = await this.findByIdAndStoreId(id, storeId);
     if (!existing) {

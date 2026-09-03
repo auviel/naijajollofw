@@ -1,5 +1,6 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { MapsLink, TelLink } from "@/components/kitchen/contact-links";
+import { IconBtn } from "@/components/kitchen/icon-btn";
 import { apiFetch } from "@/lib/api";
 import { KType } from "@/lib/kitchen/typography";
 import {
@@ -20,21 +21,25 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+type PhoneRow = {
+  id: string;
+  phoneE164: string;
+  label: string | null;
+  isPrimary: boolean;
+};
+
+type AddressRow = {
+  id: string;
+  formatted: string;
+  isPrimary: boolean;
+};
+
 type CustomerDetailPayload = {
   id: string;
   name: string;
   notes: string | null;
-  phones: Array<{
-    id: string;
-    phoneE164: string;
-    label: string | null;
-    isPrimary: boolean;
-  }>;
-  addresses: Array<{
-    id: string;
-    formatted: string;
-    isPrimary: boolean;
-  }>;
+  phones: PhoneRow[];
+  addresses: AddressRow[];
   orderCount: number;
   deliveryCount: number;
   recentOrders: StaffOrderListItem[];
@@ -68,6 +73,20 @@ export default function CustomerDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [contactBusy, setContactBusy] = useState(false);
+
+  const [phoneDraftId, setPhoneDraftId] = useState<string | "new" | null>(null);
+  const [phoneDraft, setPhoneDraft] = useState("");
+  const [addressDraftId, setAddressDraftId] = useState<string | "new" | null>(
+    null,
+  );
+  const [addressDraft, setAddressDraft] = useState("");
+
+  const applyCustomer = useCallback((data: CustomerDetailPayload) => {
+    setCustomer(data);
+    setName(data.name);
+    setNotes(data.notes ?? "");
+  }, []);
 
   const load = useCallback(async () => {
     if (!id || typeof id !== "string") return;
@@ -75,14 +94,12 @@ export default function CustomerDetailScreen() {
       const data = await apiFetch<CustomerDetailPayload>(
         `/api/customers/${id}`,
       );
-      setCustomer(data);
-      setName(data.name);
-      setNotes(data.notes ?? "");
+      applyCustomer(data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load customer");
     }
-  }, [id]);
+  }, [applyCustomer, id]);
 
   useEffect(() => {
     void load();
@@ -117,23 +134,25 @@ export default function CustomerDetailScreen() {
           }),
         },
       );
-      setCustomer((prev) =>
-        prev
-          ? {
-              ...prev,
-              name: updated.name,
-              notes: updated.notes,
-            }
-          : prev,
-      );
-      setName(updated.name);
-      setNotes(updated.notes ?? "");
+      applyCustomer({
+        ...customer,
+        name: updated.name,
+        notes: updated.notes,
+      });
       setEditing(false);
+      clearContactDrafts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save");
     } finally {
       setSaving(false);
     }
+  }
+
+  function clearContactDrafts() {
+    setPhoneDraftId(null);
+    setPhoneDraft("");
+    setAddressDraftId(null);
+    setAddressDraft("");
   }
 
   function cancelEdit() {
@@ -142,6 +161,7 @@ export default function CustomerDetailScreen() {
     setNotes(customer.notes ?? "");
     setError(null);
     setEditing(false);
+    clearContactDrafts();
   }
 
   function startEdit() {
@@ -179,6 +199,134 @@ export default function CustomerDetailScreen() {
     }
   }
 
+  async function refreshFromContactMutation(
+    path: string,
+    init: RequestInit,
+  ) {
+    if (!customer) return;
+    setContactBusy(true);
+    setError(null);
+    try {
+      const updated = await apiFetch<CustomerDetailPayload>(path, init);
+      applyCustomer({
+        ...updated,
+        recentOrders: customer.recentOrders,
+        orderCount: customer.orderCount,
+        deliveryCount: customer.deliveryCount,
+      });
+      clearContactDrafts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update contact");
+    } finally {
+      setContactBusy(false);
+    }
+  }
+
+  function startAddPhone() {
+    setPhoneDraftId("new");
+    setPhoneDraft("");
+  }
+
+  function startEditPhone(phone: PhoneRow) {
+    setPhoneDraftId(phone.id);
+    setPhoneDraft(formatPhone(phone.phoneE164));
+  }
+
+  async function commitPhoneDraft() {
+    if (!customer || !phoneDraft.trim()) {
+      setError("Enter a phone number.");
+      return;
+    }
+    if (phoneDraftId === "new") {
+      await refreshFromContactMutation(`/api/customers/${customer.id}/phones`, {
+        method: "POST",
+        body: JSON.stringify({ phone: phoneDraft.trim() }),
+      });
+      return;
+    }
+    if (phoneDraftId) {
+      await refreshFromContactMutation(
+        `/api/customers/${customer.id}/phones/${phoneDraftId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ phone: phoneDraft.trim() }),
+        },
+      );
+    }
+  }
+
+  function confirmDeletePhone(phone: PhoneRow) {
+    if (!customer) return;
+    if (customer.phones.length <= 1) {
+      setError("Keep at least one phone on the customer.");
+      return;
+    }
+    Alert.alert("Remove phone?", formatPhone(phone.phoneE164), [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () =>
+          void refreshFromContactMutation(
+            `/api/customers/${customer.id}/phones/${phone.id}`,
+            { method: "DELETE" },
+          ),
+      },
+    ]);
+  }
+
+  function startAddAddress() {
+    setAddressDraftId("new");
+    setAddressDraft("");
+  }
+
+  function startEditAddress(address: AddressRow) {
+    setAddressDraftId(address.id);
+    setAddressDraft(address.formatted);
+  }
+
+  async function commitAddressDraft() {
+    if (!customer || !addressDraft.trim()) {
+      setError("Enter an address.");
+      return;
+    }
+    if (addressDraftId === "new") {
+      await refreshFromContactMutation(
+        `/api/customers/${customer.id}/addresses`,
+        {
+          method: "POST",
+          body: JSON.stringify({ address: addressDraft.trim() }),
+        },
+      );
+      return;
+    }
+    if (addressDraftId) {
+      await refreshFromContactMutation(
+        `/api/customers/${customer.id}/addresses/${addressDraftId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ address: addressDraft.trim() }),
+        },
+      );
+    }
+  }
+
+  function confirmDeleteAddress(address: AddressRow) {
+    if (!customer) return;
+    Alert.alert("Remove address?", address.formatted, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () =>
+          void refreshFromContactMutation(
+            `/api/customers/${customer.id}/addresses/${address.id}`,
+            { method: "DELETE" },
+          ),
+      },
+    ]);
+  }
+
   if (!customer && !error) {
     return (
       <Screen>
@@ -206,29 +354,21 @@ export default function CustomerDetailScreen() {
           <View style={styles.cardHead}>
             <Text style={KType.kicker}>Profile</Text>
             {editing ? (
-              <Pressable
+              <IconBtn
+                name="close"
+                color={Colors.text}
+                label="Cancel editing"
                 onPress={cancelEdit}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel="Cancel editing"
-                style={styles.editBtn}
-              >
-                <Ionicons name="close" size={18} color={Colors.text} />
-              </Pressable>
+                soft
+              />
             ) : (
-              <Pressable
+              <IconBtn
+                name="create-outline"
+                color={Colors.accent}
+                label="Edit profile"
                 onPress={startEdit}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel="Edit profile"
-                style={styles.editBtn}
-              >
-                <Ionicons
-                  name="create-outline"
-                  size={18}
-                  color={Colors.accent}
-                />
-              </Pressable>
+                soft
+              />
             )}
           </View>
 
@@ -259,33 +399,216 @@ export default function CustomerDetailScreen() {
           )}
 
           <View style={styles.divider} />
-          <Text style={KType.kicker}>Phones</Text>
-          {customer.phones.length === 0 ? (
+          <View style={styles.sectionHead}>
+            <Text style={KType.kicker}>Phones</Text>
+            {editing ? (
+              <IconBtn
+                name="add"
+                color={Colors.accent}
+                label="Add phone"
+                onPress={startAddPhone}
+                soft
+              />
+            ) : null}
+          </View>
+
+          {customer.phones.length === 0 && phoneDraftId !== "new" ? (
             <Text style={KType.meta}>None on file</Text>
           ) : (
-            customer.phones.map((phone) => (
-              <TelLink
-                key={phone.id}
-                phone={phone.phoneE164}
-                label={`${formatPhone(phone.phoneE164)}${phone.isPrimary ? " · primary" : ""}`}
-              />
-            ))
+            customer.phones.map((phone) =>
+              editing && phoneDraftId === phone.id ? (
+                <View key={phone.id} style={styles.draftRow}>
+                  <Field
+                    value={phoneDraft}
+                    onChangeText={setPhoneDraft}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    style={styles.draftField}
+                  />
+                  <IconBtn
+                    name="checkmark"
+                    color={Colors.accent}
+                    label="Save phone"
+                    onPress={() => void commitPhoneDraft()}
+                    soft
+                  />
+                  <IconBtn
+                    name="close"
+                    color={Colors.textSecondary}
+                    label="Cancel"
+                    onPress={clearContactDrafts}
+                    soft
+                  />
+                </View>
+              ) : (
+                <View key={phone.id} style={styles.lineRow}>
+                  <View style={styles.lineBody}>
+                    {editing ? (
+                      <Text style={KType.body}>
+                        {formatPhone(phone.phoneE164)}
+                        {phone.isPrimary ? " · primary" : ""}
+                      </Text>
+                    ) : (
+                      <TelLink
+                        phone={phone.phoneE164}
+                        label={`${formatPhone(phone.phoneE164)}${phone.isPrimary ? " · primary" : ""}`}
+                      />
+                    )}
+                  </View>
+                  {editing ? (
+                    <View style={styles.lineActions}>
+                      <IconBtn
+                        name="create-outline"
+                        color={Colors.text}
+                        label="Edit phone"
+                        onPress={() => startEditPhone(phone)}
+                      />
+                      <IconBtn
+                        name="trash-outline"
+                        color={Colors.danger}
+                        label="Delete phone"
+                        onPress={() => confirmDeletePhone(phone)}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              ),
+            )
           )}
 
+          {editing && phoneDraftId === "new" ? (
+            <View style={styles.draftRow}>
+              <Field
+                value={phoneDraft}
+                onChangeText={setPhoneDraft}
+                placeholder="(519) 555-0100"
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                style={styles.draftField}
+              />
+              <IconBtn
+                name="checkmark"
+                color={Colors.accent}
+                label="Add phone"
+                onPress={() => void commitPhoneDraft()}
+                soft
+              />
+              <IconBtn
+                name="close"
+                color={Colors.textSecondary}
+                label="Cancel"
+                onPress={clearContactDrafts}
+                soft
+              />
+            </View>
+          ) : null}
+
           <View style={styles.divider} />
-          <Text style={KType.kicker}>Addresses</Text>
-          {customer.addresses.length === 0 ? (
+          <View style={styles.sectionHead}>
+            <Text style={KType.kicker}>Addresses</Text>
+            {editing ? (
+              <IconBtn
+                name="add"
+                color={Colors.accent}
+                label="Add address"
+                onPress={startAddAddress}
+                soft
+              />
+            ) : null}
+          </View>
+
+          {customer.addresses.length === 0 && addressDraftId !== "new" ? (
             <Text style={KType.meta}>None on file</Text>
           ) : (
-            customer.addresses.map((address) => (
-              <View key={address.id} style={{ gap: 2 }}>
-                <MapsLink address={address.formatted} />
-                {address.isPrimary ? (
-                  <Text style={KType.meta}>Primary</Text>
-                ) : null}
-              </View>
-            ))
+            customer.addresses.map((address) =>
+              editing && addressDraftId === address.id ? (
+                <View key={address.id} style={styles.draftRow}>
+                  <Field
+                    value={addressDraft}
+                    onChangeText={setAddressDraft}
+                    autoCapitalize="words"
+                    style={styles.draftField}
+                  />
+                  <IconBtn
+                    name="checkmark"
+                    color={Colors.accent}
+                    label="Save address"
+                    onPress={() => void commitAddressDraft()}
+                    soft
+                  />
+                  <IconBtn
+                    name="close"
+                    color={Colors.textSecondary}
+                    label="Cancel"
+                    onPress={clearContactDrafts}
+                    soft
+                  />
+                </View>
+              ) : (
+                <View key={address.id} style={styles.lineRow}>
+                  <View style={styles.lineBody}>
+                    {editing ? (
+                      <>
+                        <Text style={KType.body}>{address.formatted}</Text>
+                        {address.isPrimary ? (
+                          <Text style={KType.meta}>Primary</Text>
+                        ) : null}
+                      </>
+                    ) : (
+                      <View style={{ gap: 2 }}>
+                        <MapsLink address={address.formatted} />
+                        {address.isPrimary ? (
+                          <Text style={KType.meta}>Primary</Text>
+                        ) : null}
+                      </View>
+                    )}
+                  </View>
+                  {editing ? (
+                    <View style={styles.lineActions}>
+                      <IconBtn
+                        name="create-outline"
+                        color={Colors.text}
+                        label="Edit address"
+                        onPress={() => startEditAddress(address)}
+                      />
+                      <IconBtn
+                        name="trash-outline"
+                        color={Colors.danger}
+                        label="Delete address"
+                        onPress={() => confirmDeleteAddress(address)}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              ),
+            )
           )}
+
+          {editing && addressDraftId === "new" ? (
+            <View style={styles.draftRow}>
+              <Field
+                value={addressDraft}
+                onChangeText={setAddressDraft}
+                placeholder="Street, city, postal"
+                autoCapitalize="words"
+                style={styles.draftField}
+              />
+              <IconBtn
+                name="checkmark"
+                color={Colors.accent}
+                label="Add address"
+                onPress={() => void commitAddressDraft()}
+                soft
+              />
+              <IconBtn
+                name="close"
+                color={Colors.textSecondary}
+                label="Cancel"
+                onPress={clearContactDrafts}
+                soft
+              />
+            </View>
+          ) : null}
         </Card>
 
         <View style={styles.past}>
@@ -331,7 +654,7 @@ export default function CustomerDetailScreen() {
           label={deleting ? "Deleting…" : "Delete customer"}
           variant="danger"
           onPress={confirmDelete}
-          disabled={deleting || saving}
+          disabled={deleting || saving || contactBusy}
           icon={
             <Ionicons name="trash-outline" size={18} color={Colors.danger} />
           }
@@ -348,7 +671,7 @@ export default function CustomerDetailScreen() {
           <Button
             label={saving ? "Saving…" : "Save changes"}
             onPress={() => void onSave()}
-            disabled={saving}
+            disabled={saving || contactBusy}
           />
         </View>
       ) : null}
@@ -364,13 +687,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
-  editBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  sectionHead: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.secondarySoft,
+    justifyContent: "space-between",
+    gap: 12,
   },
   infoBlock: { gap: 4 },
   label: { ...KType.metaStrong, marginTop: 4 },
@@ -380,6 +701,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginVertical: 6,
   },
+  lineRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  lineBody: { flex: 1, gap: 2 },
+  lineActions: { flexDirection: "row", gap: 2 },
+  draftRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  draftField: { flex: 1 },
   past: { gap: 10, marginTop: 4 },
   orderList: { gap: 8 },
   orderRow: { gap: 4 },

@@ -10,14 +10,13 @@ import type {
   KitchenMenuItemDetail,
 } from "@/lib/kitchen/menu-types";
 import { Screen, Skeleton } from "@naijajollof/ui";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text } from "react-native";
 import { KType } from "@/lib/kitchen/typography";
 import { Colors } from "@naijajollof/ui";
 
 export default function EditMenuItemScreen() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<KitchenMenuItemDetail | null>(null);
   const [categories, setCategories] = useState<
@@ -84,6 +83,7 @@ export default function EditMenuItemScreen() {
           submitLabel="Save"
           busy={busy}
           error={error}
+          viewEdit
           onSubmit={(values) => {
             setBusy(true);
             setError(null);
@@ -99,7 +99,11 @@ export default function EditMenuItemScreen() {
                     available: values.available,
                   }),
                 });
-                router.back();
+                const refreshed = await apiFetch<KitchenMenuItemDetail>(
+                  `/api/menu/items/${item.id}`,
+                );
+                setItem(refreshed);
+                setImages(refreshed.images ?? []);
               } catch (e) {
                 setError(
                   e instanceof Error ? e.message : "Could not save item.",
