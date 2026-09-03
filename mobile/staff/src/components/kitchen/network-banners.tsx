@@ -1,6 +1,6 @@
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useEffect, useState } from "react";
 
@@ -17,18 +17,6 @@ export function OfflineBanner() {
       color: c.inverse,
       textAlign: "center" as const,
     },
-    tip: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      gap: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      backgroundColor: c.surface,
-      borderBottomWidth: 1 / 2,
-      borderBottomColor: c.border,
-    },
-    tipText: { ...KType.meta, flex: 1 },
-    dismiss: { ...KType.metaStrong, color: c.accent },
   }));
 
   useEffect(() => {
@@ -64,7 +52,7 @@ export function SessionTipBanner({
       paddingHorizontal: 16,
       paddingVertical: 10,
       backgroundColor: c.surface,
-      borderBottomWidth: 1 / 2,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
     tipText: { ...KType.meta, flex: 1 },

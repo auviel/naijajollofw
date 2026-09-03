@@ -125,16 +125,9 @@ export function TicketCard({
         style={styles.body}
       >
         <View style={styles.top}>
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation?.();
-            }}
-            onLongPress={() => void copyTicket()}
-            delayLongPress={250}
-            hitSlop={6}
-          >
-            <Text style={KType.ticket}>{ticket}</Text>
-          </Pressable>
+          <Text style={[KType.bodyStrong, { flex: 1 }]} numberOfLines={1}>
+            {order.customerName}
+          </Text>
           <View style={styles.topRight}>
             {wait ? <Text style={KType.wait}>{wait}</Text> : null}
             <Text style={KType.numeric}>
@@ -163,7 +156,6 @@ export function TicketCard({
             <ItemThumb uri={null} size={44} />
           )}
           <View style={styles.midCopy}>
-            <Text style={KType.bodyStrong}>{order.customerName}</Text>
             <Text style={KType.meta} numberOfLines={2}>
               {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
               {order.scheduledFor

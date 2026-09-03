@@ -86,7 +86,9 @@ export function KitchenThemeProvider({
 
   return (
     <ThemeContext.Provider value={value}>
-      <UiThemeProvider colors={colors}>{children}</UiThemeProvider>
+      <UiThemeProvider colors={colors} scheme={resolved}>
+        {children}
+      </UiThemeProvider>
     </ThemeContext.Provider>
   );
 }
@@ -101,7 +103,8 @@ export function useKitchenTheme() {
 
 export function applyAppearanceToOS(appearance: AppearancePref) {
   if (appearance === "system") {
-    Appearance.setColorScheme(null);
+    // RN accepts null to clear a forced scheme; typings lag behind.
+    Appearance.setColorScheme(null as unknown as "light");
     return;
   }
   Appearance.setColorScheme(appearance);

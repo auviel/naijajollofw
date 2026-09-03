@@ -3,14 +3,11 @@ import { ItemThumb } from "@/components/kitchen/item-thumb";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
 import { apiFetch } from "@/lib/api";
 import type { KitchenMenuCatalog } from "@/lib/kitchen/menu-types";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { formatCadFromCents } from "@naijajollof/api-types";
-import {
-  Card,
-  Colors,
-  KitchenCustomersSkeleton,
-  Radii,
-} from "@naijajollof/ui";
+import { Card, KitchenCustomersSkeleton, Radii } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -30,6 +27,65 @@ import {
 
 export default function MenuTab() {
   const router = useRouter();
+  const { colors } = useKitchenTheme();
+  const styles = useThemedStyles((c) => ({
+    content: { padding: 20, paddingBottom: 100, gap: 12 },
+    topRow: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 8,
+    },
+    addBtn: { padding: 4 },
+    chips: { gap: 8, paddingVertical: 2 },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: Radii.sm,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
+    chipSelected: {
+      backgroundColor: c.accentSoft,
+    },
+    chipLabel: { ...KType.meta },
+    chipLabelSelected: { ...KType.metaStrong, color: c.accent },
+    list: { gap: 10 },
+    row: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 12,
+    },
+    rowCopy: { flex: 1, gap: 2 },
+    error: { ...KType.metaStrong, color: c.danger },
+    empty: { ...KType.meta, textAlign: "center" as const, marginTop: 24 },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(24,24,27,0.4)",
+      justifyContent: "center" as const,
+      padding: 24,
+    },
+    modalCard: {
+      backgroundColor: c.surface,
+      borderRadius: Radii.md,
+      padding: 20,
+      gap: 14,
+    },
+    modalInput: {
+      minHeight: 48,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      borderRadius: Radii.sm,
+      paddingHorizontal: 14,
+      fontSize: 16,
+      color: c.text,
+    },
+    modalActions: {
+      flexDirection: "row" as const,
+      justifyContent: "flex-end" as const,
+      gap: 20,
+    },
+  }));
   const [catalog, setCatalog] = useState<KitchenMenuCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,7 +210,7 @@ export default function MenuTab() {
             accessibilityLabel="Add menu item or category"
             style={styles.addBtn}
           >
-            <Ionicons name="add" size={24} color={Colors.text} />
+            <Ionicons name="add" size={24} color={colors.text} />
           </Pressable>
           <KitchenHeaderActions />
         </View>
@@ -240,7 +296,7 @@ export default function MenuTab() {
               value={newCategoryName}
               onChangeText={setNewCategoryName}
               placeholder="Category name"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               autoFocus
               maxLength={80}
             />
@@ -252,7 +308,7 @@ export default function MenuTab() {
                 onPress={() => void createCategory()}
                 disabled={creatingCategory || !newCategoryName.trim()}
               >
-                <Text style={[KType.metaStrong, { color: Colors.accent }]}>
+                <Text style={[KType.metaStrong, { color: colors.accent }]}>
                   {creatingCategory ? "Creating…" : "Create"}
                 </Text>
               </Pressable>
@@ -263,62 +319,3 @@ export default function MenuTab() {
     </SafeScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { padding: 20, paddingBottom: 100, gap: 12 },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  addBtn: { padding: 4 },
-  chips: { gap: 8, paddingVertical: 2 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radii.sm,
-    backgroundColor: Colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-  },
-  chipSelected: {
-    backgroundColor: Colors.accentSoft,
-  },
-  chipLabel: { ...KType.meta },
-  chipLabelSelected: { ...KType.metaStrong, color: Colors.accent },
-  list: { gap: 10 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  rowCopy: { flex: 1, gap: 2 },
-  error: { ...KType.metaStrong, color: Colors.danger },
-  empty: { ...KType.meta, textAlign: "center", marginTop: 24 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(24,24,27,0.4)",
-    justifyContent: "center",
-    padding: 24,
-  },
-  modalCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radii.md,
-    padding: 20,
-    gap: 14,
-  },
-  modalInput: {
-    minHeight: 48,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    borderRadius: Radii.sm,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    color: Colors.text,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 20,
-  },
-});

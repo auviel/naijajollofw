@@ -1,6 +1,6 @@
 import { useInboxUnread } from "@/lib/kitchen/inbox-unread";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Colors } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback } from "react";
@@ -12,6 +12,7 @@ export function KitchenHeaderActions({
   showAllOrders?: boolean;
 }) {
   const router = useRouter();
+  const { colors } = useKitchenTheme();
   const { count, refresh } = useInboxUnread();
 
   useFocusEffect(
@@ -30,9 +31,9 @@ export function KitchenHeaderActions({
           accessibilityLabel="All orders"
           style={styles.linkBtn}
         >
-          <Ionicons name="list-outline" size={14} color={Colors.accent} />
-          <Text style={styles.link}>All orders</Text>
-          <Ionicons name="chevron-forward" size={12} color={Colors.accent} />
+          <Ionicons name="list-outline" size={14} color={colors.accent} />
+          <Text style={[styles.link, { color: colors.accent }]}>All orders</Text>
+          <Ionicons name="chevron-forward" size={12} color={colors.accent} />
         </Pressable>
       ) : null}
       <Pressable
@@ -47,9 +48,11 @@ export function KitchenHeaderActions({
         <Ionicons
           name={count > 0 ? "notifications" : "notifications-outline"}
           size={22}
-          color={Colors.text}
+          color={colors.text}
         />
-        {count > 0 ? <View style={styles.dot} /> : null}
+        {count > 0 ? (
+          <View style={[styles.dot, { backgroundColor: colors.accent }]} />
+        ) : null}
       </Pressable>
     </View>
   );
@@ -58,7 +61,7 @@ export function KitchenHeaderActions({
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 14 },
   linkBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  link: { ...KType.metaStrong, color: Colors.accent },
+  link: { ...KType.metaStrong },
   bellWrap: { position: "relative", padding: 4 },
   dot: {
     position: "absolute",
@@ -67,6 +70,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.accent,
   },
 });

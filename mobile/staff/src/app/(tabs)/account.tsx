@@ -1,8 +1,10 @@
 import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { useAuth } from "@/lib/auth";
-import { Button, Card, Colors } from "@naijajollof/ui";
+import { Button, Card } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -16,13 +18,14 @@ function Row({
   value?: string;
   onPress: () => void;
 }) {
+  const { colors } = useKitchenTheme();
   return (
     <Pressable onPress={onPress} style={styles.row} accessibilityRole="button">
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={KType.bodyStrong}>{label}</Text>
         {value ? <Text style={KType.meta}>{value}</Text> : null}
       </View>
-      <Text style={styles.chevron}>›</Text>
+      <Text style={[styles.chevron, { color: colors.textSecondary }]}>›</Text>
     </Pressable>
   );
 }
@@ -30,6 +33,13 @@ function Row({
 export default function AccountScreen() {
   const { user, store, signOut } = useAuth();
   const router = useRouter();
+  const { colors } = useKitchenTheme();
+  const themed = useThemedStyles((c) => ({
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+  }));
 
   return (
     <SafeScreen>
@@ -45,13 +55,13 @@ export default function AccountScreen() {
             value={user?.name}
             onPress={() => router.push("/account/you")}
           />
-          <View style={styles.divider} />
+          <View style={themed.divider} />
           <Row
             label="Store"
             value={store?.name ?? user?.storeName}
             onPress={() => router.push("/account/store")}
           />
-          <View style={styles.divider} />
+          <View style={themed.divider} />
           <Row
             label="Preferences"
             value="Notifications · Appearance"
@@ -61,7 +71,9 @@ export default function AccountScreen() {
 
         <Button
           variant="danger"
-          icon={<Ionicons name="log-out-outline" size={18} color={Colors.danger} />}
+          icon={
+            <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+          }
           label="Sign out"
           onPress={() => void signOut()}
         />
@@ -85,13 +97,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 4,
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
-  },
   chevron: {
     ...KType.section,
-    color: Colors.textSecondary,
     fontWeight: "400",
   },
 });

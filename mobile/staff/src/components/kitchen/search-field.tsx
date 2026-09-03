@@ -1,6 +1,6 @@
 import { Radii, Touch } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
@@ -24,7 +24,7 @@ export function SearchField({
       gap: 10,
       paddingHorizontal: 14,
       borderRadius: Radii.sm,
-      borderWidth: 1 / 2,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
       backgroundColor: c.surface,
     },

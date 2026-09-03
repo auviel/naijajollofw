@@ -1,6 +1,11 @@
 import { apiFetch } from "@/lib/api";
+import { syncStaffPushIfGranted } from "@/lib/push";
 import { clearTokens, loadTokens, saveTokens } from "@/lib/storage";
-import type { StaffMePayload, StaffStoreProfile, StaffUser } from "@/lib/kitchen/staff-me";
+import type {
+  StaffMePayload,
+  StaffStoreProfile,
+  StaffUser,
+} from "@/lib/kitchen/staff-me";
 import React, {
   createContext,
   useCallback,
@@ -30,6 +35,12 @@ function normalizeUser(user: StaffUser): StaffUser {
   };
 }
 
+function queuePushSync() {
+  void syncStaffPushIfGranted().catch(() => {
+    // Preferences surfaces push errors; silent here.
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<StaffUser | null>(null);
@@ -51,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await apiFetch<StaffMePayload>("/api/me");
       applyMe(data);
+      queuePushSync();
     } catch {
       await clearTokens();
       setUser(null);
@@ -90,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // keep login payload
       }
+      queuePushSync();
     },
     [applyMe],
   );

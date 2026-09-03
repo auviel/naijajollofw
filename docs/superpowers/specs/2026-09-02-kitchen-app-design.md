@@ -88,7 +88,7 @@ Account home (scroll) → push for details:
 
 1. **You** — editable name, email, phone; role read-only (humanized). Email change sends a 6-digit OTP to the *new* address before commit; name/phone save immediately. Security: Change password (email OTP → code → new/confirm); Passkeys row **Coming soon** (not actionable).
 2. **Store** — editable name, phone, email, address (+ unit); weekly hours (closed toggle + open/close). Persists via `PATCH /api/store` and `PUT /api/store/hours`. Pull-to-refresh; skeleton while loading.
-3. **Preferences** — Notifications (sound / haptic / push / quiet); Appearance (system / light; dark later). Push toggle respects OS permission; if denied, deep-link to system Settings.  
+3. **Preferences** — Notifications (sound / haptic / push / quiet later); Appearance (system / light / dark). Push shows humanized permission status, surfaces register failures, deep-links to Settings when denied, and re-syncs the device token when permission is already granted. Dark mode themes canvas, cards, fields, buttons, and kitchen surfaces — not chrome-only.  
 4. **Sign out**
 
 Web dashboard: **Account** page mirrors You profile + password OTP (store profile/hours stay under Store / Hours).

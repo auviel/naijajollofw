@@ -77,16 +77,6 @@ function firstColumnWithWork(items: StaffOrderListItem[]): BoardColumnId {
   return "new";
 }
 
-function formatUpdatedAt(at: number | null): string {
-  if (at == null) return "";
-  const sec = Math.round((Date.now() - at) / 1000);
-  if (sec < 8) return "Updated just now";
-  if (sec < 60) return `Updated ${sec}s ago`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `Updated ${min}m ago`;
-  return "Updated earlier";
-}
-
 export function BoardScreen() {
   const router = useRouter();
   const { store } = useAuth();
@@ -100,8 +90,6 @@ export function BoardScreen() {
   );
   const [columnTouched, setColumnTouched] = useState(persisted.columnTouched);
   const [laterOpen, setLaterOpen] = useState(true);
-  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
-  const [updatedLabel, setUpdatedLabel] = useState("");
   const [showSessionTip, setShowSessionTip] = useState(false);
 
   useFocusEffect(
@@ -120,15 +108,6 @@ export function BoardScreen() {
     setPersistedBoardColumn(activeColumnId, columnTouched);
   }, [activeColumnId, columnTouched]);
 
-  useEffect(() => {
-    if (updatedAt == null) return;
-    setUpdatedLabel(formatUpdatedAt(updatedAt));
-    const id = setInterval(() => {
-      setUpdatedLabel(formatUpdatedAt(updatedAt));
-    }, 5_000);
-    return () => clearInterval(id);
-  }, [updatedAt]);
-
   const load = useCallback(async () => {
     try {
       const result = await apiFetch<ListStaffOrdersResult>(
@@ -136,7 +115,6 @@ export function BoardScreen() {
       );
       setData(result);
       setBoardPendingAcceptance(result.pendingAcceptanceCount ?? 0);
-      setUpdatedAt(Date.now());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load board");
@@ -320,9 +298,6 @@ export function BoardScreen() {
                 color={Colors.accent}
               />
             </Pressable>
-            {updatedLabel ? (
-              <Text style={styles.updated}>{updatedLabel}</Text>
-            ) : null}
           </View>
           <KitchenHeaderActions />
         </View>
@@ -442,7 +417,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   allOrders: { ...KType.metaStrong, color: Colors.accent },
-  updated: { ...KType.meta, marginTop: 2 },
   error: { ...KType.metaStrong, color: Colors.danger },
   emptyBlock: { alignItems: "center", gap: 8, marginTop: 24 },
   empty: {

@@ -4,7 +4,7 @@ import {
   applyAppearanceToOS,
   useKitchenTheme,
 } from "@/lib/kitchen/theme";
-import { Colors, headerScreenOptions } from "@naijajollof/ui";
+import { headerScreenOptions } from "@naijajollof/ui";
 import { isRunningInExpoGo } from "expo";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -176,15 +176,22 @@ function ThemedRoot() {
   );
 }
 
-function RootLayout() {
+function RootShell() {
+  const { colors } = useKitchenTheme();
   return (
     <GestureHandlerRootView
-      style={{ flex: 1, backgroundColor: Colors.background }}
+      style={{ flex: 1, backgroundColor: colors.background }}
     >
-      <KitchenThemeProvider>
-        <ThemedRoot />
-      </KitchenThemeProvider>
+      <ThemedRoot />
     </GestureHandlerRootView>
+  );
+}
+
+function RootLayout() {
+  return (
+    <KitchenThemeProvider>
+      <RootShell />
+    </KitchenThemeProvider>
   );
 }
 

@@ -1,5 +1,6 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { KType } from "@/lib/kitchen/typography";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { apiFetch } from "@/lib/api";
 import {
   formatCadFromCents,
@@ -7,13 +8,7 @@ import {
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
 import { SearchField } from "@/components/kitchen/search-field";
-import {
-  Card,
-  Colors,
-  OrdersScreenSkeleton,
-  Radii,
-  Screen,
-} from "@naijajollof/ui";
+import { Card, OrdersScreenSkeleton, Radii, Screen } from "@naijajollof/ui";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -42,6 +37,48 @@ function ticketLabel(order: StaffOrderListItem): string {
 
 export default function OrdersListScreen() {
   const router = useRouter();
+  const styles = useThemedStyles((c) => ({
+    segments: {
+      flexDirection: "row" as const,
+      gap: 4,
+      padding: 4,
+      borderRadius: Radii.md,
+      backgroundColor: c.backgroundWash,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
+    segment: {
+      flex: 1,
+      minHeight: 36,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      paddingHorizontal: 6,
+      borderRadius: Radii.sm,
+    },
+    segmentSelected: {
+      backgroundColor: c.accent,
+    },
+    segmentLabel: {
+      ...KType.label,
+      fontSize: 12,
+      fontWeight: "500" as const,
+      color: c.textSecondary,
+    },
+    segmentLabelSelected: {
+      fontWeight: "600" as const,
+      color: c.inverse,
+    },
+    list: { gap: 10 },
+    row: { gap: 4 },
+    rowTop: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      gap: 12,
+    },
+    error: { ...KType.metaStrong, color: c.danger },
+    empty: { ...KType.meta, textAlign: "center" as const, marginTop: 32 },
+  }));
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [filter, setFilter] = useState<OrderFilter>("active");
@@ -159,46 +196,3 @@ export default function OrdersListScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  segments: {
-    flexDirection: "row",
-    gap: 4,
-    padding: 4,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.backgroundWash,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-  },
-  segment: {
-    flex: 1,
-    minHeight: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-    borderRadius: Radii.sm,
-  },
-  segmentSelected: {
-    backgroundColor: Colors.accent,
-  },
-  segmentLabel: {
-    ...KType.label,
-    fontSize: 12,
-    fontWeight: "500",
-    color: Colors.textSecondary,
-  },
-  segmentLabelSelected: {
-    fontWeight: "600",
-    color: Colors.inverse,
-  },
-  list: { gap: 10 },
-  row: { gap: 4 },
-  rowTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  error: { ...KType.metaStrong, color: Colors.danger },
-  empty: { ...KType.meta, textAlign: "center", marginTop: 32 },
-});

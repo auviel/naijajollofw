@@ -1,8 +1,9 @@
-import { Colors, Radii, Shadows } from "@naijajollof/ui";
+import { Radii, Shadows } from "@naijajollof/ui";
 import {
   getBoardUnseenCount,
   subscribeBoardAttention,
 } from "@/lib/kitchen/board-attention";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { Tabs } from "expo-router";
@@ -11,7 +12,10 @@ import { Platform, View } from "react-native";
 
 function useBoardBadge() {
   const [count, setCount] = useState(getBoardUnseenCount());
-  useEffect(() => subscribeBoardAttention(() => setCount(getBoardUnseenCount())), []);
+  useEffect(
+    () => subscribeBoardAttention(() => setCount(getBoardUnseenCount())),
+    [],
+  );
   return count;
 }
 
@@ -25,6 +29,7 @@ function BoardTabIcon({
   focused?: boolean;
 }) {
   const badge = useBoardBadge();
+  const { colors } = useKitchenTheme();
   return (
     <View>
       <Ionicons
@@ -41,7 +46,7 @@ function BoardTabIcon({
             minWidth: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: Colors.accent,
+            backgroundColor: colors.accent,
           }}
         />
       ) : null}
@@ -51,13 +56,25 @@ function BoardTabIcon({
 
 export default function TabsLayout() {
   const badge = useBoardBadge();
+  const { colors, resolved } = useKitchenTheme();
+  const blurEffect =
+    resolved === "dark"
+      ? "systemChromeMaterialDark"
+      : "systemChromeMaterialLight";
 
   if (Platform.OS === "ios") {
     return (
       <NativeTabs
+        key={resolved}
         minimizeBehavior="onScrollDown"
-        tintColor={Colors.accent}
+        tintColor={colors.accent}
+        iconColor={{
+          default: colors.textSecondary,
+          selected: colors.accent,
+        }}
+        blurEffect={blurEffect}
         labelVisibilityMode="unlabeled"
+        badgeBackgroundColor={colors.accent}
       >
         <NativeTabs.Trigger name="index" accessibilityLabel="Board">
           <NativeTabs.Trigger.Label hidden>Board</NativeTabs.Trigger.Label>
@@ -104,10 +121,11 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      key={resolved}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarShowLabel: false,
         tabBarStyle: {
           position: "absolute",
@@ -116,12 +134,12 @@ export default function TabsLayout() {
           bottom: 16,
           height: 60,
           borderRadius: Radii.lg,
-          backgroundColor: Colors.surface,
+          backgroundColor: colors.surface,
           borderTopWidth: 0,
           ...Shadows.float,
         },
         tabBarItemStyle: { paddingVertical: 8 },
-        sceneStyle: { backgroundColor: Colors.background },
+        sceneStyle: { backgroundColor: colors.background },
       }}
     >
       <Tabs.Screen

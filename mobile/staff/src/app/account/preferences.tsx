@@ -4,11 +4,19 @@ import {
   type AppearancePref,
   useKitchenTheme,
 } from "@/lib/kitchen/theme";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { kvGet, kvSet } from "@/lib/kv";
-import { registerStaffPushDevice } from "@/lib/push";
-import { Button, Card, Colors, Screen } from "@naijajollof/ui";
+import {
+  getStaffPushPermissionStatus,
+  humanizePushStatus,
+  registerStaffPushDevice,
+  type PushPermissionStatus,
+} from "@/lib/push";
+import { Button, Card, Screen } from "@naijajollof/ui";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  AppState,
   Linking,
   Pressable,
   StyleSheet,
@@ -16,27 +24,83 @@ import {
   Text,
   View,
 } from "react-native";
-import * as Notifications from "expo-notifications";
 
 const KEY_SOUND = "kitchen.pref.sound";
 const KEY_HAPTIC = "kitchen.pref.haptic";
 
 export default function AccountPreferencesScreen() {
-  const { appearance, setAppearance } = useKitchenTheme();
+  const { appearance, setAppearance, colors } = useKitchenTheme();
+  const styles = useThemedStyles((c) => ({
+    card: { paddingVertical: 4, gap: 0 },
+    row: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "space-between" as const,
+      paddingVertical: 12,
+      paddingHorizontal: 4,
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+    pushBlock: { gap: 8, paddingVertical: 12, paddingHorizontal: 4 },
+    sectionGap: { marginTop: 12 },
+    check: { ...KType.bodyStrong, color: c.accent },
+    checkMuted: { ...KType.body, color: c.textSecondary, minWidth: 16 },
+  }));
+
   const [sound, setSound] = useState(true);
   const [haptic, setHaptic] = useState(true);
-  const [pushStatus, setPushStatus] = useState<string>("unknown");
+  const [pushStatus, setPushStatus] =
+    useState<PushPermissionStatus>("unknown");
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
+  const [pushRegistered, setPushRegistered] = useState(false);
+
+  const refreshPushStatus = useCallback(async () => {
+    const status = await getStaffPushPermissionStatus();
+    setPushStatus(status);
+    return status;
+  }, []);
+
+  const syncPushIfAllowed = useCallback(async () => {
+    const status = await refreshPushStatus();
+    if (status !== "granted") {
+      setPushRegistered(false);
+      return;
+    }
+    const result = await registerStaffPushDevice();
+    setPushStatus(result.status);
+    if (result.ok) {
+      setPushRegistered(true);
+      setPushMessage(null);
+    } else {
+      setPushRegistered(false);
+      setPushMessage(result.message);
+    }
+  }, [refreshPushStatus]);
 
   useEffect(() => {
     void (async () => {
       const [s, h] = await Promise.all([kvGet(KEY_SOUND), kvGet(KEY_HAPTIC)]);
       if (s != null) setSound(s === "1");
       if (h != null) setHaptic(h === "1");
-      const perm = await Notifications.getPermissionsAsync();
-      setPushStatus(perm.status);
+      await syncPushIfAllowed();
     })();
-  }, []);
+  }, [syncPushIfAllowed]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void syncPushIfAllowed();
+    }, [syncPushIfAllowed]),
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") void syncPushIfAllowed();
+    });
+    return () => sub.remove();
+  }, [syncPushIfAllowed]);
 
   const toggleSound = useCallback((value: boolean) => {
     setSound(value);
@@ -50,10 +114,17 @@ export default function AccountPreferencesScreen() {
 
   async function enablePush() {
     setPushBusy(true);
+    setPushMessage(null);
     try {
-      await registerStaffPushDevice();
-      const perm = await Notifications.getPermissionsAsync();
-      setPushStatus(perm.status);
+      const result = await registerStaffPushDevice();
+      setPushStatus(result.status);
+      if (result.ok) {
+        setPushRegistered(true);
+        setPushMessage(null);
+      } else {
+        setPushRegistered(false);
+        setPushMessage(result.message);
+      }
     } finally {
       setPushBusy(false);
     }
@@ -65,6 +136,8 @@ export default function AccountPreferencesScreen() {
     { id: "dark", label: "Dark" },
   ];
 
+  const pushOn = pushStatus === "granted" && pushRegistered;
+
   return (
     <Screen>
       <StackScroll>
@@ -72,34 +145,53 @@ export default function AccountPreferencesScreen() {
         <Card style={styles.card}>
           <View style={styles.row}>
             <Text style={KType.body}>Sound</Text>
-            <Switch value={sound} onValueChange={toggleSound} />
+            <Switch
+              value={sound}
+              onValueChange={toggleSound}
+              trackColor={{ false: colors.border, true: colors.accent }}
+            />
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={KType.body}>Haptic</Text>
-            <Switch value={haptic} onValueChange={toggleHaptic} />
+            <Switch
+              value={haptic}
+              onValueChange={toggleHaptic}
+              trackColor={{ false: colors.border, true: colors.accent }}
+            />
           </View>
           <View style={styles.divider} />
           <View style={styles.pushBlock}>
             <Text style={KType.body}>Push</Text>
-            <Text style={KType.meta}>Status · {pushStatus}</Text>
-            {pushStatus !== "granted" ? (
+            <Text style={KType.meta}>
+              Status ·{" "}
+              {pushOn ? "On for this device" : humanizePushStatus(pushStatus)}
+            </Text>
+            {pushMessage ? (
+              <Text style={[KType.meta, { color: colors.danger }]}>
+                {pushMessage}
+              </Text>
+            ) : null}
+            {pushOn ? (
+              <Text style={KType.meta}>
+                New-order alerts will arrive on this phone.
+              </Text>
+            ) : pushStatus === "denied" ? (
               <>
                 <Button
-                  disabled={pushBusy}
-                  label={pushBusy ? "Working…" : "Enable push"}
-                  onPress={() => void enablePush()}
+                  label="Open system Settings"
+                  onPress={() => void Linking.openSettings()}
                 />
-                {pushStatus === "denied" ? (
-                  <Button
-                    variant="ghost"
-                    label="Open system Settings"
-                    onPress={() => void Linking.openSettings()}
-                  />
-                ) : null}
+                <Text style={KType.meta}>
+                  Allow notifications for Kitchen, then return here.
+                </Text>
               </>
             ) : (
-              <Text style={KType.meta}>Push enabled for this device.</Text>
+              <Button
+                disabled={pushBusy}
+                label={pushBusy ? "Working…" : "Enable push"}
+                onPress={() => void enablePush()}
+              />
             )}
             <Text style={[KType.meta, { marginTop: 4 }]}>
               Quiet hours — coming later
@@ -126,32 +218,8 @@ export default function AccountPreferencesScreen() {
               </View>
             );
           })}
-          <Text
-            style={[KType.meta, { paddingHorizontal: 4, paddingBottom: 10 }]}
-          >
-            Dark updates chrome (nav, canvas). Full card theming follows.
-          </Text>
         </Card>
       </StackScroll>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  card: { paddingVertical: 4, gap: 0 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
-  },
-  pushBlock: { gap: 8, paddingVertical: 12, paddingHorizontal: 4 },
-  sectionGap: { marginTop: 12 },
-  check: { ...KType.bodyStrong, color: Colors.accent },
-  checkMuted: { ...KType.body, color: Colors.textSecondary, minWidth: 16 },
-});

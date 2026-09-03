@@ -1,5 +1,6 @@
 import { resolveMediaUrl } from "@/lib/kitchen/media-url";
-import { Colors, Radii } from "@naijajollof/ui";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
+import { Radii } from "@naijajollof/ui";
 import { useState } from "react";
 import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
@@ -12,6 +13,7 @@ export function ItemThumb({
   size?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { colors } = useKitchenTheme();
   const resolved = resolveMediaUrl(uri);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -20,12 +22,23 @@ export function ItemThumb({
     <View
       style={[
         styles.wrap,
-        { width: size, height: size, borderRadius: Math.min(Radii.sm, size / 4) },
+        {
+          width: size,
+          height: size,
+          borderRadius: Math.min(Radii.sm, size / 4),
+          backgroundColor: colors.backgroundWash,
+          borderColor: colors.border,
+        },
         style,
       ]}
     >
       {!loaded || failed || !resolved ? (
-        <View style={styles.placeholder} />
+        <View
+          style={[
+            styles.placeholder,
+            { backgroundColor: colors.backgroundWash },
+          ]}
+        />
       ) : null}
       {resolved && !failed ? (
         <Image
@@ -43,13 +56,10 @@ export function ItemThumb({
 const styles = StyleSheet.create({
   wrap: {
     overflow: "hidden",
-    backgroundColor: Colors.backgroundWash,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
   },
   placeholder: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: Colors.backgroundWash,
   },
   image: {
     width: "100%",
