@@ -13,7 +13,7 @@ import {
   KitchenTicketSkeleton,
   Screen,
 } from "@naijajollof/ui";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
@@ -76,6 +76,7 @@ const headerStyles = StyleSheet.create({
 
 export default function TicketScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const navigation = useNavigation();
   const styles = useThemedStyles((c) => ({
     card: { gap: 4 },
@@ -99,8 +100,9 @@ export default function TicketScreen() {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: c.border,
     },
-  lineCopy: { flex: 1, gap: 2 },
-  totalRow: {
+    lineCopy: { flex: 1, gap: 2 },
+    linePrice: { ...KType.numeric, marginTop: 1 },
+    totalRow: {
       flexDirection: "row" as const,
       justifyContent: "space-between" as const,
       alignItems: "center" as const,

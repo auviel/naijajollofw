@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-03  
 **Surface:** Expo staff app (`mobile/staff`) — Menu tab  
-**Status:** Approved in chat; awaiting implementation plan
+**Status:** Implemented
 
 ## Problem
 

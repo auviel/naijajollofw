@@ -8,14 +8,15 @@ import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { kvGet, kvSet } from "@/lib/kv";
 import {
   getStaffPushPermissionStatus,
-  humanizePushStatus,
   registerStaffPushDevice,
   type PushPermissionStatus,
 } from "@/lib/push";
-import { Button, Card, Screen } from "@naijajollof/ui";
+import { Card, Screen } from "@naijajollof/ui";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   AppState,
   Linking,
   Pressable,
@@ -27,9 +28,20 @@ import {
 
 const KEY_SOUND = "kitchen.pref.sound";
 const KEY_HAPTIC = "kitchen.pref.haptic";
+const KEY_PUSH = "kitchen.pref.push";
+
+const APPEARANCE_OPTIONS: Array<{
+  id: AppearancePref;
+  label: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+}> = [
+  { id: "system", label: "System", icon: "phone-portrait-outline" },
+  { id: "light", label: "Light", icon: "sunny-outline" },
+  { id: "dark", label: "Dark", icon: "moon-outline" },
+];
 
 export default function AccountPreferencesScreen() {
-  const { appearance, setAppearance, colors } = useKitchenTheme();
+  const { appearance, setAppearance, colors, resolved } = useKitchenTheme();
   const styles = useThemedStyles((c) => ({
     card: { paddingVertical: 4, gap: 0 },
     row: {
@@ -38,12 +50,18 @@ export default function AccountPreferencesScreen() {
       justifyContent: "space-between" as const,
       paddingVertical: 12,
       paddingHorizontal: 4,
+      gap: 12,
+    },
+    rowLabel: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 12,
+      flex: 1,
     },
     divider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: c.border,
     },
-    pushBlock: { gap: 8, paddingVertical: 12, paddingHorizontal: 4 },
     sectionGap: { marginTop: 12 },
     check: { ...KType.bodyStrong, color: c.accent },
     checkMuted: { ...KType.body, color: c.textSecondary, minWidth: 16 },
@@ -51,10 +69,10 @@ export default function AccountPreferencesScreen() {
 
   const [sound, setSound] = useState(true);
   const [haptic, setHaptic] = useState(true);
+  const [pushWanted, setPushWanted] = useState(true);
   const [pushStatus, setPushStatus] =
     useState<PushPermissionStatus>("unknown");
   const [pushBusy, setPushBusy] = useState(false);
-  const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [pushRegistered, setPushRegistered] = useState(false);
 
   const refreshPushStatus = useCallback(async () => {
@@ -64,6 +82,14 @@ export default function AccountPreferencesScreen() {
   }, []);
 
   const syncPushIfAllowed = useCallback(async () => {
+    const pref = await kvGet(KEY_PUSH);
+    const wanted = pref !== "0";
+    setPushWanted(wanted);
+    if (!wanted) {
+      setPushRegistered(false);
+      await refreshPushStatus();
+      return;
+    }
     const status = await refreshPushStatus();
     if (status !== "granted") {
       setPushRegistered(false);
@@ -71,13 +97,7 @@ export default function AccountPreferencesScreen() {
     }
     const result = await registerStaffPushDevice();
     setPushStatus(result.status);
-    if (result.ok) {
-      setPushRegistered(true);
-      setPushMessage(null);
-    } else {
-      setPushRegistered(false);
-      setPushMessage(result.message);
-    }
+    setPushRegistered(result.ok);
   }, [refreshPushStatus]);
 
   useEffect(() => {
@@ -112,31 +132,49 @@ export default function AccountPreferencesScreen() {
     void kvSet(KEY_HAPTIC, value ? "1" : "0");
   }, []);
 
-  async function enablePush() {
-    setPushBusy(true);
-    setPushMessage(null);
-    try {
-      const result = await registerStaffPushDevice();
-      setPushStatus(result.status);
-      if (result.ok) {
-        setPushRegistered(true);
-        setPushMessage(null);
-      } else {
+  const togglePush = useCallback(
+    async (value: boolean) => {
+      if (!value) {
+        setPushWanted(false);
         setPushRegistered(false);
-        setPushMessage(result.message);
+        void kvSet(KEY_PUSH, "0");
+        return;
       }
-    } finally {
-      setPushBusy(false);
-    }
-  }
 
-  const appearanceOptions: Array<{ id: AppearancePref; label: string }> = [
-    { id: "system", label: "System" },
-    { id: "light", label: "Light" },
-    { id: "dark", label: "Dark" },
-  ];
+      setPushWanted(true);
+      void kvSet(KEY_PUSH, "1");
+      setPushBusy(true);
+      try {
+        const result = await registerStaffPushDevice();
+        setPushStatus(result.status);
+        if (result.ok) {
+          setPushRegistered(true);
+          return;
+        }
+        setPushRegistered(false);
+        if (result.reason === "denied") {
+          Alert.alert(
+            "Notifications blocked",
+            "Allow notifications for Kitchen in Settings to get new-order alerts.",
+            [
+              { text: "Not now", style: "cancel" },
+              {
+                text: "Open Settings",
+                onPress: () => void Linking.openSettings(),
+              },
+            ],
+          );
+        } else if (result.reason === "simulator") {
+          Alert.alert("Push unavailable", result.message);
+        }
+      } finally {
+        setPushBusy(false);
+      }
+    },
+    [],
+  );
 
-  const pushOn = pushStatus === "granted" && pushRegistered;
+  const pushOn = pushWanted && pushStatus === "granted" && pushRegistered;
 
   return (
     <Screen>
@@ -161,44 +199,20 @@ export default function AccountPreferencesScreen() {
             />
           </View>
           <View style={styles.divider} />
-          <View style={styles.pushBlock}>
+          <View style={styles.row}>
             <Text style={KType.body}>Push</Text>
-            <Text style={KType.meta}>
-              Status ·{" "}
-              {pushOn ? "On for this device" : humanizePushStatus(pushStatus)}
-            </Text>
-            {pushMessage ? (
-              <Text style={[KType.meta, { color: colors.danger }]}>
-                {pushMessage}
-              </Text>
-            ) : null}
-            {pushOn ? (
-              <Text style={KType.meta}>
-                New-order alerts will arrive on this phone.
-              </Text>
-            ) : pushStatus === "denied" ? (
-              <>
-                <Button
-                  label="Open system Settings"
-                  onPress={() => void Linking.openSettings()}
-                />
-                <Text style={KType.meta}>
-                  Allow notifications for Kitchen, then return here.
-                </Text>
-              </>
-            ) : (
-              <Button
-                disabled={pushBusy}
-                label={pushBusy ? "Working…" : "Enable push"}
-                onPress={() => void enablePush()}
-              />
-            )}
+            <Switch
+              value={pushOn}
+              disabled={pushBusy}
+              onValueChange={(value) => void togglePush(value)}
+              trackColor={{ false: colors.border, true: colors.accent }}
+            />
           </View>
         </Card>
 
         <Text style={[KType.kicker, styles.sectionGap]}>Appearance</Text>
         <Card style={styles.card}>
-          {appearanceOptions.map((option, index) => {
+          {APPEARANCE_OPTIONS.map((option, index) => {
             const selected = appearance === option.id;
             return (
               <View key={option.id}>
@@ -206,8 +220,17 @@ export default function AccountPreferencesScreen() {
                 <Pressable
                   onPress={() => setAppearance(option.id)}
                   style={styles.row}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                 >
-                  <Text style={KType.body}>{option.label}</Text>
+                  <View style={styles.rowLabel}>
+                    <Ionicons
+                      name={option.icon}
+                      size={20}
+                      color={selected ? colors.accent : colors.textSecondary}
+                    />
+                    <Text style={KType.body}>{option.label}</Text>
+                  </View>
                   <Text style={selected ? styles.check : styles.checkMuted}>
                     {selected ? "✓" : ""}
                   </Text>
@@ -215,6 +238,13 @@ export default function AccountPreferencesScreen() {
               </View>
             );
           })}
+          {appearance === "system" ? (
+            <Text
+              style={[KType.meta, { paddingHorizontal: 4, paddingBottom: 10 }]}
+            >
+              Following device · currently {resolved}
+            </Text>
+          ) : null}
         </Card>
       </StackScroll>
     </Screen>

@@ -109,8 +109,9 @@ export function useKitchenTheme() {
 
 export function applyAppearanceToOS(appearance: AppearancePref) {
   if (appearance === "system") {
-    // RN accepts null to clear a forced scheme; typings lag behind.
-    Appearance.setColorScheme(null as unknown as "light");
+    // Clear any forced scheme so useColorScheme() tracks the OS again.
+    // RN runtime accepts null; local typings may only list light|dark.
+    Appearance.setColorScheme(null as never);
     return;
   }
   Appearance.setColorScheme(appearance);

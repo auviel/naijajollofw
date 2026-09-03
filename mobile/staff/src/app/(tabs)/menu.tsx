@@ -1,6 +1,12 @@
 import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
+import {
+  DEFAULT_MENU_FILTERS,
+  MenuFilterSheet,
+  type MenuFilterState,
+} from "@/components/kitchen/menu-filter-sheet";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
+import { SearchField } from "@/components/kitchen/search-field";
 import { apiFetch } from "@/lib/api";
 import type { KitchenMenuCatalog } from "@/lib/kitchen/menu-types";
 import { useKitchenTheme } from "@/lib/kitchen/theme";
@@ -25,6 +31,13 @@ import {
   View,
 } from "react-native";
 
+function filtersAreDefault(filters: MenuFilterState): boolean {
+  return (
+    filters.categoryId === DEFAULT_MENU_FILTERS.categoryId &&
+    filters.availability === DEFAULT_MENU_FILTERS.availability
+  );
+}
+
 export default function MenuTab() {
   const router = useRouter();
   const { colors } = useKitchenTheme();
@@ -36,20 +49,31 @@ export default function MenuTab() {
       gap: 8,
     },
     addBtn: { padding: 4 },
-    chips: { gap: 8, paddingVertical: 2 },
-    chip: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+    toolbar: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 10,
+    },
+    searchWrap: { flex: 1 },
+    filterBtn: {
+      width: 44,
+      height: 44,
       borderRadius: Radii.sm,
-      backgroundColor: c.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
+      backgroundColor: c.surface,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
     },
-    chipSelected: {
-      backgroundColor: c.accentSoft,
+    filterDot: {
+      position: "absolute" as const,
+      top: 8,
+      right: 8,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: c.accent,
     },
-    chipLabel: { ...KType.meta },
-    chipLabelSelected: { ...KType.metaStrong, color: c.accent },
     list: { gap: 10 },
     row: {
       flexDirection: "row" as const,
@@ -89,7 +113,9 @@ export default function MenuTab() {
   const [catalog, setCatalog] = useState<KitchenMenuCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [applied, setApplied] = useState<MenuFilterState>(DEFAULT_MENU_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [categoryModal, setCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
@@ -99,11 +125,14 @@ export default function MenuTab() {
       const data = await apiFetch<KitchenMenuCatalog>("/api/menu");
       setCatalog(data);
       setError(null);
-      setCategoryId((current) => {
-        if (current && data.categories.some((c) => c.id === current)) {
-          return current;
+      setApplied((current) => {
+        if (
+          current.categoryId &&
+          !data.categories.some((c) => c.id === current.categoryId)
+        ) {
+          return { ...current, categoryId: null };
         }
-        return data.categories.find((c) => c.active)?.id ?? null;
+        return current;
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load menu");
@@ -122,17 +151,34 @@ export default function MenuTab() {
   );
 
   const items = useMemo(() => {
-    const category = activeCategories.find((c) => c.id === categoryId);
-    return category?.items ?? [];
-  }, [activeCategories, categoryId]);
+    const scoped = applied.categoryId
+      ? activeCategories.filter((c) => c.id === applied.categoryId)
+      : activeCategories;
 
+    let rows = scoped.flatMap((category) => category.items);
+
+    if (applied.availability === "available") {
+      rows = rows.filter((item) => item.available);
+    } else if (applied.availability === "sold_out") {
+      rows = rows.filter((item) => !item.available);
+    }
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((item) => item.name.toLowerCase().includes(q));
+    }
+
+    return rows;
+  }, [activeCategories, applied, search]);
+
+  const filtersActive = !filtersAreDefault(applied);
   const initialLoading = catalog === null && !error;
 
   function openAddMenu() {
     const goAddItem = () =>
       router.push({
         pathname: "/menu/new",
-        params: categoryId ? { categoryId } : {},
+        params: applied.categoryId ? { categoryId: applied.categoryId } : {},
       });
     const goNewCategory = () => {
       setNewCategoryName("");
@@ -175,7 +221,7 @@ export default function MenuTab() {
       setCategoryModal(false);
       setNewCategoryName("");
       await load();
-      setCategoryId(category.id);
+      setApplied((prev) => ({ ...prev, categoryId: category.id }));
     } catch (e) {
       Alert.alert(
         "Could not create category",
@@ -190,6 +236,7 @@ export default function MenuTab() {
     <SafeScreen>
       <ScrollView
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -221,35 +268,33 @@ export default function MenuTab() {
           <KitchenCustomersSkeleton />
         ) : (
           <>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chips}
-            >
-              {activeCategories.map((category) => {
-                const selected = category.id === categoryId;
-                return (
-                  <Pressable
-                    key={category.id}
-                    onPress={() => setCategoryId(category.id)}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        selected && styles.chipLabelSelected,
-                      ]}
-                    >
-                      {category.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            <View style={styles.toolbar}>
+              <View style={styles.searchWrap}>
+                <SearchField
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search menu"
+                  accessibilityLabel="Search menu"
+                />
+              </View>
+              <Pressable
+                onPress={() => setFilterOpen(true)}
+                style={styles.filterBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Filter menu"
+              >
+                <Ionicons
+                  name="options-outline"
+                  size={20}
+                  color={colors.text}
+                />
+                {filtersActive ? <View style={styles.filterDot} /> : null}
+              </Pressable>
+            </View>
 
             <View style={styles.list}>
               {items.length === 0 ? (
-                <Text style={styles.empty}>No items in this category.</Text>
+                <Text style={styles.empty}>No items match.</Text>
               ) : (
                 items.map((item) => (
                   <Pressable
@@ -275,6 +320,20 @@ export default function MenuTab() {
           </>
         )}
       </ScrollView>
+
+      <MenuFilterSheet
+        visible={filterOpen}
+        categories={activeCategories.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }))}
+        value={applied}
+        onApply={(next) => {
+          setApplied(next);
+          setFilterOpen(false);
+        }}
+        onDismiss={() => setFilterOpen(false)}
+      />
 
       <Modal
         visible={categoryModal}
