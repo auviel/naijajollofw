@@ -1,4 +1,5 @@
-import { Colors, Space } from "@naijajollof/ui";
+import { Space } from "@naijajollof/ui";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Platform,
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export const stackScreenBackground: StyleProp<ViewStyle> = {
-  flex: 1,
-  backgroundColor: Colors.background,
-};
+export function useStackScreenBackground(): StyleProp<ViewStyle> {
+  const { colors } = useKitchenTheme();
+  return { flex: 1, backgroundColor: colors.background };
+}

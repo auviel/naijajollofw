@@ -1,6 +1,6 @@
-import { Colors } from "@naijajollof/ui";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable } from "react-native";
 
 export function IconBtn({
   name,
@@ -15,6 +15,19 @@ export function IconBtn({
   onPress: () => void;
   soft?: boolean;
 }) {
+  const styles = useThemedStyles((c) => ({
+    iconBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    iconBtnSoft: {
+      backgroundColor: c.secondarySoft,
+    },
+  }));
+
   return (
     <Pressable
       onPress={onPress}
@@ -27,16 +40,3 @@ export function IconBtn({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconBtnSoft: {
-    backgroundColor: Colors.secondarySoft,
-  },
-});

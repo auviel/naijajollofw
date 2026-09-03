@@ -1,7 +1,6 @@
 import { AuthProvider, useAuth } from "@/lib/auth";
 import {
   KitchenThemeProvider,
-  applyAppearanceToOS,
   useKitchenTheme,
 } from "@/lib/kitchen/theme";
 import { headerScreenOptions } from "@naijajollof/ui";
@@ -58,11 +57,7 @@ function Gate({ children }: { children: ReactNode }) {
 }
 
 function ThemedRoot() {
-  const { colors, resolved, appearance } = useKitchenTheme();
-
-  useEffect(() => {
-    applyAppearanceToOS(appearance);
-  }, [appearance]);
+  const { colors, resolved } = useKitchenTheme();
 
   return (
     <AuthProvider>

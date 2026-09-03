@@ -14,27 +14,14 @@ import {
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
-function isReadyish(status: StaffOrderListItem["status"]): boolean {
-  return (
-    status === "ready" ||
-    status === "ready_for_pickup" ||
-    status === "out_for_delivery"
-  );
-}
-
-function metaLine(order: StaffOrderListItem, hasThumbs: boolean): string | null {
+function metaLine(order: StaffOrderListItem): string | null {
   const parts: string[] = [];
-  if (order.fulfillmentType === "delivery") {
-    parts.push("Delivery");
-  }
+  parts.push(order.fulfillmentType === "delivery" ? "Delivery" : "Pickup");
   if (order.scheduledFor) {
     parts.push(formatKitchenScheduled(order.scheduledFor));
   }
-  if (!hasThumbs && order.itemSummary) {
+  if (order.itemSummary) {
     parts.push(order.itemSummary);
-  }
-  if (parts.length === 0 && order.fulfillmentType === "pickup" && !hasThumbs) {
-    parts.push("Pickup");
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }
@@ -45,15 +32,12 @@ export function TicketCard({
   onBump,
   onLongPressBump,
   bumpBusy,
-  showPrice,
 }: {
   order: StaffOrderListItem;
   onOpen: () => void;
   onBump: () => void;
   onLongPressBump?: () => void;
   bumpBusy?: boolean;
-  /** Override; default shows price on Ready (and similar) only. */
-  showPrice?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
     card: {
@@ -129,8 +113,7 @@ export function TicketCard({
     (order.dayTicket ? `#${order.dayTicket}` : "Order");
   const thumbs = order.thumbImageUrls ?? [];
   const hasThumbs = thumbs.length > 0;
-  const line = metaLine(order, hasThumbs);
-  const priceVisible = showPrice ?? isReadyish(order.status);
+  const line = metaLine(order);
 
   async function copyTicket() {
     try {
@@ -161,11 +144,9 @@ export function TicketCard({
           </Text>
           <View style={styles.topRight}>
             {wait ? <Text style={KType.wait}>{wait}</Text> : null}
-            {priceVisible ? (
-              <Text style={KType.numeric}>
-                {formatCadFromCents(order.totalCents)}
-              </Text>
-            ) : null}
+            <Text style={KType.numeric}>
+              {formatCadFromCents(order.totalCents)}
+            </Text>
           </View>
         </View>
 

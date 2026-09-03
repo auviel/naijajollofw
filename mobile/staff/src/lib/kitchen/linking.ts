@@ -1,10 +1,19 @@
-import { Linking, Platform } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
 
 export async function openTel(phone: string) {
   const digits = phone.replace(/[^\d+]/g, "");
   if (!digits) return;
   const url = `tel:${digits}`;
-  await Linking.openURL(url);
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) {
+      Alert.alert("Calling unavailable", "This device can’t place phone calls.");
+      return;
+    }
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert("Calling unavailable", "This device can’t place phone calls.");
+  }
 }
 
 export async function openMapsAddress(address: string) {
@@ -14,7 +23,11 @@ export async function openMapsAddress(address: string) {
     Platform.OS === "ios"
       ? `http://maps.apple.com/?q=${q}`
       : `https://www.google.com/maps/search/?api=1&query=${q}`;
-  await Linking.openURL(url);
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert("Could not open Maps");
+  }
 }
 
 export function emailLooksValid(email: string): boolean {

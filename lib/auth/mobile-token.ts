@@ -53,20 +53,25 @@ export function signMobileAccessToken(
 }
 
 export function verifyMobileAccessToken(token: string): MobileAccessClaims | null {
-  const parts = token.split(".");
-  if (parts.length !== 3) {
-    return null;
-  }
-  const [encodedHeader, encodedPayload, signature] = parts;
-  const data = `${encodedHeader}.${encodedPayload}`;
-  const expected = createHmac("sha256", authSecret()).update(data).digest("base64url");
-  const sigBuf = Buffer.from(signature, "utf8");
-  const expectedBuf = Buffer.from(expected, "utf8");
-  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
-    return null;
-  }
-
   try {
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      return null;
+    }
+    const [encodedHeader, encodedPayload, signature] = parts;
+    const data = `${encodedHeader}.${encodedPayload}`;
+    const expected = createHmac("sha256", authSecret())
+      .update(data)
+      .digest("base64url");
+    const sigBuf = Buffer.from(signature, "utf8");
+    const expectedBuf = Buffer.from(expected, "utf8");
+    if (
+      sigBuf.length !== expectedBuf.length ||
+      !timingSafeEqual(sigBuf, expectedBuf)
+    ) {
+      return null;
+    }
+
     const payload = JSON.parse(
       Buffer.from(encodedPayload, "base64url").toString("utf8"),
     ) as MobileAccessClaims;
@@ -78,6 +83,7 @@ export function verifyMobileAccessToken(token: string): MobileAccessClaims | nul
     }
     return payload;
   } catch {
+    // Corrupt token, missing AUTH_SECRET mid-reload, etc. — never 500 the route.
     return null;
   }
 }

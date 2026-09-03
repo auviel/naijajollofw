@@ -102,7 +102,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return fromBearer;
   }
 
-  const session = (await auth()) as Session | null;
+  let session: Session | null = null;
+  try {
+    session = (await auth()) as Session | null;
+  } catch (error) {
+    console.error("[auth] session read failed", error);
+    return null;
+  }
+
   const mapped = mapSessionUser(session);
   if (!mapped) {
     return null;

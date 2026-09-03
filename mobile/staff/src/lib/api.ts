@@ -17,6 +17,8 @@ function reportApiFailure(input: {
 }) {
   // Skip expected auth-expiry noise (refresh path handles 401).
   if (input.status === 401) return;
+  // Dev Fast Refresh / compile races often surface as empty 5xx bodies — don't pollute Sentry.
+  if (__DEV__) return;
 
   const error =
     input.cause instanceof Error ? input.cause : new Error(input.message);

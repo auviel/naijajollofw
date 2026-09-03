@@ -23,7 +23,7 @@ import {
   type OrderStatus,
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
-import { Colors, KitchenBoardSkeleton } from "@naijajollof/ui";
+import { KitchenBoardSkeleton } from "@naijajollof/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -34,13 +34,14 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
+import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
+import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
 const POLL_MS = 10_000;
 
@@ -75,6 +76,43 @@ function firstColumnWithWork(items: StaffOrderListItem[]): BoardColumnId {
 export function BoardScreen() {
   const router = useRouter();
   const { store } = useAuth();
+  const { colors } = useKitchenTheme();
+  const styles = useThemedStyles((c) => ({
+    content: { padding: 20, paddingBottom: 100, gap: 16 },
+    topRow: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+      gap: 12,
+    },
+    allOrdersBtn: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      alignSelf: "flex-start" as const,
+      gap: 4,
+    },
+    allOrders: { ...KType.metaStrong, color: c.accent },
+    error: { ...KType.metaStrong, color: c.danger },
+    emptyBlock: { alignItems: "center" as const, gap: 8, marginTop: 24 },
+    empty: {
+      ...KType.meta,
+      textAlign: "center" as const,
+      paddingHorizontal: 12,
+    },
+    emptyColumn: {
+      ...KType.meta,
+      textAlign: "center" as const,
+      paddingVertical: 12,
+    },
+    emptyCta: { ...KType.metaStrong, color: c.accent },
+    list: { gap: 10 },
+    later: { gap: 10, marginTop: 8 },
+    laterHeader: {
+      flexDirection: "row" as const,
+      justifyContent: "space-between" as const,
+      alignItems: "center" as const,
+    },
+  }));
   const persisted = getPersistedBoardColumn();
   const [data, setData] = useState<ListStaffOrdersResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -271,7 +309,7 @@ export function BoardScreen() {
               accessibilityLabel="All orders"
               style={styles.allOrdersBtn}
             >
-              <Ionicons name="list-outline" size={14} color={Colors.accent} />
+              <Ionicons name="list-outline" size={14} color={colors.accent} />
               <Text style={styles.allOrders}>All orders</Text>
             </Pressable>
           </View>
@@ -362,7 +400,6 @@ export function BoardScreen() {
                       <TicketCard
                         key={order.id}
                         order={order}
-                        showPrice
                         bumpBusy={busyId === order.id}
                         onOpen={() => router.push(`/orders/${order.id}`)}
                         onBump={() => void bumpOrder(order)}
@@ -378,40 +415,3 @@ export function BoardScreen() {
     </SafeScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { padding: 20, paddingBottom: 100, gap: 16 },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  allOrdersBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-  },
-  allOrders: { ...KType.metaStrong, color: Colors.accent },
-  error: { ...KType.metaStrong, color: Colors.danger },
-  emptyBlock: { alignItems: "center", gap: 8, marginTop: 24 },
-  empty: {
-    ...KType.meta,
-    textAlign: "center",
-    paddingHorizontal: 12,
-  },
-  emptyColumn: {
-    ...KType.meta,
-    textAlign: "center",
-    paddingVertical: 12,
-  },
-  emptyCta: { ...KType.metaStrong, color: Colors.accent },
-  list: { gap: 10 },
-  later: { gap: 10, marginTop: 8 },
-  laterHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-});

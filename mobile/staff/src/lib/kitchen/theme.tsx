@@ -47,13 +47,42 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function resolveScheme(
+  appearance: AppearancePref,
+  system: string | null | undefined,
+): "light" | "dark" {
+  if (appearance === "light" || appearance === "dark") return appearance;
+  return system === "dark" ? "dark" : "light";
+}
+
 export function KitchenThemeProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const system = useColorScheme();
+  const systemFromHook = useColorScheme();
+  /** Keep a live OS reading — native tab chrome follows OS even when RN was forced. */
+  const [systemScheme, setSystemScheme] = useState<"light" | "dark" | null>(
+    () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
+  );
   const [appearance, setAppearanceState] = useState<AppearancePref>("system");
+
+  useEffect(() => {
+    // Drop any leftover Appearance.setColorScheme override from older builds so
+    // System can track the real device setting again.
+    Appearance.setColorScheme("unspecified");
+  }, []);
+
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemScheme(colorScheme === "dark" ? "dark" : "light");
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    setSystemScheme(systemFromHook === "dark" ? "dark" : "light");
+  }, [systemFromHook]);
 
   useEffect(() => {
     void kvGet(KEY).then((v) => {
@@ -66,15 +95,13 @@ export function KitchenThemeProvider({
   const setAppearance = useCallback((value: AppearancePref) => {
     setAppearanceState(value);
     void kvSet(KEY, value);
+    // Never force RN's global color scheme — Light/Dark are app-only.
+    // Forcing broke System (native tab bar followed OS dark while RN stayed light).
+    Appearance.setColorScheme("unspecified");
   }, []);
 
-  const resolved: "light" | "dark" =
-    appearance === "system"
-      ? system === "dark"
-        ? "dark"
-        : "light"
-      : appearance;
-
+  const system = systemScheme ?? systemFromHook;
+  const resolved = resolveScheme(appearance, system);
   const colors = resolved === "dark" ? DarkPalette : LightColors;
 
   // Keep typography + UI package tokens in sync for this render tree.
@@ -107,12 +134,7 @@ export function useKitchenTheme() {
   return ctx;
 }
 
-export function applyAppearanceToOS(appearance: AppearancePref) {
-  if (appearance === "system") {
-    // Clear any forced scheme so useColorScheme() tracks the OS again.
-    // RN runtime accepts null; local typings may only list light|dark.
-    Appearance.setColorScheme(null as never);
-    return;
-  }
-  Appearance.setColorScheme(appearance);
+/** Clears any RN color-scheme override so System can follow the device. */
+export function applyAppearanceToOS(_appearance?: AppearancePref) {
+  Appearance.setColorScheme("unspecified");
 }
