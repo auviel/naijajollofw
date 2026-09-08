@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { sentryBeforeSend } from "@/lib/observability/sentry-before-send";
 import { AppError } from "@/lib/utils/errors";
-import type { ErrorEvent, EventHint } from "@sentry/core";
 
-function event(message: string, type = "Error"): ErrorEvent {
+function event(message: string, type = "Error") {
   return {
     message,
     exception: { values: [{ type, value: message }] },
-  } as ErrorEvent;
+  };
 }
 
-function hint(error: unknown): EventHint {
+function hint(error: unknown) {
   return { originalException: error };
 }
 
@@ -104,7 +103,7 @@ describe("sentryBeforeSend", () => {
           },
         ],
       },
-    } as ErrorEvent;
+    };
 
     expect(sentryBeforeSend(incoming, hint(undefined))).toBeNull();
   });
@@ -129,7 +128,7 @@ describe("sentryBeforeSend", () => {
           },
         ],
       },
-    } as ErrorEvent;
+    };
 
     expect(sentryBeforeSend(incoming, hint(undefined))).toBe(incoming);
   });

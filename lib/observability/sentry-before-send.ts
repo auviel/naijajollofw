@@ -1,4 +1,15 @@
-import type { ErrorEvent, EventHint } from "@sentry/core";
+/** Structural types — avoid importing `@sentry/core` (sanity nests a second copy). */
+type SentryFrame = { function?: string; filename?: string };
+type SentryException = {
+  type?: string;
+  value?: string;
+  stacktrace?: { frames?: SentryFrame[] };
+};
+type SentryErrorEvent = {
+  message?: string;
+  exception?: { values?: SentryException[] };
+};
+type SentryEventHint = { originalException?: unknown };
 
 function isExpectedClientAppError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -19,7 +30,7 @@ function isExpectedClientAppError(error: unknown): boolean {
   );
 }
 
-function eventMessage(event: ErrorEvent, hint: EventHint): string {
+function eventMessage(event: SentryErrorEvent, hint: SentryEventHint): string {
   const error = hint.originalException;
   if (
     typeof error === "object" &&
@@ -45,7 +56,7 @@ function eventMessage(event: ErrorEvent, hint: EventHint): string {
  * with no in-app frames — not actionable app bugs.
  */
 function isInjectedAddEventListenerStackOverflow(
-  event: ErrorEvent,
+  event: SentryErrorEvent,
   message: string,
   exceptionType: string,
 ): boolean {
@@ -66,10 +77,10 @@ function isInjectedAddEventListenerStackOverflow(
 }
 
 /** Drop expected / non-actionable noise so real diner/staff bugs stay visible. */
-export function sentryBeforeSend(
-  event: ErrorEvent,
-  hint: EventHint,
-): ErrorEvent | null {
+export function sentryBeforeSend<T extends SentryErrorEvent>(
+  event: T,
+  hint: SentryEventHint,
+): T | null {
   const error = hint.originalException;
   const message = eventMessage(event, hint);
   const exceptionType = event.exception?.values?.[0]?.type ?? "";

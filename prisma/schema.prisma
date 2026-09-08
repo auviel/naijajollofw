@@ -4,6 +4,9 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  // Workers forbid `new WebAssembly.Module(bytes)` (base64 decode path).
+  // cloudflare runtime emits a real .wasm module import instead.
+  runtime  = "cloudflare"
 }
 
 datasource db {
