@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { StoreProfile } from "@/lib/domain/store/types";
-import type { Store } from "@prisma/client";
+import type { Store } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/client";
 
 /** Short process TTL — React `cache()` alone misses across parallel RSC trees. */

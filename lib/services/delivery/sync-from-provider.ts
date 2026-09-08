@@ -1,5 +1,5 @@
-import type { Prisma } from "@prisma/client";
-import type { Delivery } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
+import type { Delivery } from "@/generated/prisma/client";
 import {
   deliveryRepository,
   type ProofOfDeliveryData,

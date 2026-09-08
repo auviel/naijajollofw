@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { deliveryRepository } from "@/lib/db/repositories/delivery.repository";
 import { webhookEventRepository } from "@/lib/db/repositories/webhook-event.repository";
 import { mapUberDeliveryStatus } from "@/lib/integrations/delivery/uber/mappers";

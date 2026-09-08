@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { webhookEventRepository } from "@/lib/db/repositories/webhook-event.repository";
 import { whatsappRepository } from "@/lib/db/repositories/whatsapp.repository";
 import { getWhatsAppConfig, isWhatsAppEnabled } from "@/lib/integrations/whatsapp/config";

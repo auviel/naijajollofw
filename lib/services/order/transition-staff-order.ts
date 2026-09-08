@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatus } from "@/generated/prisma/client";
 import { requireStoreManager } from "@/lib/auth/session";
 import {
   orderRepository,

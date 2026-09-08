@@ -1,4 +1,4 @@
-import type { Cart, CartItem, MenuItem, Prisma } from "@prisma/client";
+import type { Cart, CartItem, MenuItem, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/client";
 import { normalizePublicMediaUrl } from "@/lib/integrations/r2/public-url";
 import type { CartModifierSelection, CartView } from "@/lib/domain/cart/types";

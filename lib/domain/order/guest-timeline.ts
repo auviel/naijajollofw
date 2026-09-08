@@ -1,4 +1,4 @@
-import type { FulfillmentType, OrderStatus } from "@prisma/client";
+import type { FulfillmentType, OrderStatus } from "@/generated/prisma/client";
 
 export type GuestTimelineStepState = "complete" | "current" | "upcoming";
 

@@ -1,4 +1,4 @@
-import type { DeliveryStatus } from "@prisma/client";
+import type { DeliveryStatus } from "@/generated/prisma/client";
 import { orderRepository } from "@/lib/db/repositories/order.repository";
 import { mapDeliveryStatusToOrderStatus } from "@/lib/domain/order/transitions";
 import { notifyOrderStatus } from "@/lib/services/order/notify-order-status";

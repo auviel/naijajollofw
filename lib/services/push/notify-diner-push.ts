@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatus } from "@/generated/prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/domain/order/types";
 import { pushDeviceRepository } from "@/lib/db/repositories/push-device.repository";
 import { sendExpoPush } from "@/lib/integrations/push/expo";

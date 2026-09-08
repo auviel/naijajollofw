@@ -2,9 +2,10 @@
  * Quick kitchen smoke data: 3 live incoming (pending_acceptance) tickets.
  * Usage: npx tsx prisma/seed-incoming.ts
  */
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
+import { createScriptPrisma } from "../lib/db/script-prisma";
 
-const prisma = new PrismaClient();
+const prisma = createScriptPrisma();
 
 function torontoCalendarDate(): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {

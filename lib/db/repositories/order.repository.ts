@@ -6,7 +6,7 @@ import type {
   OrderStatus,
   Prisma,
   Store,
-} from "@prisma/client";
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/client";
 import { getStoreTimeZone } from "@/lib/config/environment";
 import { allocateOrderNumbers } from "@/lib/db/repositories/allocate-order-numbers";

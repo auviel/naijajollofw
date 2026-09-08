@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatus } from "@/generated/prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/domain/order/types";
 import { getAppBaseUrl } from "@/lib/integrations/email/resend-client";
 import { sendEmailInBackground } from "@/lib/integrations/email/send";

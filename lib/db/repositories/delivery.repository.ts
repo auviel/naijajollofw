@@ -5,7 +5,7 @@ import type {
   DeliveryRecord,
   DeliveryStatus,
 } from "@/lib/domain/delivery/types";
-import type { Delivery, DeliveryStatus as PrismaDeliveryStatus, Prisma } from "@prisma/client";
+import type { Delivery, DeliveryStatus as PrismaDeliveryStatus, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/client";
 
 export type ProofOfDeliveryData = {

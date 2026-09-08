@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { PrismaClient } from "@prisma/client";
+import { createScriptPrisma } from "@/lib/db/script-prisma";
 import { mapStoreToProfile } from "@/lib/db/repositories/store.repository";
 import { formatStoreProfileAddress } from "@/lib/domain/store/format";
 import { getDoorDashExternalStoreId } from "@/lib/domain/store/delivery-settings";
@@ -15,7 +15,7 @@ const storeId =
 
 async function main() {
   const config = getDoorDashConfig();
-  const prisma = new PrismaClient();
+  const prisma = createScriptPrisma();
 
   try {
     const record = await prisma.store.findUnique({ where: { id: storeId } });

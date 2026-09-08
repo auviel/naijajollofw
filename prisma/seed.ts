@@ -3,13 +3,13 @@ import {
   type FulfillmentType,
   type OrderStatus,
   Prisma,
-  PrismaClient,
-} from "@prisma/client";
+} from "@/generated/prisma/client";
+import { createScriptPrisma } from "../lib/db/script-prisma";
 import bcrypt from "bcryptjs";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
 import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
 
-const prisma = new PrismaClient();
+const prisma = createScriptPrisma();
 
 function torontoCalendarDate(): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {
