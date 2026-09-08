@@ -46,7 +46,7 @@ async function readApiError(response: Response): Promise<string> {
 
 export function StoreProfileForm({ store, configuredProviders }: StoreProfileFormProps) {
   const router = useRouter();
-  const { update: updateSession } = useSession();
+  const updateSession = useSession()?.update;
   const { success, error: toastError } = useToast();
 
   const initialAddressQuery = useMemo(() => buildAddressQuery(store), [store]);
@@ -163,7 +163,7 @@ export function StoreProfileForm({ store, configuredProviders }: StoreProfileFor
       }
 
       const body = (await response.json()) as { data: StoreProfile };
-      await updateSession({ storeName: body.data.name });
+      await updateSession?.({ storeName: body.data.name });
       success("Store profile saved.");
       router.refresh();
     } catch {

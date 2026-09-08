@@ -31,7 +31,9 @@ export function StorefrontHeaderBar({
   storeName,
   searchIndex,
 }: StorefrontHeaderBarProps) {
-  const { data: session, status } = useSession();
+  const sessionState = useSession();
+  const session = sessionState?.data;
+  const status = sessionState?.status ?? "loading";
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

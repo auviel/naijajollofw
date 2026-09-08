@@ -146,7 +146,9 @@ function ProductCards({
 }
 
 function AssistantTextPart({ text }: { text: string }) {
-  const { data: session, status } = useSession();
+  const sessionState = useSession();
+  const session = sessionState?.data;
+  const status = sessionState?.status ?? "loading";
   const { closeAiChat } = useStorefrontUi();
   const isLoggedIn = status === "authenticated" && Boolean(session?.user);
   const suggestsSignIn =

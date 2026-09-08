@@ -52,6 +52,15 @@ describe("sentryBeforeSend", () => {
         hint(undefined),
       ),
     ).toBeNull();
+
+    expect(
+      sentryBeforeSend(
+        event(
+          "Cannot destructure property 'data' of '(0 , d.useSession)(...)' as it is undefined.",
+        ),
+        hint(undefined),
+      ),
+    ).toBeNull();
   });
 
   it("drops failed Server Action and opaque RSC client wrappers", () => {

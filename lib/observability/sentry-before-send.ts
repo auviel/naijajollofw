@@ -101,6 +101,9 @@ export function sentryBeforeSend<T extends SentryErrorEvent>(
 
   if (
     /useSession must be wrapped in a <SessionProvider/i.test(message) ||
+    /Cannot destructure property ['"]?data['"]? of .*useSession/i.test(
+      message,
+    ) ||
     /Hydration failed because the server rendered text didn't match/i.test(
       message,
     ) ||
