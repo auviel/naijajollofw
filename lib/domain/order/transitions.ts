@@ -26,7 +26,7 @@ const ACTION_META = new Map<
   { label: string; variant: TransitionAction["variant"] }
 >([
   ["accepted", { label: "Accept", variant: "primary" }],
-  ["preparing", { label: "Start", variant: "primary" }],
+  ["preparing", { label: "Accept", variant: "primary" }],
   ["ready", { label: "Ready", variant: "primary" }],
   ["ready_for_pickup", { label: "Ready", variant: "primary" }],
   ["completed", { label: "Complete", variant: "primary" }],
@@ -46,7 +46,16 @@ export function getAllowedTransitions(
     return ["completed", "cancelled"];
   }
 
-  // Delivery from ready is fulfilled via dedicated endpoints (manual / courier).
+  // Manual delivery: method chosen at Ready; Complete when delivered.
+  if (
+    from === "ready" &&
+    ctx?.fulfillmentType === "delivery" &&
+    ctx.fulfillmentMethod === "manual"
+  ) {
+    return ["completed", "cancelled"];
+  }
+
+  // Unassigned delivery stays on Ready until method is chosen (fulfill endpoints).
   return STAFF_TRANSITIONS.get(from) ?? [];
 }
 
@@ -67,10 +76,12 @@ export function getTransitionActions(
     if (!meta) {
       return [];
     }
-    const label =
-      to === "completed" && ctx?.fulfillmentType === "pickup"
-        ? "Picked up"
-        : meta.label;
+    let label = meta.label;
+    if (to === "completed" && ctx?.fulfillmentType === "pickup") {
+      label = "Picked up";
+    } else if (to === "cancelled" && from === "pending_acceptance") {
+      label = "Decline";
+    }
     return [{ to, label, variant: meta.variant }];
   });
 }
@@ -78,19 +89,30 @@ export function getTransitionActions(
 /** Board columns for the live kitchen view. */
 export const KITCHEN_BOARD_COLUMNS = [
   {
-    id: "new",
-    title: "New",
-    statuses: ["pending_acceptance"] as const satisfies readonly OrderStatus[],
-  },
-  {
     id: "cooking",
     title: "Cooking",
-    statuses: ["accepted", "preparing"] as const satisfies readonly OrderStatus[],
+    statuses: [
+      "pending_acceptance",
+      "accepted",
+      "preparing",
+    ] as const satisfies readonly OrderStatus[],
   },
   {
     id: "ready",
-    title: "Ready / Out",
+    title: "Ready",
     statuses: [
+      "ready",
+      "ready_for_pickup",
+      "out_for_delivery",
+    ] as const satisfies readonly OrderStatus[],
+  },
+  {
+    id: "all",
+    title: "All",
+    statuses: [
+      "pending_acceptance",
+      "accepted",
+      "preparing",
       "ready",
       "ready_for_pickup",
       "out_for_delivery",

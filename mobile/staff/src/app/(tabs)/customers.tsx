@@ -146,7 +146,7 @@ export default function CustomersTab() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingBottom: 100, gap: 12 },
+  content: { padding: 20, paddingBottom: 24, gap: 12 },
   topRow: {
     flexDirection: "row",
     alignItems: "center",

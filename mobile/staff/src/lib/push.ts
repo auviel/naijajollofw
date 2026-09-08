@@ -130,11 +130,12 @@ export async function registerStaffPushDevice(): Promise<PushRegisterResult> {
   }
 
   if (Platform.OS === "android") {
+    // Omit `sound`: passing "default" is treated as a custom filename and logs
+    // "Custom sound 'default' not found". No sound key → system default.
     await Notifications.setNotificationChannelAsync("new-orders", {
       name: "New orders",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      sound: "default",
     });
   }
 

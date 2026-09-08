@@ -1,5 +1,4 @@
 import { formatKitchenWait } from "@/lib/kitchen/format";
-import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import {
@@ -7,6 +6,7 @@ import {
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
 import { Button } from "@naijajollof/ui";
+import { useEffect, useState } from "react";
 import { Modal, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,25 +17,23 @@ function ticketLabel(order: StaffOrderListItem): string {
   );
 }
 
-function fulfillmentLabel(order: StaffOrderListItem): string {
-  return order.fulfillmentType === "delivery" ? "Delivery" : "Pickup";
-}
-
 export function InsistOverlay({
   order,
   moreWaiting,
   bumpBusy,
   onAccept,
-  onBump,
+  onPark,
+  onDeclineConfirm,
 }: {
   order: StaffOrderListItem;
   moreWaiting: number;
   bumpBusy: boolean;
   onAccept: () => void;
-  onBump: () => void;
+  onPark: () => void;
+  onDeclineConfirm: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { colors } = useKitchenTheme();
+  const [confirmDecline, setConfirmDecline] = useState(false);
   const styles = useThemedStyles((c) => ({
     root: {
       flex: 1,
@@ -49,6 +47,7 @@ export function InsistOverlay({
     wait: { ...KType.wait, color: c.accent },
     customer: { ...KType.bodyStrong, color: c.text, marginTop: 16 },
     meta: { ...KType.meta, color: c.textSecondary, marginTop: 4 },
+    where: { ...KType.body, color: c.text, marginTop: 8 },
     summary: { ...KType.body, color: c.text, marginTop: 20 },
     notes: {
       ...KType.meta,
@@ -58,9 +57,25 @@ export function InsistOverlay({
     },
     more: { ...KType.metaStrong, color: c.textSecondary, marginTop: 16 },
     actions: { gap: 12 },
+    confirmHint: {
+      ...KType.meta,
+      color: c.textSecondary,
+      textAlign: "center" as const,
+      marginBottom: 4,
+    },
   }));
 
+  useEffect(() => {
+    setConfirmDecline(false);
+  }, [order.id]);
+
   const wait = formatKitchenWait(order.placedAt ?? order.createdAt);
+  const isDelivery = order.fulfillmentType === "delivery";
+  const whereLine = isDelivery
+    ? order.dropoffAddress
+      ? `Delivery · ${order.dropoffAddress}`
+      : "Delivery"
+    : "Pickup";
 
   return (
     <Modal
@@ -68,7 +83,7 @@ export function InsistOverlay({
       animationType="fade"
       presentationStyle="overFullScreen"
       statusBarTranslucent
-      onRequestClose={onAccept}
+      onRequestClose={onPark}
     >
       <View
         style={[
@@ -87,10 +102,13 @@ export function InsistOverlay({
             {order.customerName}
           </Text>
           <Text style={styles.meta}>
-            {fulfillmentLabel(order)} · {formatCadFromCents(order.totalCents)}
+            {formatCadFromCents(order.totalCents)}
+          </Text>
+          <Text style={styles.where} numberOfLines={3}>
+            {whereLine}
           </Text>
           {order.itemSummary ? (
-            <Text style={styles.summary} numberOfLines={4}>
+            <Text style={styles.summary} numberOfLines={5}>
               {order.itemSummary}
             </Text>
           ) : null}
@@ -107,18 +125,38 @@ export function InsistOverlay({
         </View>
 
         <View style={styles.actions}>
-          <Button
-            label={bumpBusy ? "…" : "Start"}
-            onPress={onBump}
-            disabled={bumpBusy}
-          />
-          <Button
-            label="Accept"
-            variant="secondary"
-            onPress={onAccept}
-            disabled={bumpBusy}
-            style={{ backgroundColor: colors.surfaceElevated }}
-          />
+          {confirmDecline ? (
+            <>
+              <Text style={styles.confirmHint}>
+                Guest will be notified · order cancelled
+              </Text>
+              <Button
+                label="Keep"
+                onPress={() => setConfirmDecline(false)}
+                disabled={bumpBusy}
+              />
+              <Button
+                label={bumpBusy ? "…" : "Yes, decline"}
+                variant="danger"
+                onPress={onDeclineConfirm}
+                disabled={bumpBusy}
+              />
+            </>
+          ) : (
+            <>
+              <Button
+                label={bumpBusy ? "…" : "Accept"}
+                onPress={onAccept}
+                disabled={bumpBusy}
+              />
+              <Button
+                label="Decline"
+                variant="ghost"
+                onPress={() => setConfirmDecline(true)}
+                disabled={bumpBusy}
+              />
+            </>
+          )}
         </View>
       </View>
     </Modal>

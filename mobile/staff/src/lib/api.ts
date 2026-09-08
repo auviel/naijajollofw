@@ -92,15 +92,36 @@ export async function apiFetch<T>(
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
-    response = await fetch(`${API_URL}${path}`, { ...init, headers });
+    const controller = new AbortController();
+    const timeoutMs = 20_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      response = await fetch(`${API_URL}${path}`, {
+        ...init,
+        headers,
+        signal: init.signal ?? controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
   } catch (cause) {
+    const aborted =
+      (cause instanceof Error && cause.name === "AbortError") ||
+      (typeof DOMException !== "undefined" &&
+        cause instanceof DOMException &&
+        cause.name === "AbortError");
+    const message = aborted
+      ? `Request timed out. Check API URL (${API_URL}).`
+      : cause instanceof Error
+        ? cause.message
+        : "Network error";
     reportApiFailure({
       path,
       method,
-      message: cause instanceof Error ? cause.message : "Network error",
+      message,
       cause,
     });
-    throw cause;
+    throw new Error(message);
   }
 
   if (response.status === 401 && retry) {

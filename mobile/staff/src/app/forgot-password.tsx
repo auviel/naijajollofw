@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -92,15 +93,22 @@ export default function ForgotPasswordScreen() {
       <View style={styles.scrim} />
 
       <KeyboardAvoidingView
-        style={[
-          styles.wrap,
-          {
-            paddingTop: insets.top + 24,
-            paddingBottom: Math.max(insets.bottom, 24),
-          },
-        ]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        <ScrollView
+          contentContainerStyle={[
+            styles.wrap,
+            {
+              paddingTop: insets.top + 24,
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
         <View style={styles.brand}>
           <Text style={[styles.brandName, { color: colors.inverse }]}>
             Reset password
@@ -228,6 +236,7 @@ export default function ForgotPasswordScreen() {
             </Pressable>
           ) : null}
         </GlassSurface>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -235,12 +244,13 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#1a1210" },
+  flex: { flex: 1 },
   scrim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(24, 18, 16, 0.45)",
   },
   wrap: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "flex-end",
     paddingHorizontal: 20,
     gap: 28,

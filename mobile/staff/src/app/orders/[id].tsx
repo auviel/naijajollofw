@@ -2,7 +2,10 @@ import { apiFetch } from "@/lib/api";
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { MapsLink, TelLink } from "@/components/kitchen/contact-links";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
+import { OrderStatusText } from "@/components/kitchen/order-status-text";
+import { DeliveryMethodSheet } from "@/components/kitchen/delivery-method-sheet";
 import { ActionIcon } from "@/lib/kitchen/action-icon";
+import { requestBoardRefresh } from "@/lib/kitchen/board-live";
 import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
@@ -24,18 +27,18 @@ function ticketTitle(order: StaffOrderDetail): string {
   );
 }
 
-function ticketSubtitle(order: StaffOrderDetail): string {
-  const kind = order.fulfillmentType === "delivery" ? "Delivery" : "Pickup";
-  const status = order.status.replaceAll("_", " ");
-  return `${kind} · ${status}`;
+function ticketSubtitleKind(order: StaffOrderDetail): string {
+  return order.fulfillmentType === "delivery" ? "Delivery" : "Pickup";
 }
 
 function OrderHeaderTitle({
   title,
-  subtitle,
+  kind,
+  status,
 }: {
   title: string;
-  subtitle: string;
+  kind: string;
+  status: string;
 }) {
   const { colors } = useKitchenTheme();
   return (
@@ -46,12 +49,16 @@ function OrderHeaderTitle({
       >
         {title}
       </Text>
-      <Text
-        style={[headerStyles.subtitle, { color: colors.textSecondary }]}
-        numberOfLines={1}
-      >
-        {subtitle}
-      </Text>
+      <View style={headerStyles.subRow}>
+        <Text
+          style={[headerStyles.subtitle, { color: colors.textSecondary }]}
+          numberOfLines={1}
+        >
+          {kind}
+          {" · "}
+        </Text>
+        <OrderStatusText status={status} style={headerStyles.subtitle} />
+      </View>
     </View>
   );
 }
@@ -67,10 +74,14 @@ const headerStyles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.2,
   },
+  subRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 1,
+  },
   subtitle: {
     fontSize: 12,
-    fontWeight: "500",
-    marginTop: 1,
+    fontWeight: "600",
   },
 });
 
@@ -118,6 +129,7 @@ export default function TicketScreen() {
   const [order, setOrder] = useState<StaffOrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [methodSheet, setMethodSheet] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -143,15 +155,31 @@ export default function TicketScreen() {
       return;
     }
     const title = ticketTitle(order);
-    const subtitle = ticketSubtitle(order);
+    const kind = ticketSubtitleKind(order);
     navigation.setOptions({
       title,
-      headerTitle: () => <OrderHeaderTitle title={title} subtitle={subtitle} />,
+      headerTitle: () => (
+        <OrderHeaderTitle
+          title={title}
+          kind={kind}
+          status={order.status}
+        />
+      ),
     });
   }, [navigation, order, resolved]);
 
   async function transition(to: string) {
-    if (!id) return;
+    if (!id || !order) return;
+
+    if (
+      (to === "ready" || to === "ready_for_pickup") &&
+      order.fulfillmentType === "delivery" &&
+      order.status === "preparing"
+    ) {
+      setMethodSheet(true);
+      return;
+    }
+
     setBusy(to);
     try {
       const data = await apiFetch<StaffOrderDetail>(`/api/orders/${id}/transition`, {
@@ -159,6 +187,7 @@ export default function TicketScreen() {
         body: JSON.stringify({ to }),
       });
       setOrder(data);
+      requestBoardRefresh();
     } catch (err) {
       Alert.alert("Could not update", err instanceof Error ? err.message : "Try again");
     } finally {
@@ -166,20 +195,8 @@ export default function TicketScreen() {
     }
   }
 
-  async function fulfillManual() {
-    if (!id) return;
-    setBusy("manual");
-    try {
-      const data = await apiFetch<StaffOrderDetail>(`/api/orders/${id}/fulfill/manual`, {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-      setOrder(data);
-    } catch (err) {
-      Alert.alert("Could not dispatch", err instanceof Error ? err.message : "Try again");
-    } finally {
-      setBusy(null);
-    }
+  async function openMethodSheet() {
+    setMethodSheet(true);
   }
 
   if (!order) {
@@ -275,10 +292,8 @@ export default function TicketScreen() {
               disabled={Boolean(busy)}
               variant="secondary"
               icon={<ActionIcon to="fulfill_manual" variant="secondary" />}
-              label={
-                busy === "manual" ? "Working…" : "Out for delivery (manual)"
-              }
-              onPress={() => void fulfillManual()}
+              label={busy === "method" ? "Working…" : "Choose delivery method"}
+              onPress={() => void openMethodSheet()}
             />
           ) : null}
           {order.allowedActions
@@ -291,14 +306,21 @@ export default function TicketScreen() {
                 icon={<ActionIcon to={action.to} variant="danger" />}
                 label={busy === action.to ? "Working…" : action.label}
                 onPress={() => {
-                  Alert.alert("Cancel this order?", undefined, [
-                    { text: "Keep", style: "cancel" },
-                    {
-                      text: "Cancel order",
-                      style: "destructive",
-                      onPress: () => void transition(action.to),
-                    },
-                  ]);
+                  const declining = order.status === "pending_acceptance";
+                  Alert.alert(
+                    declining ? "Decline this order?" : "Cancel this order?",
+                    declining
+                      ? "Guest will be notified · order cancelled."
+                      : undefined,
+                    [
+                      { text: "Keep", style: "cancel" },
+                      {
+                        text: declining ? "Yes, decline" : "Cancel order",
+                        style: "destructive",
+                        onPress: () => void transition(action.to),
+                      },
+                    ],
+                  );
                 }}
               />
             ))}
@@ -311,6 +333,18 @@ export default function TicketScreen() {
           onPress={() => router.back()}
         />
       </StackScroll>
+      {methodSheet ? (
+        <DeliveryMethodSheet
+          order={order}
+          markReadyFirst={order.status === "preparing"}
+          onCancel={() => setMethodSheet(false)}
+          onDone={() => {
+            setMethodSheet(false);
+            requestBoardRefresh();
+            void load();
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

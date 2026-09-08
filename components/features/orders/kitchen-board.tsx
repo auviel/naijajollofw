@@ -26,22 +26,24 @@ type ColumnId = (typeof KITCHEN_BOARD_COLUMNS)[number]["id"];
 
 function tabLabel(id: ColumnId): string {
   switch (id) {
-    case "new":
-      return "New";
     case "cooking":
       return "Cooking";
     case "ready":
       return "Ready";
+    case "all":
+      return "All";
   }
 }
 
 function boardActionLabel(to: TransitionAction["to"], fallback: string): string {
   switch (to) {
     case "preparing":
-      return "Start";
+      return "Accept";
     case "ready":
     case "ready_for_pickup":
       return "Ready";
+    case "completed":
+      return fallback;
     default:
       return fallback;
   }
@@ -72,12 +74,18 @@ function ordersForColumn(
 
 function firstColumnWithWork(items: StaffOrderListItem[]): ColumnId {
   for (const column of KITCHEN_BOARD_COLUMNS) {
+    if (column.id === "all") continue;
     if (ordersForColumn(items, column).length > 0) {
       return column.id;
     }
   }
-  return "new";
+  return "cooking";
 }
+
+/** Side-by-side lanes on large screens — All is tabs-only (avoids duplicate cards). */
+const DESKTOP_LANE_COLUMNS = KITCHEN_BOARD_COLUMNS.filter(
+  (column) => column.id !== "all",
+);
 
 export function KitchenBoard({
   initialItems,
@@ -254,6 +262,9 @@ export function KitchenBoard({
           {KITCHEN_BOARD_COLUMNS.map((column) => {
             const count = columnCounts.get(column.id) ?? 0;
             const selected = column.id === activeColumnId;
+            const hot =
+              column.id === "cooking" &&
+              liveItems.some((order) => order.status === "pending_acceptance");
             return (
               <button
                 key={column.id}
@@ -272,7 +283,7 @@ export function KitchenBoard({
                 <span
                   className={cn(
                     "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold",
-                    column.id === "new" && count > 0
+                    hot && count > 0
                       ? "bg-amber-500 text-white"
                       : selected
                         ? "bg-surface text-text-secondary"
@@ -301,9 +312,12 @@ export function KitchenBoard({
         </section>
       </div>
 
-      <div className="hidden gap-3 lg:grid lg:grid-cols-3">
-        {KITCHEN_BOARD_COLUMNS.map((column) => {
+      <div className="hidden gap-3 lg:grid lg:grid-cols-2">
+        {DESKTOP_LANE_COLUMNS.map((column) => {
           const columnOrders = ordersForColumn(liveItems, column);
+          const hot =
+            column.id === "cooking" &&
+            columnOrders.some((order) => order.status === "pending_acceptance");
 
           return (
             <section
@@ -318,7 +332,7 @@ export function KitchenBoard({
                 <span
                   className={cn(
                     "inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
-                    column.id === "new" && columnOrders.length > 0
+                    hot
                       ? "bg-amber-500 text-white"
                       : "bg-surface text-text-secondary",
                   )}

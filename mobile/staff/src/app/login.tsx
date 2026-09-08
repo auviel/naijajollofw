@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -59,69 +60,82 @@ export default function LoginScreen() {
       <View style={styles.scrim} />
 
       <KeyboardAvoidingView
-        style={[
-          styles.wrap,
-          {
-            paddingTop: insets.top + 24,
-            paddingBottom: Math.max(insets.bottom, 24),
-          },
-        ]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <View style={styles.brand}>
-          <Text style={[styles.brandName, { color: colors.inverse }]}>
-            Naija Jollof
-          </Text>
-          <Text style={styles.brandLine}>Kitchen staff</Text>
-        </View>
-
-        <GlassSurface style={styles.card} interactive>
-          <View style={styles.fieldBlock}>
-            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-            <Field
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              placeholder="you@store.com"
-              value={email}
-              onChangeText={setEmail}
-              textContentType="username"
-              autoComplete="email"
-            />
-          </View>
-          <View style={styles.fieldBlock}>
-            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-            <PasswordField
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              textContentType="password"
-              autoComplete="password"
-            />
-          </View>
-          {error ? (
-            <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
-          ) : null}
-          <Button
-            disabled={!canSubmit}
-            label={busy ? "Signing in…" : "Sign in"}
-            onPress={() => void onSubmit()}
-          />
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/forgot-password",
-                params: email.trim() ? { email: email.trim() } : undefined,
-              })
-            }
-            hitSlop={8}
-            accessibilityRole="link"
-          >
-            <Text style={[styles.forgot, { color: colors.accent }]}>
-              Forgot password?
+        <ScrollView
+          contentContainerStyle={[
+            styles.wrap,
+            {
+              paddingTop: insets.top + 24,
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <View style={styles.brand}>
+            <Text style={[styles.brandName, { color: colors.inverse }]}>
+              Naija Jollof
             </Text>
-          </Pressable>
-        </GlassSurface>
+            <Text style={styles.brandLine}>Kitchen staff</Text>
+          </View>
+
+          <GlassSurface style={styles.card} interactive>
+            <View style={styles.fieldBlock}>
+              <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+              <Field
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                placeholder="you@store.com"
+                value={email}
+                onChangeText={setEmail}
+                textContentType="username"
+                autoComplete="email"
+              />
+            </View>
+            <View style={styles.fieldBlock}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                Password
+              </Text>
+              <PasswordField
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                textContentType="password"
+                autoComplete="password"
+              />
+            </View>
+            {error ? (
+              <Text style={[styles.error, { color: colors.danger }]}>
+                {error}
+              </Text>
+            ) : null}
+            <Button
+              disabled={!canSubmit}
+              label={busy ? "Signing in…" : "Sign in"}
+              onPress={() => void onSubmit()}
+            />
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/forgot-password",
+                  params: email.trim() ? { email: email.trim() } : undefined,
+                })
+              }
+              hitSlop={8}
+              accessibilityRole="link"
+            >
+              <Text style={[styles.forgot, { color: colors.accent }]}>
+                Forgot password?
+              </Text>
+            </Pressable>
+          </GlassSurface>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -129,12 +143,13 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#1a1210" },
+  flex: { flex: 1 },
   scrim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(24, 18, 16, 0.45)",
   },
   wrap: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "flex-end",
     paddingHorizontal: 20,
     gap: 28,

@@ -27,7 +27,7 @@ type EmailNotifyStatus =
   | "out_for_delivery"
   | "cancelled";
 
-/** Start on the board skips `accepted` → still send the accepted diner ping. */
+/** Accept into cooking skips `accepted` → still send the accepted diner ping. */
 export function notifyStatusForStaffTransition(
   from: OrderStatus,
   to: OrderStatus,

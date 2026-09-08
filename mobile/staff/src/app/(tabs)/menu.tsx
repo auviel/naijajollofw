@@ -42,7 +42,7 @@ export default function MenuTab() {
   const router = useRouter();
   const { colors } = useKitchenTheme();
   const styles = useThemedStyles((c) => ({
-    content: { padding: 20, paddingBottom: 100, gap: 12 },
+    content: { padding: 20, paddingBottom: 24, gap: 12 },
     topRow: {
       flexDirection: "row" as const,
       alignItems: "center" as const,

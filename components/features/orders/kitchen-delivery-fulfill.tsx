@@ -41,19 +41,22 @@ export function KitchenDeliveryFulfill({ order }: KitchenDeliveryFulfillProps) {
     setPendingManual(true);
     setError(null);
     try {
-      const response = await fetch(`/api/orders/${order.id}/fulfill/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      const response = await fetch(
+        `/api/orders/${order.id}/fulfill/assign-manual`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
       if (!response.ok) {
         toastError(await readApiError(response));
         return;
       }
-      success("Out for delivery");
+      success("Manual delivery — tap Complete when delivered");
       router.refresh();
     } catch {
-      toastError("Unable to mark out for delivery.");
+      toastError("Unable to reserve manual delivery.");
     } finally {
       setPendingManual(false);
     }

@@ -134,19 +134,22 @@ function ManualFulfillForm({
   async function submit() {
     setPending(true);
     try {
-      const response = await fetch(`/api/orders/${orderId}/fulfill/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: note.trim() || undefined }),
-      });
+      const response = await fetch(
+        `/api/orders/${orderId}/fulfill/assign-manual`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ note: note.trim() || undefined }),
+        },
+      );
       if (!response.ok) {
         toastError(await readApiError(response));
         return;
       }
-      success("Marked out for delivery");
+      success("Manual delivery — tap Complete when delivered");
       router.refresh();
     } catch {
-      toastError("Unable to fulfill order.");
+      toastError("Unable to reserve manual delivery.");
     } finally {
       setPending(false);
     }

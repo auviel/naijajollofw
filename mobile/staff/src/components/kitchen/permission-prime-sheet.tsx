@@ -16,7 +16,7 @@ const BENEFITS: Array<{
   },
   {
     icon: "alert-circle-outline",
-    text: "Insist alerts until someone Accepts or Bumps",
+    text: "Insist alerts until someone Accepts or Declines",
   },
   {
     icon: "settings-outline",

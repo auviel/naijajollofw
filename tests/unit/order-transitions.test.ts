@@ -9,7 +9,7 @@ import {
 } from "@/lib/domain/order/transitions";
 
 describe("order transitions", () => {
-  it("allows start (preparing) and cancel from pending_acceptance", () => {
+  it("allows accept (preparing) and decline from pending_acceptance", () => {
     expect(canTransition("pending_acceptance", "preparing")).toBe(true);
     expect(canTransition("pending_acceptance", "accepted")).toBe(false);
     expect(canTransition("pending_acceptance", "cancelled")).toBe(true);
@@ -48,6 +48,22 @@ describe("order transitions", () => {
     ).toBe(false);
   });
 
+  it("allows complete when ready with manual delivery", () => {
+    expect(
+      canTransition("ready", "completed", {
+        fulfillmentType: "delivery",
+        fulfillmentMethod: "manual",
+      }),
+    ).toBe(true);
+    const actions = getTransitionActions("ready", {
+      fulfillmentType: "delivery",
+      fulfillmentMethod: "manual",
+    });
+    expect(actions.find((action) => action.to === "completed")?.label).toBe(
+      "Complete",
+    );
+  });
+
   it("labels pickup complete as Picked up", () => {
     const actions = getTransitionActions("ready_for_pickup", {
       fulfillmentType: "pickup",
@@ -57,19 +73,22 @@ describe("order transitions", () => {
     );
   });
 
-  it("exposes primary start action first", () => {
+  it("exposes primary accept action first", () => {
     const actions = getTransitionActions("pending_acceptance");
     expect(actions[0]?.to).toBe("preparing");
-    expect(actions[0]?.label).toBe("Start");
+    expect(actions[0]?.label).toBe("Accept");
     expect(actions.some((a) => a.to === "cancelled")).toBe(true);
+    expect(actions.find((a) => a.to === "cancelled")?.label).toBe("Decline");
   });
 
   it("uses a three-column kitchen board", () => {
     expect(KITCHEN_BOARD_COLUMNS.map((column) => column.id)).toEqual([
-      "new",
       "cooking",
       "ready",
+      "all",
     ]);
+    expect(KITCHEN_BOARD_COLUMNS[0]?.statuses).toContain("pending_acceptance");
+    expect(KITCHEN_BOARD_COLUMNS[0]?.statuses).toContain("preparing");
   });
 
   it("maps carrier status onto order status", () => {

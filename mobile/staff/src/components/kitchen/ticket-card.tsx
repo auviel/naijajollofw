@@ -6,7 +6,12 @@ import { Radii, Shadows } from "@naijajollof/ui";
 import * as Clipboard from "expo-clipboard";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { ItemThumb } from "@/components/kitchen/item-thumb";
-import { isStatusBump, primaryBumpFor } from "@/lib/kitchen/bump";
+import {
+  isFulfillMethodBump,
+  isReadyDeliveryBump,
+  isStatusBump,
+  primaryBumpFor,
+} from "@/lib/kitchen/bump";
 import {
   formatKitchenScheduled,
   formatKitchenWait,
@@ -129,7 +134,13 @@ export function TicketCard({
       <Pressable
         onPress={onOpen}
         onLongPress={() => {
-          if (onLongPressBump && bump && isStatusBump(bump)) {
+          if (
+            onLongPressBump &&
+            bump &&
+            (isStatusBump(bump) ||
+              isReadyDeliveryBump(bump) ||
+              isFulfillMethodBump(bump))
+          ) {
             onLongPressBump();
             return;
           }

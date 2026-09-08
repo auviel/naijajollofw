@@ -262,16 +262,27 @@ export type DinerPaymentState = {
 };
 
 export const KITCHEN_BOARD_COLUMNS = [
-  { id: "new", title: "New", statuses: ["pending_acceptance"] as const },
   {
     id: "cooking",
     title: "Cooking",
-    statuses: ["accepted", "preparing"] as const,
+    statuses: ["pending_acceptance", "accepted", "preparing"] as const,
   },
   {
     id: "ready",
-    title: "Ready / Out",
+    title: "Ready",
     statuses: ["ready", "ready_for_pickup", "out_for_delivery"] as const,
+  },
+  {
+    id: "all",
+    title: "All",
+    statuses: [
+      "pending_acceptance",
+      "accepted",
+      "preparing",
+      "ready",
+      "ready_for_pickup",
+      "out_for_delivery",
+    ] as const,
   },
 ] as const;
 

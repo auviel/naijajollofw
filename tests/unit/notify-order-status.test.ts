@@ -24,7 +24,7 @@ describe("shouldNotifyOrderStatus", () => {
     expect(shouldNotifyOrderStatus("completed", "delivery")).toBe(false);
   });
 
-  it("maps board Start to the accepted diner ping", () => {
+  it("maps Accept into cooking to the accepted diner ping", () => {
     expect(
       notifyStatusForStaffTransition("pending_acceptance", "preparing"),
     ).toBe("accepted");

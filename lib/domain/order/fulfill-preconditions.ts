@@ -22,6 +22,17 @@ export function canClaimCourierDispatch(
   );
 }
 
+/** Assign manual method while staying on Ready (choose method at Ready bump). */
+export function canAssignManualDelivery(
+  order: FulfillOrderSnapshot,
+): boolean {
+  return canClaimCourierDispatch(order);
+}
+
+/**
+ * Legacy: mark manual delivery as out for delivery.
+ * Prefer assign-manual + complete (Fulfill) for the kitchen Ready path.
+ */
 export function canFulfillManualDelivery(
   order: FulfillOrderSnapshot,
 ): boolean {

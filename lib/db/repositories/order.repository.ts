@@ -605,6 +605,50 @@ export const orderRepository = {
     });
   },
 
+  async assignManualFulfillment(input: {
+    orderId: string;
+    storeId: string;
+    actor: string;
+    note?: string | null;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const result = await tx.order.updateMany({
+        where: {
+          id: input.orderId,
+          storeId: input.storeId,
+          status: "ready",
+          fulfillmentType: "delivery",
+          fulfillmentMethod: "unassigned",
+          deliveryId: null,
+        },
+        data: {
+          fulfillmentMethod: "manual",
+          manualDeliveryNote: input.note?.trim() || null,
+        },
+      });
+
+      if (result.count === 0) {
+        return null;
+      }
+
+      await tx.orderEvent.create({
+        data: {
+          orderId: input.orderId,
+          status: "ready",
+          actor: input.actor,
+          note: input.note?.trim()
+            ? `Manual delivery reserved: ${input.note.trim()}`
+            : "Manual delivery reserved",
+        },
+      });
+
+      return tx.order.findFirstOrThrow({
+        where: { id: input.orderId },
+        include: orderInclude,
+      });
+    });
+  },
+
   async fulfillManual(input: {
     orderId: string;
     storeId: string;

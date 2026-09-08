@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { InsistOverlay } from "@/components/kitchen/insist-overlay";
+import { requestBoardRefresh } from "@/lib/kitchen/board-live";
 import {
   ackInsistOrder,
   getInsistAckedIds,
@@ -124,12 +125,6 @@ export function InsistHost({ paused = false }: { paused?: boolean }) {
   }, [current?.id]);
 
   const onAccept = useCallback(async () => {
-    if (!current) return;
-    await ackInsistOrder(current.id);
-    setAcked(await getInsistAckedIds());
-  }, [current]);
-
-  const onBump = useCallback(async () => {
     if (!current || bumpBusy) return;
     setBumpBusy(true);
     void insistBumpConfirm();
@@ -138,17 +133,47 @@ export function InsistHost({ paused = false }: { paused?: boolean }) {
         method: "POST",
         body: JSON.stringify({ to: "preparing" }),
       });
+      requestBoardRefresh();
       await load();
     } catch (err) {
       void insistError();
-      const message = err instanceof Error ? err.message : "Bump failed";
-      Alert.alert("Bump failed", message, [
+      const message = err instanceof Error ? err.message : "Accept failed";
+      Alert.alert("Accept failed", message, [
         { text: "Dismiss", style: "cancel" },
         {
           text: "Retry",
-          onPress: () => void onBump(),
+          onPress: () => void onAccept(),
         },
       ]);
+    } finally {
+      setBumpBusy(false);
+    }
+  }, [current, bumpBusy, load]);
+
+  const onPark = useCallback(() => {
+    if (!current || bumpBusy) return;
+    void (async () => {
+      await ackInsistOrder(current.id);
+      setAcked(await getInsistAckedIds());
+    })();
+  }, [current, bumpBusy]);
+
+  const onDeclineConfirm = useCallback(async () => {
+    if (!current || bumpBusy) return;
+    setBumpBusy(true);
+    try {
+      await apiFetch(`/api/orders/${current.id}/transition`, {
+        method: "POST",
+        body: JSON.stringify({ to: "cancelled" }),
+      });
+      await ackInsistOrder(current.id);
+      setAcked(await getInsistAckedIds());
+      requestBoardRefresh();
+      await load();
+    } catch (err) {
+      void insistError();
+      const message = err instanceof Error ? err.message : "Decline failed";
+      Alert.alert("Decline failed", message);
     } finally {
       setBumpBusy(false);
     }
@@ -162,7 +187,8 @@ export function InsistHost({ paused = false }: { paused?: boolean }) {
       moreWaiting={moreWaiting}
       bumpBusy={bumpBusy}
       onAccept={() => void onAccept()}
-      onBump={() => void onBump()}
+      onPark={onPark}
+      onDeclineConfirm={() => void onDeclineConfirm()}
     />
   );
 }

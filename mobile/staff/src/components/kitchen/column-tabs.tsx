@@ -4,12 +4,14 @@ import { DarkPalette } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
-export type BoardColumnId = "new" | "cooking" | "ready";
+export type BoardColumnId = "cooking" | "ready" | "all";
 
 type ColumnTab = {
   id: BoardColumnId;
   title: string;
   count: number;
+  /** Accent badge — e.g. parked/incoming still waiting accept. */
+  hot?: boolean;
 };
 
 export function ColumnTabs({
@@ -90,7 +92,7 @@ export function ColumnTabs({
     <View style={styles.shell} accessibilityRole="tablist">
       {columns.map((column) => {
         const selected = column.id === activeId;
-        const highlightNew = column.id === "new" && column.count > 0;
+        const highlightHot = Boolean(column.hot) && column.count > 0;
         return (
           <Pressable
             key={column.id}
@@ -105,15 +107,15 @@ export function ColumnTabs({
             <View
               style={[
                 styles.badge,
-                highlightNew && styles.badgeHot,
-                selected && !highlightNew && styles.badgeSelected,
+                highlightHot && styles.badgeHot,
+                selected && !highlightHot && styles.badgeSelected,
               ]}
             >
               <Text
                 style={[
                   styles.badgeText,
-                  highlightNew && styles.badgeTextHot,
-                  selected && !highlightNew && styles.badgeTextSelected,
+                  highlightHot && styles.badgeTextHot,
+                  selected && !highlightHot && styles.badgeTextSelected,
                 ]}
               >
                 {column.count}

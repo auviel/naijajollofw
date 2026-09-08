@@ -1,0 +1,59 @@
+import { requireStoreManager } from "@/lib/auth/session";
+import {
+  orderRepository,
+  toStaffDetail,
+} from "@/lib/db/repositories/order.repository";
+import { canAssignManualDelivery } from "@/lib/domain/order/fulfill-preconditions";
+import type { StaffOrderDetail } from "@/lib/domain/order/types";
+import { fulfillManualSchema } from "@/lib/domain/order/validation-staff";
+import { AppError } from "@/lib/utils/errors";
+
+/** Reserve manual delivery while staying on Ready. */
+export async function assignOrderManual(
+  orderId: string,
+  input: unknown,
+): Promise<StaffOrderDetail> {
+  const user = await requireStoreManager();
+  const parsed = fulfillManualSchema.parse(input);
+
+  const existing = await orderRepository.findByIdForStore(orderId, user.storeId);
+  if (!existing) {
+    throw new AppError("NOT_FOUND", "Order not found.", 404);
+  }
+
+  if (
+    !canAssignManualDelivery({
+      status: existing.status,
+      fulfillmentType: existing.fulfillmentType,
+      fulfillmentMethod: existing.fulfillmentMethod,
+      deliveryId: existing.deliveryId,
+    })
+  ) {
+    throw new AppError(
+      "VALIDATION_ERROR",
+      existing.fulfillmentType !== "delivery"
+        ? "Manual delivery is only for delivery orders."
+        : existing.status !== "ready"
+          ? "Order must be ready before choosing delivery method."
+          : "This order is already assigned a fulfillment method.",
+      400,
+    );
+  }
+
+  const updated = await orderRepository.assignManualFulfillment({
+    orderId,
+    storeId: user.storeId,
+    actor: user.email,
+    note: parsed.note,
+  });
+
+  if (!updated) {
+    throw new AppError(
+      "CONFLICT",
+      "This order was already assigned a fulfillment method. Refresh and try again.",
+      409,
+    );
+  }
+
+  return toStaffDetail(updated);
+}

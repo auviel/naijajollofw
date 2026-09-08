@@ -14,7 +14,13 @@ import {
   getPersistedBoardColumn,
   setPersistedBoardColumn,
 } from "@/lib/kitchen/board-column-state";
-import { isStatusBump, primaryBumpFor } from "@/lib/kitchen/bump";
+import { subscribeBoardRefresh } from "@/lib/kitchen/board-live";
+import {
+  isFulfillMethodBump,
+  isReadyDeliveryBump,
+  isStatusBump,
+  primaryBumpFor,
+} from "@/lib/kitchen/bump";
 import { insistBumpConfirm, insistError } from "@/lib/kitchen/insist";
 import {
   isKitchenBoardDeferred,
@@ -24,9 +30,8 @@ import {
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
 import { KitchenBoardSkeleton } from "@naijajollof/ui";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   AppState,
@@ -39,11 +44,34 @@ import {
 } from "react-native";
 import { KitchenHeaderActions } from "@/components/kitchen/header-actions";
 import { SafeScreen } from "@/components/kitchen/safe-screen";
-import { useKitchenTheme } from "@/lib/kitchen/theme";
+import { DeliveryMethodSheet } from "@/components/kitchen/delivery-method-sheet";
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 
-const POLL_MS = 10_000;
+const POLL_MS = 8_000;
+
+/** Statuses that still belong on the live kitchen board. */
+const BOARD_ACTIVE = new Set<string>([
+  "pending_acceptance",
+  "accepted",
+  "preparing",
+  "ready",
+  "ready_for_pickup",
+  "out_for_delivery",
+]);
+
+function patchBoardItems(
+  items: StaffOrderListItem[],
+  orderId: string,
+  next: Partial<StaffOrderListItem> & { status: OrderStatus },
+): StaffOrderListItem[] {
+  if (!BOARD_ACTIVE.has(next.status)) {
+    return items.filter((item) => item.id !== orderId);
+  }
+  return items.map((item) =>
+    item.id === orderId ? { ...item, ...next } : item,
+  );
+}
 
 function orderTimeMs(order: StaffOrderListItem): number {
   const iso = order.placedAt ?? order.createdAt;
@@ -66,32 +94,26 @@ function ordersForColumn(
 
 function firstColumnWithWork(items: StaffOrderListItem[]): BoardColumnId {
   for (const column of KITCHEN_BOARD_COLUMNS) {
+    // Prefer Cooking / Ready over All when auto-picking a lane.
+    if (column.id === "all") continue;
     if (ordersForColumn(items, column.id).length > 0) {
       return column.id;
     }
   }
-  return "new";
+  return "cooking";
 }
 
 export function BoardScreen() {
   const router = useRouter();
   const { store } = useAuth();
-  const { colors } = useKitchenTheme();
   const styles = useThemedStyles((c) => ({
-    content: { padding: 20, paddingBottom: 100, gap: 16 },
+    content: { padding: 20, paddingBottom: 24, gap: 16 },
     topRow: {
       flexDirection: "row" as const,
       justifyContent: "space-between" as const,
       alignItems: "center" as const,
       gap: 12,
     },
-    allOrdersBtn: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      alignSelf: "flex-start" as const,
-      gap: 4,
-    },
-    allOrders: { ...KType.metaStrong, color: c.accent },
     error: { ...KType.metaStrong, color: c.danger },
     emptyBlock: { alignItems: "center" as const, gap: 8, marginTop: 24 },
     empty: {
@@ -118,34 +140,50 @@ export function BoardScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [methodOrder, setMethodOrder] = useState<{
+    order: StaffOrderListItem;
+    markReadyFirst: boolean;
+  } | null>(null);
   const [activeColumnId, setActiveColumnId] = useState<BoardColumnId>(
     persisted.activeColumnId,
   );
   const [columnTouched, setColumnTouched] = useState(persisted.columnTouched);
   const [laterOpen, setLaterOpen] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      markBoardSeen();
-    }, []),
-  );
-
-  useEffect(() => {
-    setPersistedBoardColumn(activeColumnId, columnTouched);
-  }, [activeColumnId, columnTouched]);
+  const loadSeq = useRef(0);
 
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     try {
       const result = await apiFetch<ListStaffOrdersResult>(
         "/api/orders?filter=active&channel=kitchen&limit=80",
       );
+      // Drop stale polls so an in-flight refresh can't revive a fulfilled ticket.
+      if (seq !== loadSeq.current) return;
       setData(result);
       setBoardPendingAcceptance(result.pendingAcceptanceCount ?? 0);
       setError(null);
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       setError(err instanceof Error ? err.message : "Could not load board");
     }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      markBoardSeen();
+      void load();
+    }, [load]),
+  );
+
+  useEffect(() => {
+    return subscribeBoardRefresh(() => {
+      void load();
+    });
+  }, [load]);
+
+  useEffect(() => {
+    setPersistedBoardColumn(activeColumnId, columnTouched);
+  }, [activeColumnId, columnTouched]);
 
   useEffect(() => {
     void load();
@@ -197,11 +235,17 @@ export function BoardScreen() {
 
   const columnCounts = useMemo(() => {
     return {
-      new: ordersForColumn(grouped.live, "new").length,
       cooking: ordersForColumn(grouped.live, "cooking").length,
       ready: ordersForColumn(grouped.live, "ready").length,
+      all: ordersForColumn(grouped.live, "all").length,
     };
   }, [grouped.live]);
+
+  const pendingOnBoard = useMemo(
+    () =>
+      grouped.live.some((order) => order.status === "pending_acceptance"),
+    [grouped.live],
+  );
 
   const activeOrders = ordersForColumn(grouped.live, activeColumnId);
 
@@ -215,22 +259,31 @@ export function BoardScreen() {
       const bump = primaryBumpFor(order);
       if (!bump) return;
 
+      if (isReadyDeliveryBump(bump)) {
+        setMethodOrder({ order, markReadyFirst: true });
+        return;
+      }
+
+      if (isFulfillMethodBump(bump)) {
+        setMethodOrder({ order, markReadyFirst: false });
+        return;
+      }
+
       if (!isStatusBump(bump)) {
-        router.push(`/orders/${order.id}`);
         return;
       }
 
       const previous = data;
       setBusyId(order.id);
+      // Invalidate in-flight polls before optimistic patch.
+      loadSeq.current += 1;
       setData((current) => {
         if (!current) return current;
         return {
           ...current,
-          items: current.items.map((item) =>
-            item.id === order.id
-              ? { ...item, status: bump.to as OrderStatus }
-              : item,
-          ),
+          items: patchBoardItems(current.items, order.id, {
+            status: bump.to as OrderStatus,
+          }),
           pendingAcceptanceCount:
             order.status === "pending_acceptance"
               ? Math.max(0, current.pendingAcceptanceCount - 1)
@@ -244,6 +297,7 @@ export function BoardScreen() {
           method: "POST",
           body: JSON.stringify({ to: bump.to }),
         });
+        // Bump already applied locally; refetch for counts/tabs (ignore stale races).
         await load();
       } catch (err) {
         setData(previous);
@@ -261,7 +315,7 @@ export function BoardScreen() {
         setBusyId(null);
       }
     },
-    [data, load, router],
+    [data, load],
   );
 
   const emptyBoard =
@@ -273,6 +327,7 @@ export function BoardScreen() {
 
   const nextColumnWithWork = useMemo(() => {
     for (const column of KITCHEN_BOARD_COLUMNS) {
+      if (column.id === "all") continue;
       if (
         column.id !== activeColumnId &&
         ordersForColumn(grouped.live, column.id).length > 0
@@ -300,19 +355,9 @@ export function BoardScreen() {
         }
       >
         <View style={styles.topRow}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={KType.page}>{store?.name ?? "Kitchen"}</Text>
-            <Pressable
-              onPress={() => router.push("/orders")}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="All orders"
-              style={styles.allOrdersBtn}
-            >
-              <Ionicons name="list-outline" size={14} color={colors.accent} />
-              <Text style={styles.allOrders}>All orders</Text>
-            </Pressable>
-          </View>
+          <Text style={[KType.page, { flex: 1 }]}>
+            {store?.name ?? "Kitchen"}
+          </Text>
           <KitchenHeaderActions />
         </View>
 
@@ -333,13 +378,14 @@ export function BoardScreen() {
               activeId={activeColumnId}
               onChange={selectColumn}
               columns={[
-                { id: "new", title: "New", count: columnCounts.new },
                 {
                   id: "cooking",
                   title: "Cooking",
                   count: columnCounts.cooking,
+                  hot: pendingOnBoard,
                 },
                 { id: "ready", title: "Ready", count: columnCounts.ready },
+                { id: "all", title: "All", count: columnCounts.all },
               ]}
             />
 
@@ -348,11 +394,11 @@ export function BoardScreen() {
                 <View style={styles.emptyBlock}>
                   <Text style={styles.emptyColumn}>
                     None in{" "}
-                    {activeColumnId === "new"
-                      ? "New"
-                      : activeColumnId === "cooking"
-                        ? "Cooking"
-                        : "Ready"}
+                    {activeColumnId === "cooking"
+                      ? "Cooking"
+                      : activeColumnId === "ready"
+                        ? "Ready"
+                        : "All"}
                   </Text>
                   {nextColumnWithWork ? (
                     <Pressable
@@ -360,12 +406,7 @@ export function BoardScreen() {
                       hitSlop={8}
                     >
                       <Text style={styles.emptyCta}>
-                        Switch to{" "}
-                        {nextColumnWithWork.id === "new"
-                          ? "New"
-                          : nextColumnWithWork.id === "cooking"
-                            ? "Cooking"
-                            : "Ready"}
+                        Switch to {nextColumnWithWork.title}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -412,6 +453,18 @@ export function BoardScreen() {
           </>
         )}
       </ScrollView>
+      {methodOrder ? (
+        <DeliveryMethodSheet
+          order={methodOrder.order}
+          markReadyFirst={methodOrder.markReadyFirst}
+          onCancel={() => setMethodOrder(null)}
+          onDone={() => {
+            setMethodOrder(null);
+            void insistBumpConfirm();
+            void load();
+          }}
+        />
+      ) : null}
     </SafeScreen>
   );
 }

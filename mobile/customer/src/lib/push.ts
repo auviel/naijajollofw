@@ -27,10 +27,10 @@ export async function registerDinerPushDevice(): Promise<void> {
   if (status !== "granted") return;
 
   if (Platform.OS === "android") {
+    // Omit `sound`: "default" is treated as a custom filename on Android.
     await Notifications.setNotificationChannelAsync("order-updates", {
       name: "Order updates",
       importance: Notifications.AndroidImportance.HIGH,
-      sound: "default",
     });
   }
 

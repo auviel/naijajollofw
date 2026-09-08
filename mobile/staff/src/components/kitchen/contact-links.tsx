@@ -1,7 +1,8 @@
 import { openMapsAddress, openTel } from "@/lib/kitchen/linking";
 import { useKitchenTheme } from "@/lib/kitchen/theme";
 import { KType } from "@/lib/kitchen/typography";
-import { Pressable, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, Text, View } from "react-native";
 
 export function TelLink({
   phone,
@@ -35,9 +36,17 @@ export function MapsLink({ address }: { address: string }) {
       hitSlop={6}
     >
       <Text style={[KType.body, { color: colors.accent }]}>{address}</Text>
-      <Text style={[KType.meta, { color: colors.accent, marginTop: 2 }]}>
-        Open in Maps
-      </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          marginTop: 2,
+        }}
+      >
+        <Text style={[KType.meta, { color: colors.accent }]}>Open in Maps</Text>
+        <Ionicons name="open-outline" size={14} color={colors.accent} />
+      </View>
     </Pressable>
   );
 }

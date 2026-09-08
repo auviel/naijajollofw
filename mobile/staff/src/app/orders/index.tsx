@@ -1,4 +1,5 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
+import { OrderStatusText } from "@/components/kitchen/order-status-text";
 import { KType } from "@/lib/kitchen/typography";
 import { useThemedStyles } from "@/lib/kitchen/use-themed-styles";
 import { apiFetch } from "@/lib/api";
@@ -7,8 +8,9 @@ import {
   type StaffOrderListItem,
 } from "@naijajollof/api-types";
 import { SearchField } from "@/components/kitchen/search-field";
+import { subscribeBoardRefresh } from "@/lib/kitchen/board-live";
 import { Card, OrdersScreenSkeleton, Radii, Screen } from "@naijajollof/ui";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
@@ -111,6 +113,18 @@ export default function OrdersListScreen() {
     void load();
   }, [load]);
 
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  useEffect(() => {
+    return subscribeBoardRefresh(() => {
+      void load();
+    });
+  }, [load]);
+
   const initialLoading = data === null && !error;
 
   return (
@@ -175,9 +189,7 @@ export default function OrdersListScreen() {
                 <Card style={styles.row}>
                   <View style={styles.rowTop}>
                     <Text style={KType.bodyStrong}>{ticketLabel(order)}</Text>
-                    <Text style={KType.meta}>
-                      {order.status.replaceAll("_", " ")}
-                    </Text>
+                    <OrderStatusText status={order.status} />
                   </View>
                   <Text style={KType.meta}>{order.customerName}</Text>
                 </Card>

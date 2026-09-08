@@ -1,6 +1,7 @@
 import { StackScroll } from "@/components/kitchen/stack-scroll";
 import { MapsLink, TelLink } from "@/components/kitchen/contact-links";
 import { IconBtn } from "@/components/kitchen/icon-btn";
+import { OrderStatusText } from "@/components/kitchen/order-status-text";
 import { apiFetch } from "@/lib/api";
 import { KType } from "@/lib/kitchen/typography";
 import {
@@ -639,13 +640,15 @@ export default function CustomerDetailScreen() {
                         {formatCadFromCents(order.totalCents)}
                       </Text>
                     </View>
-                    <Text style={KType.meta}>
-                      {order.status.replaceAll("_", " ")}
-                      {" · "}
-                      {order.fulfillmentType === "delivery"
-                        ? "Delivery"
-                        : "Pickup"}
-                    </Text>
+                    <View style={styles.orderMeta}>
+                      <OrderStatusText status={order.status} />
+                      <Text style={KType.meta}>
+                        {" · "}
+                        {order.fulfillmentType === "delivery"
+                          ? "Delivery"
+                          : "Pickup"}
+                      </Text>
+                    </View>
                   </Card>
                 </Pressable>
               ))}
@@ -729,6 +732,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     gap: 12,
+  },
+  orderMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
   error: { ...KType.metaStrong, color: Colors.danger },
   footer: {
