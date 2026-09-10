@@ -9,7 +9,9 @@ import { useStorefrontUi } from "@/components/providers/storefront-ui-context";
 import { AmakaAvatar } from "@/components/features/ai/amaka-avatar";
 import { AiChatTypingIndicator } from "@/components/features/ai/ai-chat-typing-indicator";
 import { ChatMessageText } from "@/components/features/ai/chat-message-text";
-import { Check, Eye, Send, ShoppingBag } from "@/components/ui/icons";
+import { Check, Eye, Mic, Send, ShoppingBag } from "@/components/ui/icons";
+import { AmakaVoiceWave } from "@/components/features/ai/amaka-voice-wave";
+import { useDeviceSpeechToText } from "@/components/features/ai/use-device-speech-to-text";
 import type { ChatPendingState } from "@/lib/ai/chat-pending-state";
 import { rememberCartSessionId } from "@/lib/utils/cart-session-client";
 import { formatCadFromCents } from "@/lib/utils/currency";
@@ -459,6 +461,19 @@ export function AiChatComposer({
   const canSend = Boolean(input.trim()) && !disabled;
   const wasDisabledRef = useRef(Boolean(disabled));
 
+  const {
+    supported: speechSupported,
+    listening,
+    level: voiceLevel,
+    speechError,
+    clearSpeechError,
+    toggle: toggleSpeech,
+    stop: stopSpeech,
+  } = useDeviceSpeechToText({
+    enabled: !disabled,
+    onTranscript: setInput,
+  });
+
   const focusComposer = useCallback(() => {
     requestAnimationFrame(() => {
       textareaRef.current?.focus();
@@ -476,6 +491,10 @@ export function AiChatComposer({
     wasDisabledRef.current = Boolean(disabled);
   }, [disabled, focusComposer]);
 
+  useEffect(() => {
+    if (disabled) stopSpeech();
+  }, [disabled, stopSpeech]);
+
   return (
     <form
       className="p-3"
@@ -483,12 +502,22 @@ export function AiChatComposer({
         event.preventDefault();
         const text = input.trim();
         if (!text || disabled) return;
+        stopSpeech();
         onSend(text);
         setInput("");
+        clearSpeechError();
         requestAnimationFrame(() => resizeComposerTextarea(textareaRef.current));
         focusComposer();
       }}
     >
+      {speechError ? (
+        <p
+          className="mb-2 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger"
+          role="alert"
+        >
+          {speechError}
+        </p>
+      ) : null}
       <div
         className={cn(
           "flex items-end gap-2 rounded-2xl border border-border bg-surface py-1.5 pl-3 pr-1.5",
@@ -510,12 +539,53 @@ export function AiChatComposer({
             }
           }}
           placeholder={
-            pendingLabel ? pendingLabel : "Ask about food or hours…"
+            listening
+              ? "Listening…"
+              : pendingLabel
+                ? pendingLabel
+                : "Ask about food or hours…"
           }
           disabled={disabled}
           className="min-h-9 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-base leading-5 text-ink outline-none placeholder:text-ink-muted disabled:opacity-60"
           style={{ maxHeight: COMPOSER_MAX_HEIGHT }}
         />
+        {speechSupported ? (
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={listening ? "Stop listening" : "Voice input"}
+            aria-pressed={listening}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              clearSpeechError();
+              toggleSpeech(input);
+            }}
+            className={cn(
+              "relative inline-flex size-9 shrink-0 items-center justify-center rounded-2xl transition",
+              listening
+                ? "bg-accent/15 text-accent"
+                : "text-ink-muted hover:bg-surface-elevated hover:text-ink",
+              "disabled:pointer-events-none disabled:opacity-40",
+            )}
+          >
+            {listening ? (
+              <span className="relative inline-flex size-4 items-center justify-center">
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full bg-accent/40"
+                  style={{
+                    transform: `scale(${1 + voiceLevel * 2.1})`,
+                    opacity: 0.18 + voiceLevel * 0.5,
+                    transition: "transform 70ms linear, opacity 70ms linear",
+                  }}
+                />
+                <AmakaVoiceWave level={voiceLevel} className="relative" />
+              </span>
+            ) : (
+              <Mic className="size-4" aria-hidden />
+            )}
+          </button>
+        ) : null}
         <button
           type="submit"
           disabled={!canSend}

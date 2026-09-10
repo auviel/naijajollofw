@@ -19,7 +19,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    value: "camera=(), microphone=(self), geolocation=()",
   },
   {
     key: "Content-Security-Policy",
@@ -151,6 +151,20 @@ const nextConfig: NextConfig = {
     "pg",
     "pg-cloudflare",
   ],
+  // Prisma Cloudflare runtime imports `*.wasm?module`. Webpack 5 needs this
+  // experiment or `next build --webpack` fails to parse the binary.
+  webpack: (config) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    };
+    config.output = {
+      ...config.output,
+      webassemblyModuleFilename: "static/wasm/[modulehash].wasm",
+    };
+    return config;
+  },
   env: {
     NEXT_PUBLIC_VERCEL_ENV:
       process.env.APP_ENV ?? process.env.CLOUDFLARE_ENV ?? process.env.VERCEL_ENV ?? "",

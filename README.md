@@ -73,16 +73,21 @@ postgresql://delivergo:delivergo@localhost:5433/delivergo?schema=public
 
 ```bash
 npm run db:migrate
-npm run db:seed
+# Local / CI demo catalog (wipes menu — never use on prod):
+npm run db:seed:demo
+# Or safe idempotent setup (store + hours + staff only; menu untouched):
+npm run db:bootstrap
 ```
 
-Seed creates the Waterloo store + menu and a local store manager.
+`db:seed` is an alias of `db:seed:demo`. Destructive seed is **permanently blocked** on production-like databases (Railway public `*.rlwy.net`, private `*.railway.internal`, Neon, Supabase, or `APP_ENV`/`CLOUDFLARE_ENV`/`NODE_ENV=production` / `RAILWAY_*`). There is no override flag — use `db:bootstrap` or `scripts/restore-waterloo-menu.ts` on live.
+
+Demo seed creates the Waterloo store + menu and a local store manager.
 
 | Field | Value |
 |-------|-------|
 | Store | Naija Jollof Waterloo — 280 Lester St #102, Waterloo, ON |
 | Store id | `seed-store-waterloo` |
-| Staff login | `admin@naijajollofw.ca` / `123456` |
+| Staff login | `admin@naijajollofw.ca` / `123456` (override with `SEED_STAFF_PASSWORD`) |
 | DoorDash store id | `DOORDASH_EXTERNAL_STORE_ID` in `.env` (e.g. `default`) |
 
 After seeding, register the store with DoorDash:
@@ -267,7 +272,7 @@ If read-after-write freshness ever matters more than latency (e.g. kitchen board
 
 Keep the production hostname so Square / Uber / DoorDash webhook URLs do not change.
 
-Do **not** run `npm run db:seed` against production after go-live (it resets menu + seed logins).
+**Database on production:** run migrations + `npm run db:bootstrap` only. Never run `npm run db:seed` / `db:seed:demo` against Railway or Neon — it deletes all menu items (and is now hard-blocked). After an accidental wipe, restore with `scripts/restore-waterloo-menu.ts`. Manage the live catalog in the admin UI.
 
 ## API routes
 

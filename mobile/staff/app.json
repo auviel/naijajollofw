@@ -11,7 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "ca.naijajollofw.kitchen",
       "infoPlist": {
-        "CFBundleDisplayName": "Naija Jollof Kitchen",
+        "CFBundleDisplayName": "NJ Kitchen",
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "Add photos to menu items.",
         "NSCameraUsageDescription": "Take photos for menu items.",
@@ -30,7 +30,6 @@
     },
     "android": {
       "package": "ca.naijajollofw.kitchen",
-      "label": "Naija Jollof Kitchen",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#121212",
@@ -50,6 +49,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withIosSceneLifecycle",
       "expo-secure-store",
       [
         "expo-image-picker",
@@ -80,7 +80,8 @@
           "project": "naijajollofw-kitchen"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

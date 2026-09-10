@@ -1,7 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { cache } from "react";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -64,8 +63,9 @@ function normalizePgConnectionString(connectionString: string): string {
 }
 
 function createPrisma(connectionString: string, perRequest: boolean): PrismaClient {
-  // Hyperdrive (and managed Postgres) already pool at the edge. Keep the client
-  // pool tiny so serverless instances don't exhaust slots or wait on a stuck pool.
+  // Hyperdrive already pools at the edge. Keep the client pool tiny; on Workers
+  // maxUses:1 so a socket is never reused after the request ends (CF docs:
+  // "Connection terminated unexpectedly" = cross-request pg reuse).
   const adapter = new PrismaPg({
     connectionString: normalizePgConnectionString(connectionString),
     max: 1,
@@ -82,21 +82,32 @@ function createPrisma(connectionString: string, perRequest: boolean): PrismaClie
   });
 }
 
-const prismaForHyperdriveRequest = cache((connectionString: string) =>
-  createPrisma(connectionString, true),
-);
-
 function getClient(): PrismaClient {
   const hyperdrive = hyperdriveConnectionString();
-  if (hyperdrive && isCloudflareWorkers()) {
-    return prismaForHyperdriveRequest(hyperdrive);
+  // Workers: prefer Hyperdrive. Never cache the Prisma/pg client across
+  // requests (React.cache / globalThis both cause "Connection terminated
+  // unexpectedly" with Hyperdrive). Set PREFER_DATABASE_URL=1 only for
+  // emergency bypass of Hyperdrive.
+  const forceDatabaseUrl = process.env.PREFER_DATABASE_URL === "1";
+  if (hyperdrive && isCloudflareWorkers() && !forceDatabaseUrl) {
+    return createPrisma(hyperdrive, true);
+  }
+
+  if (isCloudflareWorkers()) {
+    const databaseUrl = process.env.DATABASE_URL ?? hyperdrive;
+    if (!databaseUrl) {
+      throw new Error(
+        "DATABASE_URL is not set (and Hyperdrive is unavailable). Local/migrate uses Railway or Docker Postgres; Workers use the HYPERDRIVE binding.",
+      );
+    }
+    return createPrisma(databaseUrl, true);
   }
 
   if (globalForPrisma.prisma) {
     return globalForPrisma.prisma;
   }
 
-  const databaseUrl = hyperdrive ?? process.env.DATABASE_URL;
+  const databaseUrl = process.env.DATABASE_URL ?? hyperdrive;
   if (!databaseUrl) {
     throw new Error(
       "DATABASE_URL is not set (and Hyperdrive is unavailable). Local/migrate uses Railway or Docker Postgres; Workers use the HYPERDRIVE binding.",
@@ -109,9 +120,9 @@ function getClient(): PrismaClient {
 }
 
 /**
- * Lazy Prisma client. On Workers this goes through Hyperdrive (pg adapter,
- * maxUses: 1). Local `next dev`, tests, and `prisma migrate` keep using
- * DATABASE_URL. Repositories can keep importing `prisma`.
+ * Lazy Prisma client. On Workers this goes through Hyperdrive with a fresh
+ * client per access (pg must not outlive the request). Local `next dev`,
+ * tests, and `prisma migrate` keep a singleton on DATABASE_URL.
  */
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
   get(_target, prop) {

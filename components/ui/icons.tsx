@@ -30,6 +30,7 @@ import {
   NewTwitterIcon,
   Location01Icon,
   Logout01Icon,
+  Mic01Icon,
   MoreHorizontalIcon,
   Notification01Icon,
   NoodlesIcon,
@@ -113,6 +114,7 @@ export const Home = createIcon(Home01Icon, "Home");
 export const List = createIcon(LeftToRightListDashIcon, "List");
 export const Location = createIcon(Location01Icon, "Location");
 export const LogOut = createIcon(Logout01Icon, "LogOut");
+export const Mic = createIcon(Mic01Icon, "Mic");
 export const MoreHorizontal = createIcon(MoreHorizontalIcon, "MoreHorizontal");
 export const Bell = createIcon(Notification01Icon, "Bell");
 export const Package = createIcon(Package01Icon, "Package");

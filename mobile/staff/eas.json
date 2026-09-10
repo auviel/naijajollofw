@@ -15,14 +15,16 @@
       "ios": { "image": "latest" },
       "android": { "image": "latest" },
       "env": {
+        "EXPO_PUBLIC_API_URL": "https://naijajollofw.ca",
         "SENTRY_ALLOW_FAILURE": "true"
       }
     },
     "production": {
-      "distribution": "internal",
+      "distribution": "store",
       "ios": { "image": "latest" },
       "android": { "image": "latest" },
       "env": {
+        "EXPO_PUBLIC_API_URL": "https://naijajollofw.ca",
         "SENTRY_ALLOW_FAILURE": "true"
       }
     }

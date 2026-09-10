@@ -65,3 +65,7 @@ mobile/**/*.key
 mobile/**/*.mobileprovision
 mobile/**/.env
 !mobile/**/.env.example
+
+# Local Expo/IPA artifacts
+mobile/**/*.ipa
+mobile/**/store-assets/

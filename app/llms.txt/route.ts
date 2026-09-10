@@ -2,6 +2,8 @@ import { buildLlmsTxt } from "@/lib/seo/llms";
 import { getPublicStoreHoursSchedule } from "@/lib/services/store/store-hours";
 import { getPublicStorefront } from "@/lib/services/storefront/get-public-menu";
 
+// Must not statically generate at build time — local Docker Postgres is often down.
+export const dynamic = "force-dynamic";
 export const revalidate = 300;
 
 export async function GET() {

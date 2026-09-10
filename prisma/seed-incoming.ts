@@ -31,7 +31,7 @@ async function main() {
     })) ?? (await prisma.store.findFirst({ orderBy: { createdAt: "asc" } }));
 
   if (!store) {
-    throw new Error("No store found. Run npm run db:seed first.");
+    throw new Error("No store found. Run npm run db:bootstrap (or db:seed:demo locally) first.");
   }
 
   const menuItem = await prisma.menuItem.findFirst({

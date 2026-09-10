@@ -65,7 +65,12 @@ function unlockBody() {
   body.style.right = styles.right;
   body.style.width = styles.width;
   body.style.paddingRight = styles.paddingRight;
-  window.scrollTo(0, scrollY);
+  if (typeof window.scrollTo === "function") {
+    window.scrollTo(0, scrollY);
+  } else {
+    document.documentElement.scrollTop = scrollY;
+    document.body.scrollTop = scrollY;
+  }
 }
 
 /** Locks document scroll while `locked` is true. Safe to nest across modals. */

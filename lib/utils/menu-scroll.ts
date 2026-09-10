@@ -32,7 +32,13 @@ export function restoreMenuScrollOnMount() {
   const holdMs = 480;
 
   const tryRestore = () => {
-    window.scrollTo(0, top);
+    // Some embeds / odd clients expose a non-function scrollTo (Sentry WEB-24).
+    if (typeof window.scrollTo === "function") {
+      window.scrollTo(0, top);
+    } else {
+      document.documentElement.scrollTop = top;
+      document.body.scrollTop = top;
+    }
 
     if (performance.now() - started >= holdMs) {
       sessionStorage.removeItem(MENU_SCROLL_KEY);

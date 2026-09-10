@@ -8,6 +8,7 @@ import { createScriptPrisma } from "../lib/db/script-prisma";
 import bcrypt from "bcryptjs";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";
 import { getDoorDashExternalStoreIdFromEnv } from "../lib/integrations/delivery/doordash/config";
+import { assertDestructiveSeedAllowed } from "./seed-guard";
 
 const prisma = createScriptPrisma();
 
@@ -302,12 +303,10 @@ async function seedKitchenBoardOrders(
     where: { storeId, id: { startsWith: "seed-kitchen-" } },
   });
 
-  const aliases: Record<string, string> = {
-    Plantain: "Fried Plantain",
-  };
+  const aliases = new Map<string, string>([["Plantain", "Fried Plantain"]]);
 
   function menuItemIdForLine(name: string): string | undefined {
-    const key = aliases[name] ?? name;
+    const key = aliases.get(name) ?? name;
     return menuItemIdByName.get(key);
   }
 
@@ -715,6 +714,11 @@ async function resolveStoreCoordinates() {
 }
 
 async function main() {
+  assertDestructiveSeedAllowed();
+  console.log(
+    "Destructive demo seed — wiping carts + menu for this store, then recreating fixtures…",
+  );
+
   const storeData = await resolveStoreCoordinates();
 
   const store = await prisma.store.upsert({

@@ -10,14 +10,11 @@ concurrency:
   cancel-in-progress: true
 
 # Skip jobs when the push head commit or PR title includes [skip ci] / [ci skip].
-# (GitHub also skips the workflow natively for those tokens in commit messages.)
-env:
-  SKIP_CI: ${{ contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]') }}
-
+# Job-level `if` cannot use the `env` context — inline the expression instead.
 jobs:
   unit:
     name: Lint & unit coverage
-    if: ${{ env.SKIP_CI != 'true' }}
+    if: ${{ !(contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,7 +32,7 @@ jobs:
 
   mobile:
     name: Mobile typecheck
-    if: ${{ env.SKIP_CI != 'true' }}
+    if: ${{ !(contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -58,7 +55,7 @@ jobs:
 
   e2e:
     name: Playwright e2e
-    if: ${{ env.SKIP_CI != 'true' }}
+    if: ${{ !(contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -96,7 +93,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma migrate deploy
-      - run: npm run db:seed
+      - run: npm run db:seed:demo
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -110,7 +107,7 @@ jobs:
 
   build:
     name: Web build
-    if: ${{ env.SKIP_CI != 'true' }}
+    if: ${{ !(contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -139,7 +136,7 @@ jobs:
 
   semgrep:
     name: Semgrep
-    if: ${{ env.SKIP_CI != 'true' }}
+    if: ${{ !(contains(github.event.head_commit.message || '', '[skip ci]') || contains(github.event.head_commit.message || '', '[ci skip]') || contains(github.event.pull_request.title || '', '[skip ci]') || contains(github.event.pull_request.title || '', '[ci skip]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:

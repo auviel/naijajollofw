@@ -22,7 +22,7 @@ async function main() {
 
     if (!record) {
       console.error(`Store not found in database: ${storeId}`);
-      console.error("Run npm run db:seed first, or pass a valid store id.");
+      console.error("Run npm run db:bootstrap (or db:seed:demo locally) first, or pass a valid store id.");
       process.exit(1);
     }
 

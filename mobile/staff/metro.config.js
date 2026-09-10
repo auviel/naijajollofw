@@ -27,6 +27,5 @@ config.resolver.extraNodeModules = {
   "expo-glass-effect": path.resolve(appNodeModules, "expo-glass-effect"),
   "expo-modules-core": path.resolve(appNodeModules, "expo-modules-core"),
 };
-config.resolver.unstable_enableSymlinks = true;
 
 module.exports = config;

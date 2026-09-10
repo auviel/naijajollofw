@@ -64,13 +64,17 @@ export function CategoryRail({ categories, todayLabel }: CategoryRailProps) {
     const tabRight = tabLeft + tab.offsetWidth;
     const viewLeft = rail.scrollLeft;
     const viewRight = viewLeft + rail.clientWidth;
-    if (tabLeft < viewLeft + 16) {
-      rail.scrollTo({ left: Math.max(0, tabLeft - 24), behavior: "smooth" });
-    } else if (tabRight > viewRight - 48) {
-      rail.scrollTo({
-        left: tabRight - rail.clientWidth + 56,
-        behavior: "smooth",
-      });
+    const nextLeft =
+      tabLeft < viewLeft + 16
+        ? Math.max(0, tabLeft - 24)
+        : tabRight > viewRight - 48
+          ? tabRight - rail.clientWidth + 56
+          : null;
+    if (nextLeft == null) return;
+    if (typeof rail.scrollTo === "function") {
+      rail.scrollTo({ left: nextLeft, behavior: "smooth" });
+    } else {
+      rail.scrollLeft = nextLeft;
     }
   }, [activeId]);
 
