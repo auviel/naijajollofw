@@ -8,6 +8,9 @@ import { StorefrontProviders } from "@/components/providers/storefront-providers
 import { Outfit } from "next/font/google";
 import { Suspense } from "react";
 
+// Storefront chrome hits Postgres; CI builds have no DB — never statically prerender.
+export const dynamic = "force-dynamic";
+
 const outfit = Outfit({
   variable: "--font-storefront-display",
   subsets: ["latin"],
