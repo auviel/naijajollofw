@@ -230,25 +230,27 @@ const nextConfig: NextConfig = {
 };
 
 const isWorkersCiBuild =
-  process.env.WORKERS_CI === "1" ||
-  process.env.CF_PAGES === "1" ||
-  process.env.SENTRY_DISABLE_SOURCEMAPS === "1";
+  process.env.WORKERS_CI === "1" || process.env.CF_PAGES === "1";
 
-export default withSentryConfig(nextConfig, {
+const sentryBuildConfig = {
   org: process.env.SENTRY_ORG ?? "naija-jollof-waterloo",
   project: process.env.SENTRY_PROJECT ?? "naijajollofw-web",
   authToken: process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: false,
   tunnelRoute: "/monitoring",
   silent: !process.env.CI,
-  // Workers Builds runners OOM (exit 137) during Sentry source map upload.
-  // Runtime error reporting still works; set SENTRY_UPLOAD_SOURCEMAPS=1 to force.
-  sourcemaps: {
-    disable:
-      isWorkersCiBuild && process.env.SENTRY_UPLOAD_SOURCEMAPS !== "1",
-  },
   telemetry: false,
-});
+  sourcemaps: {
+    disable: true as const,
+  },
+};
+
+// Workers Builds OOM (exit 137) in Sentry's afterProductionCompile even with
+// sourcemaps disabled. Skip the build plugin there; runtime Sentry still loads
+// via instrumentation*.ts. Set SENTRY_UPLOAD_SOURCEMAPS=1 to re-enable locally.
+export default isWorkersCiBuild && process.env.SENTRY_UPLOAD_SOURCEMAPS !== "1"
+  ? nextConfig
+  : withSentryConfig(nextConfig, sentryBuildConfig);
 
 // Optional: OPENNEXT_DEV=1 npm run dev — use Wrangler bindings (Hyperdrive) in Next.dev.
 if (process.env.OPENNEXT_DEV === "1") {
