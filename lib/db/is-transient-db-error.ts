@@ -22,8 +22,18 @@ export function isTransientDbError(error: unknown): boolean {
   if (name === "PrismaClientKnownRequestError") {
     const code =
       "code" in error && typeof error.code === "string" ? error.code : "";
-    // P1001 unreachable, P1002 timed out, P1017 server closed connection
-    if (code === "P1001" || code === "P1002" || code === "P1017") {
+    // P1001 unreachable, P1002 timed out, P1017 server closed connection.
+    // Driver-adapter builds may also surface libcodes (ECONNREFUSED) with an
+    // empty message body — treat those as connectivity, not app bugs.
+    if (
+      code === "P1001" ||
+      code === "P1002" ||
+      code === "P1017" ||
+      code === "ECONNREFUSED" ||
+      code === "ETIMEDOUT" ||
+      code === "ENOTFOUND" ||
+      code === "ECONNRESET"
+    ) {
       return true;
     }
   }

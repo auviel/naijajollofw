@@ -20,6 +20,14 @@ describe("isTransientDbError", () => {
     expect(isTransientDbError(error)).toBe(true);
   });
 
+  it("detects driver-adapter ECONNREFUSED known request errors", () => {
+    const error = Object.assign(new Error("\nInvalid `prisma.store.findFirst()` invocation:\n\n\n"), {
+      name: "PrismaClientKnownRequestError",
+      code: "ECONNREFUSED",
+    });
+    expect(isTransientDbError(error)).toBe(true);
+  });
+
   it("ignores unrelated errors", () => {
     expect(isTransientDbError(new Error("Square payment failed"))).toBe(false);
     expect(isTransientDbError(null)).toBe(false);

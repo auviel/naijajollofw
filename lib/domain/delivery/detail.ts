@@ -1,4 +1,4 @@
-import type { Delivery } from "@/generated/prisma/client";
+import type { Delivery } from "@/generated/prisma-node/client";
 import type {
   CourierInfo,
   DeliveryDetail,

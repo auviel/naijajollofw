@@ -7,14 +7,14 @@ import { withSentryConfig } from "@sentry/nextjs";
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Workers Builds (`WORKERS_CI=1`) must keep the Cloudflare Prisma client
- * (`*.wasm?module`). Local/`next` on Node cannot load that import — alias to
- * the Node-generated client for CI e2e, `next build`, and `next dev`.
+ * App + scripts import `@/generated/prisma-node/client` (Node-compatible WASM).
+ * Workers Builds remaps that path to the Cloudflare client (`*.wasm?module`),
+ * which Node/`next` cannot load.
  */
-const useNodePrismaClient = process.env.WORKERS_CI !== "1";
-const nodePrismaClientEntry = path.join(
+const useCloudflarePrismaClient = process.env.WORKERS_CI === "1";
+const cloudflarePrismaClientEntry = path.join(
   configDir,
-  "generated/prisma-node/client.ts",
+  "generated/prisma/client.ts",
 );
 
 /**
@@ -178,20 +178,20 @@ const nextConfig: NextConfig = {
       ...config.output,
       webassemblyModuleFilename: "static/wasm/[modulehash].wasm",
     };
-    if (useNodePrismaClient) {
+    if (useCloudflarePrismaClient) {
       config.resolve = config.resolve ?? {};
       config.resolve.alias = {
         ...config.resolve.alias,
-        "@/generated/prisma/client": nodePrismaClientEntry,
+        "@/generated/prisma-node/client": cloudflarePrismaClientEntry,
       };
     }
     return config;
   },
-  ...(useNodePrismaClient
+  ...(useCloudflarePrismaClient
     ? {
         turbopack: {
           resolveAlias: {
-            "@/generated/prisma/client": "./generated/prisma-node/client.ts",
+            "@/generated/prisma-node/client": "./generated/prisma/client.ts",
           },
         },
       }

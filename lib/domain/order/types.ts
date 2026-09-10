@@ -1,4 +1,4 @@
-import type { FulfillmentMethod, OrderStatus } from "@/generated/prisma/client";
+import type { FulfillmentMethod, OrderStatus } from "@/generated/prisma-node/client";
 import type { CartModifierSelection } from "@/lib/domain/cart/types";
 import type { TransitionAction } from "@/lib/domain/order/transitions";
 

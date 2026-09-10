@@ -3,7 +3,7 @@ import type {
   CustomerAddress,
   CustomerPhone,
   Prisma,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma-node/client";
 import { prisma } from "@/lib/db/client";
 import type { NormalizedAddress } from "@/lib/domain/address/types";
 import {

@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@/generated/prisma/client";
+import type { OrderStatus } from "@/generated/prisma-node/client";
 import { getStaffOrderStatusLabel } from "@/lib/domain/order/types";
 import { cn } from "@/lib/utils/cn";
 

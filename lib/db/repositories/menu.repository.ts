@@ -5,7 +5,7 @@ import type {
   MenuModifier,
   MenuModifierGroup,
   Prisma,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma-node/client";
 import { prisma } from "@/lib/db/client";
 import { normalizePublicMediaUrl } from "@/lib/integrations/r2/public-url";
 import { MODIFIER_GROUP_MAX_SELECT_DEFAULT } from "@/lib/domain/menu/limits";

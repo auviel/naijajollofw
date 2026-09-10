@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma-node/client";
 
 /**
  * Guest storefront orders have `userId: null` and are tied by phone Customer

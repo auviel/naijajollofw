@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/client";
-import type { StoreHours } from "@/generated/prisma/client";
+import type { StoreHours } from "@/generated/prisma-node/client";
 
 export const storeHoursRepository = {
   async findByStoreId(storeId: string): Promise<StoreHours[]> {

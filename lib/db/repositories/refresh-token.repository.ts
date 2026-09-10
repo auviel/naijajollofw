@@ -1,4 +1,4 @@
-import type { MobileApp } from "@/generated/prisma/client";
+import type { MobileApp } from "@/generated/prisma-node/client";
 import { prisma } from "@/lib/db/client";
 
 export const refreshTokenRepository = {

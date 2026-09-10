@@ -1,4 +1,4 @@
-import type { DeliveryStatus, OrderSource } from "@/generated/prisma/client";
+import type { DeliveryStatus, OrderSource } from "@/generated/prisma-node/client";
 import { prisma } from "@/lib/db/client";
 import { customerRepository } from "@/lib/db/repositories/customer.repository";
 import { orderRepository } from "@/lib/db/repositories/order.repository";

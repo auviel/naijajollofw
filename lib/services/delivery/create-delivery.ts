@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma-node/client";
 import { requireSessionContext } from "@/lib/auth/session";
 import { isProviderLiveMode } from "@/lib/config/environment";
 import { deliveryRepository } from "@/lib/db/repositories/delivery.repository";
@@ -23,7 +23,7 @@ import { AppError, isAppError } from "@/lib/utils/errors";
 import { generateDeliveryExternalId } from "@/lib/utils/id";
 import { logger } from "@/lib/utils/logger";
 import { normalizeCanadianPhone } from "@/lib/utils/phone";
-import type { OrderSource } from "@/generated/prisma/client";
+import type { OrderSource } from "@/generated/prisma-node/client";
 
 export type CreateDeliveryResult = {
   id: string;

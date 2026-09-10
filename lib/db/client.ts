@@ -1,5 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
+// Default to the Node-generated client (scripts + `next` on Node). Workers
+// Builds remaps this import to the Cloudflare client via next.config alias.
+import { PrismaClient } from "@/generated/prisma-node/client";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const globalForPrisma = globalThis as unknown as {

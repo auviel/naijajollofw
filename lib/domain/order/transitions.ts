@@ -1,4 +1,4 @@
-import type { FulfillmentMethod, FulfillmentType, OrderStatus } from "@/generated/prisma/client";
+import type { FulfillmentMethod, FulfillmentType, OrderStatus } from "@/generated/prisma-node/client";
 
 /** Base kitchen transitions (fulfillment-aware overrides applied in helpers). */
 const STAFF_TRANSITIONS = new Map<OrderStatus, readonly OrderStatus[]>([

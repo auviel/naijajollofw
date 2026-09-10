@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@/generated/prisma/client";
+import type { OrderStatus } from "@/generated/prisma-node/client";
 
 const ACCEPTED_SQUARE_PAYMENT_STATUSES = new Set(["COMPLETED", "APPROVED"]);
 

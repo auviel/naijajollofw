@@ -2,7 +2,7 @@ import type {
   FulfillmentMethod,
   FulfillmentType,
   OrderStatus,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma-node/client";
 
 export type FulfillOrderSnapshot = {
   status: OrderStatus;

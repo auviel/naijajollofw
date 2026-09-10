@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma-node/client";
 import { prisma } from "@/lib/db/client";
 import type {
   WhatsAppConversationState,
