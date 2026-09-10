@@ -9,16 +9,27 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ca.naijajollofw.staff",
+      "bundleIdentifier": "ca.naijajollofw.kitchen",
       "infoPlist": {
         "CFBundleDisplayName": "Naija Jollof Kitchen",
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "Add photos to menu items.",
-        "NSCameraUsageDescription": "Take photos for menu items."
+        "NSCameraUsageDescription": "Take photos for menu items.",
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration",
+                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).SceneDelegate"
+              }
+            ]
+          }
+        }
       }
     },
     "android": {
-      "package": "ca.naijajollofw.staff",
+      "package": "ca.naijajollofw.kitchen",
       "label": "Naija Jollof Kitchen",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
