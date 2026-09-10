@@ -3,7 +3,7 @@ import {
   type FulfillmentType,
   type OrderStatus,
   Prisma,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma-node/client";
 import { createScriptPrisma } from "../lib/db/script-prisma";
 import bcrypt from "bcryptjs";
 import { geocodeCanadianAddress } from "../lib/integrations/geocoding/mapbox/client";

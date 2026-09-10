@@ -198,6 +198,11 @@ const nextConfig: NextConfig = {
   },
 };
 
+const isWorkersCiBuild =
+  process.env.WORKERS_CI === "1" ||
+  process.env.CF_PAGES === "1" ||
+  process.env.SENTRY_DISABLE_SOURCEMAPS === "1";
+
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG ?? "naija-jollof-waterloo",
   project: process.env.SENTRY_PROJECT ?? "naijajollofw-web",
@@ -205,6 +210,13 @@ export default withSentryConfig(nextConfig, {
   widenClientFileUpload: false,
   tunnelRoute: "/monitoring",
   silent: !process.env.CI,
+  // Workers Builds runners OOM (exit 137) during Sentry source map upload.
+  // Runtime error reporting still works; set SENTRY_UPLOAD_SOURCEMAPS=1 to force.
+  sourcemaps: {
+    disable:
+      isWorkersCiBuild && process.env.SENTRY_UPLOAD_SOURCEMAPS !== "1",
+  },
+  telemetry: false,
 });
 
 // Optional: OPENNEXT_DEV=1 npm run dev — use Wrangler bindings (Hyperdrive) in Next.dev.

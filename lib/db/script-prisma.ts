@@ -1,7 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@/generated/prisma-node/client";
 
-/** Prisma 7 requires a driver adapter — used by seed/CLI scripts. */
+/** Prisma 7 driver adapter for Node/tsx scripts (seed, bootstrap, one-offs). */
 export function createScriptPrisma(): PrismaClient {
   const connectionString =
     process.env.DATABASE_URL ??

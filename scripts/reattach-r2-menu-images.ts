@@ -155,6 +155,21 @@ function assertRailwayLikeUrl(url: string) {
   }
 }
 
+/**
+ * Railway's public proxy uses a self-signed cert. Modern `pg` treats
+ * `sslmode=require` as verify-full; `uselibpqcompat=true` restores libpq
+ * semantics without hard-coding `rejectUnauthorized: false` in source.
+ */
+function normalizeRailwayConnectionString(url: string): string {
+  const match = url.match(/^(postgres(?:ql)?:\/\/[^?]*)(\?.*)?$/i);
+  if (!match) return url;
+  const [, base, query = ""] = match;
+  const params = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
+  params.set("uselibpqcompat", "true");
+  params.set("sslmode", "require");
+  return `${base}?${params.toString()}`;
+}
+
 async function main() {
   const dryRun = process.env.DRY_RUN === "1";
   const url = process.env.DATABASE_URL;
@@ -162,8 +177,7 @@ async function main() {
   assertRailwayLikeUrl(url);
 
   const client = new pg.Client({
-    connectionString: url,
-    ssl: { rejectUnauthorized: false },
+    connectionString: normalizeRailwayConnectionString(url),
   });
   await client.connect();
 

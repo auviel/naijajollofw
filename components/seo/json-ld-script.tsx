@@ -12,6 +12,8 @@ export function JsonLdScript({ data }: JsonLdScriptProps) {
   return (
     <script
       type="application/ld+json"
+      // App-controlled JSON-LD only (JSON.stringify, not user HTML).
+      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
       dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
     />
   );

@@ -2,7 +2,7 @@
  * Quick kitchen smoke data: 3 live incoming (pending_acceptance) tickets.
  * Usage: npx tsx prisma/seed-incoming.ts
  */
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma-node/client";
 import { createScriptPrisma } from "../lib/db/script-prisma";
 
 const prisma = createScriptPrisma();

@@ -9,6 +9,13 @@ generator client {
   runtime  = "cloudflare"
 }
 
+// Node/tsx scripts (seed, bootstrap) cannot load `*.wasm?module` — need a
+// separate client that uses the Node-compatible WASM loader.
+generator clientNode {
+  provider = "prisma-client"
+  output   = "../generated/prisma-node"
+}
+
 datasource db {
   // Postgres stays (Neon now, any Postgres later via Hyperdrive). Not D1/SQLite.
   provider = "postgresql"
