@@ -21,6 +21,8 @@ export const metadata: Metadata = buildShareMetadata({
   path: "/hours",
 });
 
+export const dynamic = "force-dynamic";
+
 export default async function HoursOrderingPage() {
   const [{ store, prepMinutes }, openStatus, schedule, googleRating] =
     await Promise.all([

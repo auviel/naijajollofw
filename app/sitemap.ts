@@ -10,6 +10,9 @@ type BlogSitemapEntry = {
   publishedAt: string;
 };
 
+// Menu URLs come from Postgres — never prerender at build (CI has no DB).
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {

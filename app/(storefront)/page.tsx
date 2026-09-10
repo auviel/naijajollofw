@@ -23,6 +23,8 @@ const homeDescription =
 
 /** Public catalog page — no cookies(); OpenNext ISR can cache the document. */
 export const revalidate = 300;
+// searchParams already forces dynamic; keep explicit for DB-less CI builds.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildShareMetadata({
   title: "Naija Jollof Waterloo",

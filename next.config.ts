@@ -1,6 +1,21 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Workers Builds (`WORKERS_CI=1`) must keep the Cloudflare Prisma client
+ * (`*.wasm?module`). Local/`next` on Node cannot load that import — alias to
+ * the Node-generated client for CI e2e, `next build`, and `next dev`.
+ */
+const useNodePrismaClient = process.env.WORKERS_CI !== "1";
+const nodePrismaClientEntry = path.join(
+  configDir,
+  "generated/prisma-node/client.ts",
+);
 
 /**
  * CSP tuned for Square Web Payments + Cloudflare Turnstile.
@@ -163,8 +178,24 @@ const nextConfig: NextConfig = {
       ...config.output,
       webassemblyModuleFilename: "static/wasm/[modulehash].wasm",
     };
+    if (useNodePrismaClient) {
+      config.resolve = config.resolve ?? {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@/generated/prisma/client": nodePrismaClientEntry,
+      };
+    }
     return config;
   },
+  ...(useNodePrismaClient
+    ? {
+        turbopack: {
+          resolveAlias: {
+            "@/generated/prisma/client": "./generated/prisma-node/client.ts",
+          },
+        },
+      }
+    : {}),
   env: {
     NEXT_PUBLIC_VERCEL_ENV:
       process.env.APP_ENV ?? process.env.CLOUDFLARE_ENV ?? process.env.VERCEL_ENV ?? "",
